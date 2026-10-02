@@ -93,7 +93,7 @@ def _cmd_judge(args: argparse.Namespace) -> int:
     done = skipped = 0
     for i, ep in enumerate(episodes, 1):
         try:
-            judge_episode(judge, ep, args.camera, Path(args.cache), sample_fps=args.sample_fps)
+            judge_episode(judge, ep, args.camera, Path(args.cache), sample_fps=args.sample_fps, max_side=args.max_side)
             done += 1
         except NotApplicable as exc:
             skipped += 1
@@ -139,6 +139,7 @@ def build_parser() -> argparse.ArgumentParser:
     j.add_argument("--camera", default=None)
     j.add_argument("--cache", default="cache")
     j.add_argument("--sample-fps", type=float, default=2.0)
+    j.add_argument("--max-side", type=int, default=448)
     j.add_argument("--limit", type=int, default=0)
     j.set_defaults(func=_cmd_judge)
     return p

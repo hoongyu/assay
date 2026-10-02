@@ -3,9 +3,11 @@
 from collections.abc import Callable
 
 from jianjin.judges.base import Curve, FakeJudge, Judge
+from jianjin.judges.robometer import RobometerJudge
 
 JUDGES: dict[str, Callable[[], Judge]] = {
     "fake": FakeJudge,
+    "robometer": RobometerJudge,
 }
 
 __all__ = ["JUDGES", "Curve", "FakeJudge", "Judge"]
