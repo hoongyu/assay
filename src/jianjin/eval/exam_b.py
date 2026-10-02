@@ -16,6 +16,7 @@ from jianjin.checks import NotApplicable
 from jianjin.eval.auc import roc_auc
 from jianjin.ingest.robovad import read_robovad
 from jianjin.scores import SCORERS
+from jianjin.scores.video import video_scorer
 
 SETTINGS = ["in_domain", "cross_anomaly", "cross_task", "cross_task+anomaly"]
 
@@ -53,9 +54,13 @@ def labels_from_annotations(n: int, anomalies: list[dict]) -> np.ndarray:
     return y
 
 
-def _validation_segments(root: Path, episodes: dict) -> Segments:
-    with open(root / "splits" / "validation.csv", encoding="utf-8", newline="") as f:
-        names = [r["episode_name"] for r in csv.DictReader(f)]
+def split_names(root: Path, split: str) -> list[str]:
+    with open(root / "splits" / f"{split}.csv", encoding="utf-8", newline="") as f:
+        return [r["episode_name"] for r in csv.DictReader(f)]
+
+
+def _annotated_segments(names: list[str], episodes: dict) -> Segments:
+    """按标注造逐帧标签，全部帧都评（train、validation 用）。"""
     out: Segments = {}
     for name in names:
         ep = episodes.get(name)
@@ -112,20 +117,30 @@ def score_population(segments: Segments, episodes: dict, scorer) -> dict:
     }
 
 
-def run_exam_b(root: str | Path, split: str, scorer_name: str) -> dict:
+def make_scorer(name: str, cache_dir: str | Path = "cache", camera: str | None = None):
+    """关节打分器写名字（如 calm）；视频打分器写 video:<评判>:<分数>（如 video:robometer:drop）。"""
+    if name.startswith("video:"):
+        _, judge_name, kind = name.split(":")
+        return video_scorer(judge_name, kind, Path(cache_dir), camera)
+    return SCORERS[name]
+
+
+def run_exam_b(root: str | Path, split: str, scorer_name: str,
+               cache_dir: str | Path = "cache", camera: str | None = None) -> dict:
     root = Path(root)
     res = read_robovad(root)
     episodes = {e.id: e for e in res.episodes}
-    if split == "validation":
-        populations = {"validation": _validation_segments(root, episodes)}
-    else:
+    if split == "test":
         populations = {s: read_segments(root / "evaluation" / f"{s}.csv") for s in SETTINGS}
-    scorer = SCORERS[scorer_name]
+    else:
+        populations = {split: _annotated_segments(split_names(root, split), episodes)}
+    scorer = make_scorer(scorer_name, cache_dir, camera)
     results = [{"setting": k, **score_population(v, episodes, scorer)} for k, v in populations.items()]
     return {
-        "exam": "B（RoboVAD 帧级异常检测；拣金零样本，只用关节数据）",
+        "exam": "B（RoboVAD 帧级异常检测；拣金零样本，不在 RoboVAD 上训练）",
         "split": split,
         "scorer": scorer_name,
+        "camera": camera,
         "read_failures": res.failures,
         "results": results,
     }

@@ -179,6 +179,7 @@ def make_robovad(
     (root / "splits" / "validation.csv").write_text(
         "\n".join(["episode_name", *(validation or [])]) + "\n", encoding="utf-8"
     )
+    (root / "splits" / "train.csv").write_text("episode_name\n", encoding="utf-8")
     return root
 
 
