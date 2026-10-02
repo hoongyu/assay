@@ -19,12 +19,18 @@ from jianjin.scores import SCORERS
 
 SETTINGS = ["in_domain", "cross_anomaly", "cross_task", "cross_task+anomaly"]
 
-# 论文 arXiv 2609.17843 表 II，帧级 AUC（micro, macro），百分数。这些方法都在 RoboVAD 上训练过。
+# 论文 arXiv 2609.17843 表 II 全表（2026-10-02 从 HTML 原文解析），帧级 AUC（micro, macro），百分数。
+# 都在 RoboVAD 上训练过（有监督、弱监督或只用正常数据自监督）；只有 FIDeL 用关节数据，其余只看视频。
 PAPER_TABLE_II = {
-    "FlowJigsaw-Supervised": {"in_domain": (94.6, 94.4), "cross_anomaly": (69.0, 71.9), "cross_task": (72.0, 73.8), "cross_task+anomaly": (66.7, 66.8)},
-    "UR-DMU": {"in_domain": (88.5, 94.4), "cross_anomaly": (61.3, 71.0), "cross_task": (71.8, 77.5), "cross_task+anomaly": (63.9, 71.9)},
+    "DSANet": {"in_domain": (47.3, 40.7), "cross_anomaly": (52.1, 51.0), "cross_task": (54.4, 49.8), "cross_task+anomaly": (59.7, 47.8)},
+    "FIDeL（关节）": {"in_domain": (56.3, 54.0), "cross_anomaly": (52.1, 53.4), "cross_task": (58.1, 53.7), "cross_task+anomaly": (63.2, 51.2)},
+    "FrameShield": {"in_domain": (52.6, 54.8), "cross_anomaly": (47.8, 44.0), "cross_task": (54.3, 48.6), "cross_task+anomaly": (55.1, 42.0)},
     "Jigsaw-VAD": {"in_domain": (64.1, 65.2), "cross_anomaly": (51.7, 51.1), "cross_task": (66.9, 70.9), "cross_task+anomaly": (57.6, 57.9)},
-    "FIDeL": {"in_domain": (56.3, 54.0), "cross_anomaly": (52.1, 53.4), "cross_task": (58.1, 53.7), "cross_task+anomaly": (63.2, 51.2)},
+    "LaGOVAD": {"in_domain": (45.8, 44.3), "cross_anomaly": (45.2, 46.6), "cross_task": (47.9, 46.1), "cross_task+anomaly": (50.6, 45.4)},
+    "VadCLIP": {"in_domain": (47.1, 42.0), "cross_anomaly": (51.5, 54.1), "cross_task": (48.0, 55.1), "cross_task+anomaly": (48.0, 51.9)},
+    "UR-DMU": {"in_domain": (88.5, 94.4), "cross_anomaly": (61.3, 71.0), "cross_task": (71.8, 77.5), "cross_task+anomaly": (63.9, 71.9)},
+    "FlowJigsaw-SSL": {"in_domain": (73.6, 72.8), "cross_anomaly": (79.6, 82.5), "cross_task": (65.6, 64.9), "cross_task+anomaly": (67.4, 64.5)},
+    "FlowJigsaw-Sup.": {"in_domain": (94.6, 94.4), "cross_anomaly": (69.0, 71.9), "cross_task": (72.0, 73.8), "cross_task+anomaly": (66.7, 66.8)},
 }
 
 Segments = dict[str, list[tuple[int, int, int]]]  # 示范名 -> [(起, 止, 标签)]
