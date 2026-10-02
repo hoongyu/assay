@@ -118,7 +118,9 @@ jianjin eval <考卷名> [--split dev|test]
 
 ## 5. 失败原因分类
 
-先用下面七类。拿到 RoboMIND 的失败标签后，按它的分类对齐（论文里最常见的一类是「定位不准」）。
+先用下面七类。拿到 RoboMIND 的失败标签后，按它的分类对齐。
+
+2026-10-02 核：RoboMIND 公开的失败示范把原因写成中文目录名，共 11 类（括号里是条数）：动作不流畅（557）、二次抓取（284）、触碰多余（232）、夹取前碰撞（217）、目标移位（118）、失败放置（113）、轨迹异常（39）、动作不规范（38）、速度过快（36）、机械臂异常（17）、夹爪出境（15），另有 12 条没有原因目录。论文里是另一套 9 类，两套对不上，以公开数据的 11 类为准。原来写的「定位不准占 48%」是论文里 ACT 策略在人形机器人任务上测试时的失败统计，不是遥操作示范的失败，不能这么引。和下表的对应关系在考卷 C 开工时定。
 
 | 类别 | 主要靠什么发现 |
 |---|---|
@@ -151,11 +153,19 @@ jianjin eval <考卷名> [--split dev|test]
 - 内容：机械臂操作视频，逐帧标注有没有异常；数据和代码公开在 Zenodo，CC BY-SA 4.0。
 - 做法：按论文的评测协议，零样本（不在 RoboVAD 上训练），报帧级 micro AUC，和论文里的方法并列。
 - 参照：论文说在最难的设置下，所有方法都不到 70%。
-- 只用视频；RoboVAD 有没有关节数据，下载后再看。
+- 2026-10-02 核（论文 arXiv 2609.17843、Zenodo records/22754659，读了 zip 目录没整包下载）：
+  - 1,078 条，正常 616、异常 462，5.75 小时，异常事件 1,570 个；机械臂是 SO-ARM101，遥操作采集。划分 train 367、val 82、test 629。
+  - 每条两路 1920×1080、30 fps 的 mp4；标注是一个 `annotations.json`，按示范给 `start_frame`、`end_frame`（左闭右开）和异常类型。异常 5 类：failed_grasp、collision、placement_failure、object_drop、object_not_dropped。
+  - 有关节数据：`proprioception/<示范>.parquet`，列和 LeRobot 一样（`frame_index`、`timestamp`、`observation.state`、`action`），和视频逐帧对齐。所以关节体检也能在考卷 B 上考。
+  - 评测协议：`evaluation/*.csv` 列出要评的帧；micro AUC 是所有被评的帧合起来算一个 AUC。四种设置 in_domain、cross_anomaly、cross_task、cross_task+anomaly；最难的那种最好成绩 67.4%。
+  - 下载一个 `RoboVAD.zip`，6.86 GB。
+  - **授权三处说法不一致**：zip 里的 `license.txt` 和 README 写 CC BY-NC-ND 4.0，Zenodo 元数据写 cc-by-4.0，arXiv 页面写 CC BY-SA 4.0（那应该是论文本身的授权）。按最严的 CC BY-NC-ND 处理：只拿来评测、报成绩，不改编、不再分发数据；商业用途要不要先问作者，由用户决定。
 
 ### 考卷 C：RoboMIND 失败示范（拿得到才做）
 
 - 论文说有 5,000 条真实失败示范，每条都标了原因。Hugging Face 上的版本是 Apache-2.0 授权，要同意共享联系方式才能下载，总共 12.3 TB，目录里只看到 `success_episodes`。
+- 2026-10-02 核：失败示范**已经公开**，在 Hugging Face 仓库的 `failure_data/` 目录，路径是 `<任务>/<失败原因>/<示范>/data/trajectory.hdf5`，95 个任务、1,678 条、440.9 GB，不是论文说的 5,000 条（另外的是否在 ModelScope 的 2.0 版里，未确认）。原因类别见第 5 节。成功示范按任务算，压缩后中位数 14 GB 一个任务，UR 机型中位数 1.4 GB，可以只挑小任务下。
+- HDF5 结构：`master`（主臂）、`puppet`（从臂）、`observations/{rgb_images,depth_images}/<相机>`；Franka 和 UR 的 `joint_position` 8 维、最后一维是夹爪；AgileX 分 `_left`、`_right` 各 7 维；没有单独的 action，取 `master`；图像逐帧编码，Franka 和 UR 是 BGR。出处：官方仓库 `static/all_robot_h5_info.md`。帧率没写，拿到数据再核。
 - 拿得到：报按示范的检出率，以及原因分类的准确率；只下一两个机型的几个任务。
 - 拿不到：只用考卷 A 和 B，并在材料里说明。
 
@@ -174,6 +184,7 @@ jianjin eval <考卷名> [--split dev|test]
 ## 7. Nebius × NVIDIA 的 Physical AI 赛道
 
 - 要求（据总管赛事卡）：跑在 Nebius Token Factory 或 Nebius AI Cloud 上，至少用一个 NVIDIA 开源模型。提交截止 10-30 10:00（太平洋时间），即柏林 18:00。
+- 2026-10-02 核：Cosmos 3 的授权是 OpenMDW-1.1，模型卡写可商用；许可证原文只要求分发时保留协议和版权声明。Nebius Token Factory 上 `nvidia/Cosmos3-Super-Reasoner` 的 serverless 接口 2026-08-31 已下线，公开模型目录里没有 Cosmos，只剩 Dedicated Endpoint（价格未确认）。所以默认走 Nebius AI Cloud 租 GPU 自己跑。比赛规则允不允许，看 Nebius 的任务书。
 - 做法：加 Cosmos 3（NVIDIA 2026-05-31 开源）的适配器，用它的推理部分看视频，说出第几秒出了什么事，作为体检单上的文字解释；部署在 Nebius 上演示。
 - 这场的任务书等在做的项目降回 3 个后，由总管派发（预计在 Hack Apertus 10-16 结束后）。
 
@@ -192,10 +203,10 @@ jianjin eval <考卷名> [--split dev|test]
 ## 9. 风险和对策
 
 1. 不用训练的视频模型，在 RoboVAD 上可能不如论文里的方法。对策：和关节体检合起来用；成绩照实报，卖点放在「说得清原因」和「数据不出场」。
-2. RoboMIND 的失败示范可能没公开。对策：只用考卷 A 和 B，数据仍是真的，照实说明。
+2. RoboMIND 的失败示范可能没公开。2026-10-02 核：公开了 1,678 条，这条风险基本解除；剩下的是体量（440.9 GB），只挑小任务下。
 3. 已经有同类：数据厂商 Claru 自称逐条自动打分；开源的有 Loop-Engineering-for-VLA、hflow、kalanos。差异放在失败原因诊断、国内数采场三道质检的流程、数据不出场。
 4. 没有客户试点，评委多半会问「哪个数采场在用」。下一步联系一家数采场试用，这是外部动作，由用户决定。
-5. 赛事要求有完整合规的知识产权或授权证明。对策：代码自研；模型和数据附授权清单（Robometer、RoboMIND 是 Apache-2.0，RoboVAD 是 CC BY-SA 4.0，Cosmos 3 待核）。
+5. 赛事要求有完整合规的知识产权或授权证明。对策：代码自研；模型和数据附授权清单（Robometer、RoboMIND、考卷 A 的五个 SO-10x 数据集是 Apache-2.0，Cosmos 3 是 OpenMDW-1.1；RoboVAD 按最严的 CC BY-NC-ND 4.0 处理，见第 6 节）。
 
 ## 10. 开工第一天要核的
 
@@ -208,6 +219,20 @@ jianjin eval <考卷名> [--split dev|test]
 7. 租 GPU 的价格。
 
 每一条核完，结论写进本文对应的小节。
+
+2026-10-02 核了第 2 到第 7 条（一个调研 agent，45 次工具调用，约 12.4 万 token）：
+
+| 条目 | 结论 | 写在哪 |
+|---|---|---|
+| 1 参赛指南 | 没核，要加微信领 | 用户 |
+| 2 RoboMIND | 失败示范公开了 1,678 条，原因 11 类 | 第 5 节、考卷 C |
+| 3 RoboVAD | 6.86 GB，有关节数据；授权按 CC BY-NC-ND 处理 | 考卷 B |
+| 4 Robometer-4B | BF16 权重 8.90 GB，社区 NF4 版卡上写最低 3.6 GB 显存；官方没写显存，NF4 的精度损失没人报告过（Apache-2.0） | 这里 |
+| 5 TOPReward | 默认包 Qwen3-VL-8B-Instruct，权重约 16 GB；显存要求文档没写，按 BF16 估至少 24 GB 档（推测） | 这里 |
+| 6 Cosmos 3 | OpenMDW-1.1 可商用；Token Factory serverless 已下线 | 第 7 节 |
+| 7 GPU 价格 | Nebius 按需（美元/卡·小时）：L40S 48 GB 起 1.55，H100 80 GB 3.85，H200 4.50，没有 24 GB 档。AutoDL 官网要登录，只拿到第三方 2026-07 的报价：4090 24 GB 约 2.19 元/时、A800 80 GB 约 6.29 元/时，未核一手 | 这里 |
+
+考卷 A 用的五个数据集（核过 `meta/info.json`，都是 v3.0、30 fps、有夹爪通道）：`lerobot/svla_so100_pickplace`、`lerobot/svla_so100_stacking`、`lerobot/svla_so100_sorting`、`lerobot/svla_so101_pickplace`、`CoRL2026-CSI/SO101-DualArm-teleop_fold_towel_100epi`，数据卡 YAML 都写 Apache-2.0，正文还没逐个看。
 
 ## 11. 只能用户来做的事
 
