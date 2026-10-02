@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import h5py
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -123,3 +124,20 @@ def make_lerobot_v3(root: Path, episodes: list[tuple[str, np.ndarray]], fps: int
         root / "meta" / "episodes" / "chunk-000" / "file-000.parquet",
     )
     return root
+
+
+# ---- RoboMIND ----
+
+
+def make_robomind_h5(path: Path, state: np.ndarray | None = None, left_right: np.ndarray | None = None) -> Path:
+    """造一个最小的 RoboMIND trajectory.hdf5。state 是单臂 T×8；left_right 是双臂 (左 T×7, 右 T×7) 叠成 2×T×7。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with h5py.File(path, "w") as h:
+        if state is not None:
+            h["puppet/joint_position"] = state
+            h["master/joint_position"] = state
+        if left_right is not None:
+            h["puppet/joint_position_left"] = left_right[0]
+            h["puppet/joint_position_right"] = left_right[1]
+        h.create_group("observations/rgb_images/camera_top")
+    return path
