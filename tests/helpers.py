@@ -141,3 +141,41 @@ def make_robomind_h5(path: Path, state: np.ndarray | None = None, left_right: np
             h["puppet/joint_position_right"] = left_right[1]
         h.create_group("observations/rgb_images/camera_top")
     return path
+
+
+# ---- RoboVAD ----
+
+
+def make_robovad(
+    root: Path,
+    episodes: dict[str, tuple[np.ndarray, np.ndarray]],
+    annotations: dict | None = None,
+    evaluation: dict[str, list[tuple[str, int, int, int]]] | None = None,
+    validation: list[str] | None = None,
+    t0: float = 1.1,
+) -> Path:
+    """episodes：{示范名: (state T×6, action T×6)}；evaluation：{设置名: [(示范名, 起, 止, 标签)]}。"""
+    (root / "proprioception").mkdir(parents=True)
+    for name, (state, action) in episodes.items():
+        n = len(state)
+        pq.write_table(
+            pa.table(
+                {
+                    "frame_index": pa.array(np.arange(n), pa.int64()),
+                    "timestamp": pa.array(t0 + np.arange(n) / 30.0),
+                    "observation.state": pa.array([list(r) for r in np.asarray(state, float)], pa.large_list(pa.float64())),
+                    "action": pa.array([list(r) for r in np.asarray(action, float)], pa.large_list(pa.float64())),
+                }
+            ),
+            root / "proprioception" / f"{name}.parquet",
+        )
+    (root / "annotations.json").write_text(json.dumps(annotations or {}), encoding="utf-8")
+    (root / "evaluation").mkdir()
+    for setting, rows in (evaluation or {}).items():
+        lines = ["episode_name,start_frame,end_frame_exclusive,label"] + [f"{a},{b},{c},{d}" for a, b, c, d in rows]
+        (root / "evaluation" / f"{setting}.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (root / "splits").mkdir()
+    (root / "splits" / "validation.csv").write_text(
+        "\n".join(["episode_name", *(validation or [])]) + "\n", encoding="utf-8"
+    )
+    return root
