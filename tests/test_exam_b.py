@@ -62,3 +62,15 @@ def test_table_has_denominators_and_paper(tmp_path):
     t = format_table(out)
     assert "零样本" in t and "FIDeL" in t and "帧" in t
     assert not math.isnan(out["results"][0]["micro_auc"])
+
+
+def test_eval_b_command(tmp_path, capsys):
+    import json
+
+    from jianjin.cli import main
+
+    root = setup(tmp_path)
+    out = tmp_path / "b.json"
+    assert main(["eval", "b", "--robovad-root", str(root), "--split", "test", "--scorer", "tracking", "--out", str(out)]) == 0
+    assert json.loads(out.read_text(encoding="utf-8"))["scorer"] == "tracking"
+    assert "micro AUC" in capsys.readouterr().out

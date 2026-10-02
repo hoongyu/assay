@@ -42,18 +42,30 @@ def _cmd_check(args: argparse.Namespace) -> int:
 
 
 def _cmd_eval(args: argparse.Namespace) -> int:
-    from jianjin.eval.exam_a import format_table, load_config, run_exam_a
+    if args.exam == "a":
+        from jianjin.eval.exam_a import format_table, load_config, run_exam_a
 
-    args.out = args.out or f"results/exam_a_{args.split}.json"
-    out = run_exam_a(load_config(args.config), args.data_root, args.split, seed=args.seed)
+        split = args.split or "dev"
+        out = run_exam_a(load_config(args.config), args.data_root, split, seed=args.seed)
+    else:
+        from jianjin.eval.exam_b import format_table, run_exam_b
+
+        split = args.split or "validation"
+        out = run_exam_b(args.robovad_root, split, args.scorer)
     print(format_table(out))
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out).write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"结果写到 {args.out}")
+    path = Path(args.out or f"results/exam_{args.exam}_{split}.json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"结果写到 {path}")
     return 0
 
 
 def _cmd_fetch(args: argparse.Namespace) -> int:
+    if args.what == "robovad":
+        from jianjin.eval.robovad_fetch import fetch_robovad
+
+        print(f"已取到 {fetch_robovad(args.data_root, videos=args.videos)}")
+        return 0
     from jianjin.eval.exam_a import load_config
     from jianjin.eval.fetch import fetch
 
@@ -71,15 +83,18 @@ def build_parser() -> argparse.ArgumentParser:
     c.set_defaults(func=_cmd_check)
 
     e = sub.add_parser("eval", help="跑考卷")
-    e.add_argument("exam", choices=["a"])
+    e.add_argument("exam", choices=["a", "b"])
     e.add_argument("--config", default="configs/exam_a.toml")
     e.add_argument("--data-root", default="data")
-    e.add_argument("--split", choices=["dev", "test"], default="dev")
+    e.add_argument("--robovad-root", default="data/robovad")
+    e.add_argument("--split", choices=["dev", "test", "validation"], default=None)
+    e.add_argument("--scorer", default="tracking")
     e.add_argument("--seed", type=int, default=0)
     e.add_argument("--out", default=None)
     e.set_defaults(func=_cmd_eval)
 
-    f = sub.add_parser("fetch", help="按考卷配置下载公开数据集")
+    f = sub.add_parser("fetch", help="下载考卷数据")
+    f.add_argument("what", nargs="?", choices=["exam_a", "robovad"], default="exam_a")
     f.add_argument("--config", default="configs/exam_a.toml")
     f.add_argument("--data-root", default="data")
     f.add_argument("--videos", action="store_true", help="连视频一起下")
