@@ -28,7 +28,7 @@ def setup(tmp_path):
 def test_run_exam_a_dev_only_uses_dev(tmp_path):
     root, specs = setup(tmp_path)
     # 阈值写死在测试里，Task 13 重定默认阈值时这条测试不受影响
-    cfg = CheckConfig(still_rate=0.02, pause_s=3.0, end_moving_rate=0.05, end_window_s=0.5)
+    cfg = CheckConfig(still_rate=0.02, pause_s=3.0, end_pose_max=0.15)
     out = run_exam_a(specs, root, "dev", cfg=cfg, seed=0)
     assert [s["repo"] for s in out["datasets"]] == ["org/dev_ds"]
     assert out["n_episodes"] == 6

@@ -15,7 +15,7 @@ def wilson(k: int, n: int, z: float = 1.96) -> tuple[float, float]:
     den = 1 + z * z / n
     centre = (p + z * z / (2 * n)) / den
     half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / den
-    return (centre - half, centre + half)
+    return (max(0.0, centre - half), min(1.0, centre + half))
 
 
 def overlaps(a: tuple[float, float], b: tuple[float, float]) -> bool:

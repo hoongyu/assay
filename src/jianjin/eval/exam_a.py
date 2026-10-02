@@ -63,7 +63,8 @@ def run_exam_a(
     for kind, inject in INJECTORS.items():
         rng = np.random.default_rng(seed)
         pairs = [inject(episodes[i], rng) for i in eligible]
-        injected = run_checks([p[0] for p in pairs], cfg)
+        # 同任务比较拿原样示范当参照，不然整批都注入了缺陷，中位数本身就偏了
+        injected = run_checks([p[0] for p in pairs], cfg, reference=episodes)
         kinds.append(score_kind(kind, [p[1] for p in pairs], injected, clean))
 
     return {
