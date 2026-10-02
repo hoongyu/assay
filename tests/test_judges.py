@@ -73,3 +73,12 @@ def test_fingerprint_changes_with_slice(ep):
 
 def test_registry_has_fake():
     assert "fake" in JUDGES
+
+
+def test_load_curve_without_local_video(ep, tmp_path):
+    """本机没下视频时（比如 RoboVAD 的视频只在 Colab 上），按示范名、相机、任务描述认缓存。"""
+    judge_episode(FakeJudge(), ep, "front", tmp_path / "cache", sample_fps=1.0)
+    ep.cameras = {}
+    assert load_curve(tmp_path / "cache", "fake", ep, "front") is not None
+    ep.task = "something else"
+    assert load_curve(tmp_path / "cache", "fake", ep, "front") is None

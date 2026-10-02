@@ -57,12 +57,18 @@ def _curve(data: dict) -> Curve:
 
 
 def load_curve(cache_dir: Path, judge_name: str, ep: Episode, camera: str | None = None) -> Curve | None:
-    camera = _pick_camera(ep, camera)
+    """有本地视频就核对视频指纹；没有（视频只在 GPU 机器上）就退一步，只核对示范名、相机和任务描述。"""
+    if camera is None:
+        camera = _pick_camera(ep, camera)
     path = _path(cache_dir, judge_name, ep, camera)
     if not path.exists():
         return None
     data = json.loads(path.read_text(encoding="utf-8"))
-    if data.get("key") != _key(ep.cameras[camera], ep.task):
+    ref = ep.cameras.get(camera)
+    if ref is not None and Path(ref.path).exists():
+        if data.get("key") != _key(ref, ep.task):
+            return None
+    elif data.get("episode") != ep.id or data.get("task") != ep.task:
         return None
     return _curve(data)
 
@@ -83,5 +89,5 @@ def judge_episode(judge: Judge, ep: Episode, camera: str | None, cache_dir: Path
         raise NotApplicable("视频里读不到帧")
     curve = judge.curve(frames, times, ep.task)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"key": key, "episode": ep.id, "camera": camera, **params, **asdict(curve)}), encoding="utf-8")
+    path.write_text(json.dumps({"key": key, "episode": ep.id, "camera": camera, "task": ep.task, **params, **asdict(curve)}), encoding="utf-8")
     return curve
