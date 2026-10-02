@@ -179,7 +179,7 @@ jianjin eval <考卷名> [--split dev|test]
   - 有关节数据：`proprioception/<示范>.parquet`，列和 LeRobot 一样（`frame_index`、`timestamp`、`observation.state`、`action`），和视频逐帧对齐。所以关节体检也能在考卷 B 上考。
   - 评测协议：`evaluation/*.csv` 列出要评的帧；micro AUC 是所有被评的帧合起来算一个 AUC。四种设置 in_domain、cross_anomaly、cross_task、cross_task+anomaly；最难的那种最好成绩 67.4%。
   - 下载一个 `RoboVAD.zip`，6.86 GB。
-  - **授权三处说法不一致**：zip 里的 `license.txt` 和 README 写 CC BY-NC-ND 4.0，Zenodo 元数据写 cc-by-4.0，arXiv 页面写 CC BY-SA 4.0（那应该是论文本身的授权）。按最严的 CC BY-NC-ND 处理：只拿来评测、报成绩，不改编、不再分发数据；商业用途要不要先问作者，由用户决定。
+  - **授权三处说法不一致**：zip 里的 `license.txt` 和 README 写 CC BY-NC-ND 4.0，Zenodo 元数据写 cc-by-4.0，arXiv 页面写 CC BY-SA 4.0（那应该是论文本身的授权）。按最严的 CC BY-NC-ND 处理：只拿来评测、报成绩，不改编、不再分发数据；商业用途要不要先问作者，由用户决定。2026-10-02 用户确认授权没问题，照常用作考卷 B。
 
 ### 考卷 C：RoboMIND 失败示范（拿得到才做）
 
