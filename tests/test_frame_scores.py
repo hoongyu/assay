@@ -4,7 +4,7 @@ import pytest
 from helpers import make_episode
 from jianjin.checks import NotApplicable
 from jianjin.scores import SCORERS
-from jianjin.scores.frame import accel, gripper_tracking, stillness, tracking
+from jianjin.scores.frame import accel, calm, gripper_tracking, stillness, tracking
 
 NAMES = ["a", "b", "gripper"]
 
@@ -54,4 +54,10 @@ def test_needs_action():
 
 
 def test_registry():
-    assert set(SCORERS) == {"tracking", "gripper_tracking", "accel", "stillness"}
+    assert set(SCORERS) == {"tracking", "gripper_tracking", "accel", "calm", "stillness"}
+
+
+def test_calm_is_negative_accel():
+    x = np.concatenate([np.linspace(0, 1, 60), np.ones(60)])
+    ep = make_episode(np.stack([x, x], axis=1))
+    np.testing.assert_allclose(calm(ep), -accel(ep))

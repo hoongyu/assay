@@ -58,6 +58,11 @@ def accel(ep: Episode) -> np.ndarray:
     return _smooth(_pad_to(a, len(ep.state)), ep.fps)
 
 
+def calm(ep: Episode) -> np.ndarray:
+    """负的加速度，越平稳分越高。2026-10-02 在 RoboVAD validation 上看到加速度的 AUC 只有 0.33（异常时操作员往往放慢、停下）后加的候选。"""
+    return -accel(ep)
+
+
 def stillness(ep: Episode) -> np.ndarray:
     """越不动分越高：卡住、犹豫。"""
     return _smooth(-_pad_to(speed(ep.state, ep.fps), len(ep.state)), ep.fps)
