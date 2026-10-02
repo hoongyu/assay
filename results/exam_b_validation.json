@@ -1,0 +1,20 @@
+{
+  "exam": "B（RoboVAD 帧级异常检测；拣金零样本，只用关节数据）",
+  "split": "validation",
+  "scorer": "calm",
+  "read_failures": [],
+  "results": [
+    {
+      "setting": "validation",
+      "n_episodes": 82,
+      "n_frames": 34266,
+      "n_anomalous": 1582,
+      "micro_auc": 0.6720152470246831,
+      "macro_auc": 0.6821839007025959,
+      "n_macro_episodes": 15,
+      "missing_episodes": [],
+      "not_applicable": [],
+      "missing_frames": 0
+    }
+  ]
+}

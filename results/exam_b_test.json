@@ -1,0 +1,56 @@
+{
+  "exam": "B（RoboVAD 帧级异常检测；拣金零样本，只用关节数据）",
+  "split": "test",
+  "scorer": "calm",
+  "read_failures": [],
+  "results": [
+    {
+      "setting": "in_domain",
+      "n_episodes": 259,
+      "n_frames": 196033,
+      "n_anomalous": 7985,
+      "micro_auc": 0.41551376775809273,
+      "macro_auc": 0.4017823945621335,
+      "n_macro_episodes": 193,
+      "missing_episodes": [],
+      "not_applicable": [],
+      "missing_frames": 0
+    },
+    {
+      "setting": "cross_anomaly",
+      "n_episodes": 297,
+      "n_frames": 220291,
+      "n_anomalous": 11245,
+      "micro_auc": 0.5588505906314488,
+      "macro_auc": 0.5263275777728531,
+      "n_macro_episodes": 231,
+      "missing_episodes": [],
+      "not_applicable": [],
+      "missing_frames": 0
+    },
+    {
+      "setting": "cross_task",
+      "n_episodes": 308,
+      "n_frames": 176815,
+      "n_anomalous": 5761,
+      "micro_auc": 0.3409393819744826,
+      "macro_auc": 0.3068290709636482,
+      "n_macro_episodes": 132,
+      "missing_episodes": [],
+      "not_applicable": [],
+      "missing_frames": 0
+    },
+    {
+      "setting": "cross_task+anomaly",
+      "n_episodes": 283,
+      "n_frames": 163281,
+      "n_anomalous": 6094,
+      "micro_auc": 0.4989744884812727,
+      "macro_auc": 0.47602457337202525,
+      "n_macro_episodes": 107,
+      "missing_episodes": [],
+      "not_applicable": [],
+      "missing_frames": 0
+    }
+  ]
+}
