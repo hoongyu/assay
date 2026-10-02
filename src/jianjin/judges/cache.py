@@ -1,4 +1,7 @@
-"""模型输出按「视频指纹 + 任务描述 + 模型版本 + 采样参数」缓存成旁路 JSON，不改原数据；换了模型不会读到旧结果。"""
+"""模型输出按「视频指纹 + 任务描述」做键缓存成旁路 JSON，文件里记着模型版本和采样参数；不改原数据。
+
+重跑时键、版本、采样参数都对上才复用；读结果（打分）时只看键，采样参数照文件里记的用。
+"""
 
 from __future__ import annotations
 
@@ -29,8 +32,8 @@ def fingerprint(ref: VideoRef) -> str:
     return h.hexdigest()
 
 
-def _key(ref: VideoRef, task: str, sample_fps: float, max_side: int) -> str:
-    raw = json.dumps([fingerprint(ref), task, sample_fps, max_side])
+def _key(ref: VideoRef, task: str) -> str:
+    raw = json.dumps([fingerprint(ref), task])
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
@@ -53,14 +56,13 @@ def _curve(data: dict) -> Curve:
     return Curve(data["model"], data["version"], data["times"], data["progress"], data.get("success"))
 
 
-def load_curve(cache_dir: Path, judge_name: str, ep: Episode, camera: str | None = None,
-               sample_fps: float = 2.0, max_side: int = 448) -> Curve | None:
+def load_curve(cache_dir: Path, judge_name: str, ep: Episode, camera: str | None = None) -> Curve | None:
     camera = _pick_camera(ep, camera)
     path = _path(cache_dir, judge_name, ep, camera)
     if not path.exists():
         return None
     data = json.loads(path.read_text(encoding="utf-8"))
-    if data.get("key") != _key(ep.cameras[camera], ep.task, sample_fps, max_side):
+    if data.get("key") != _key(ep.cameras[camera], ep.task):
         return None
     return _curve(data)
 
@@ -69,15 +71,17 @@ def judge_episode(judge: Judge, ep: Episode, camera: str | None, cache_dir: Path
                   sample_fps: float = 2.0, max_side: int = 448) -> Curve:
     camera = _pick_camera(ep, camera)
     path = _path(cache_dir, judge.name, ep, camera)
-    key = _key(ep.cameras[camera], ep.task, sample_fps, max_side)
+    key = _key(ep.cameras[camera], ep.task)
+    params = {"sample_fps": sample_fps, "max_side": max_side}
     if path.exists():
         data = json.loads(path.read_text(encoding="utf-8"))
-        if data.get("key") == key and data.get("version") == judge.version:
+        same = data.get("key") == key and data.get("version") == judge.version
+        if same and all(data.get(k) == v for k, v in params.items()):
             return _curve(data)
     frames, times = read_clip(ep.cameras[camera], sample_fps=sample_fps, max_side=max_side)
     if len(frames) == 0:
         raise NotApplicable("视频里读不到帧")
     curve = judge.curve(frames, times, ep.task)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"key": key, "episode": ep.id, "camera": camera, **asdict(curve)}), encoding="utf-8")
+    path.write_text(json.dumps({"key": key, "episode": ep.id, "camera": camera, **params, **asdict(curve)}), encoding="utf-8")
     return curve

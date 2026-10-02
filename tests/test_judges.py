@@ -42,16 +42,23 @@ def test_new_version_does_not_reuse_cache(ep, tmp_path):
 
 def test_load_curve_checks_fingerprint(ep, tmp_path):
     judge_episode(FakeJudge(), ep, "front", tmp_path / "cache", sample_fps=1.0)
-    assert load_curve(tmp_path / "cache", "fake", ep, "front", sample_fps=1.0) is not None
+    assert load_curve(tmp_path / "cache", "fake", ep, "front") is not None
     ep.task = "something else"  # 任务描述变了，旧结果不能用
-    assert load_curve(tmp_path / "cache", "fake", ep, "front", sample_fps=1.0) is None
+    assert load_curve(tmp_path / "cache", "fake", ep, "front") is None
+
+
+def test_new_sampling_reruns(ep, tmp_path):
+    j = FakeJudge()
+    judge_episode(j, ep, "front", tmp_path / "cache", sample_fps=1.0)
+    judge_episode(j, ep, "front", tmp_path / "cache", sample_fps=2.0)
+    assert j.calls == 2
 
 
 def test_cache_file_is_plain_json(ep, tmp_path):
     judge_episode(FakeJudge(), ep, "front", tmp_path / "cache", sample_fps=1.0)
     (f,) = list((tmp_path / "cache" / "fake").glob("*.json"))
     data = json.loads(f.read_text(encoding="utf-8"))
-    assert {"key", "model", "version", "times", "progress"} <= set(data)
+    assert {"key", "model", "version", "times", "progress", "sample_fps", "max_side"} <= set(data)
 
 
 def test_no_camera(tmp_path):
