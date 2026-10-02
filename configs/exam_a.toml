@@ -1,0 +1,26 @@
+# 考卷 A 用的公开数据集。一个数据集只属于一个切分；授权照抄数据卡。
+# 开发集定阈值；测试集换了任务（分拣、乐高块）、换了机型（SO-101、双臂），只跑一次。
+[[dataset]]
+repo = "lerobot/svla_so100_pickplace"   # 50 条，把方块放进盒子
+split = "dev"
+license = "apache-2.0"
+
+[[dataset]]
+repo = "lerobot/svla_so100_stacking"    # 56 条，红块叠到蓝块上
+split = "dev"
+license = "apache-2.0"
+
+[[dataset]]
+repo = "lerobot/svla_so100_sorting"     # 52 条，红蓝块分进左右两个盒子
+split = "test"
+license = "apache-2.0"
+
+[[dataset]]
+repo = "lerobot/svla_so101_pickplace"   # 50 条，乐高块放进透明盒；robot_type 写的是 so100_follower
+split = "test"
+license = "apache-2.0"
+
+[[dataset]]
+repo = "CoRL2026-CSI/SO101-DualArm-teleop_fold_towel_100epi"  # 100 条，双臂叠毛巾
+split = "test"
+license = "apache-2.0"
