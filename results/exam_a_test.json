@@ -1,0 +1,104 @@
+{
+  "exam": "A（注入缺陷：在真机成功示范上人工造的失败，不是真实失败）",
+  "split": "test",
+  "seed": 0,
+  "config": {
+    "still_rate": 0.02,
+    "pause_s": 3.0,
+    "min_duration_s": 1.0,
+    "max_gap_factor": 1.5,
+    "extra_factor": 2.0,
+    "end_pose_max": 0.3,
+    "min_task_episodes": 5
+  },
+  "datasets": [
+    {
+      "repo": "lerobot/svla_so100_sorting",
+      "license": "apache-2.0",
+      "n_episodes": 52,
+      "tasks": [
+        "Put the red cube in the right box and the blue cube in the left box."
+      ],
+      "robot_types": [
+        "so100"
+      ],
+      "read_failures": []
+    },
+    {
+      "repo": "lerobot/svla_so101_pickplace",
+      "license": "apache-2.0",
+      "n_episodes": 50,
+      "tasks": [
+        "pink lego brick into the transparent box"
+      ],
+      "robot_types": [
+        "so100_follower"
+      ],
+      "read_failures": []
+    },
+    {
+      "repo": "CoRL2026-CSI/SO101-DualArm-teleop_fold_towel_100epi",
+      "license": "apache-2.0",
+      "n_episodes": 100,
+      "tasks": [
+        "Fold the towel in half."
+      ],
+      "robot_types": [
+        "bi_so_follower"
+      ],
+      "read_failures": []
+    }
+  ],
+  "n_episodes": 202,
+  "n_eligible": 201,
+  "kinds": [
+    {
+      "kind": "truncate_end",
+      "cause": "没做完",
+      "n_injected": 201,
+      "detected": 198,
+      "localized": 198,
+      "n_clean": 202,
+      "clean_flagged": 11,
+      "detect_rate": 0.9850746268656716,
+      "detect_ci": [
+        0.9570437091797073,
+        0.9949113624463686
+      ],
+      "localize_rate": 0.9850746268656716,
+      "localize_ci": [
+        0.9570437091797073,
+        0.9949113624463686
+      ],
+      "clean_flag_rate": 0.054455445544554455,
+      "clean_flag_ci": [
+        0.03067550195350162,
+        0.09486569088604103
+      ]
+    },
+    {
+      "kind": "insert_pause",
+      "cause": "停顿过长",
+      "n_injected": 201,
+      "detected": 199,
+      "localized": 199,
+      "n_clean": 202,
+      "clean_flagged": 0,
+      "detect_rate": 0.9900497512437811,
+      "detect_ci": [
+        0.9644516279680263,
+        0.9972670854183171
+      ],
+      "localize_rate": 0.9900497512437811,
+      "localize_ci": [
+        0.9644516279680263,
+        0.9972670854183171
+      ],
+      "clean_flag_rate": 0.0,
+      "clean_flag_ci": [
+        0.0,
+        0.018662894186597848
+      ]
+    }
+  ]
+}
