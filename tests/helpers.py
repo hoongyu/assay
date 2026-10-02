@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import av
 import h5py
 import numpy as np
 import pyarrow as pa
@@ -179,3 +180,20 @@ def make_robovad(
         "\n".join(["episode_name", *(validation or [])]) + "\n", encoding="utf-8"
     )
     return root
+
+
+# ---- 视频 ----
+
+
+def make_mp4(path: Path, n: int = 300, fps: int = 30) -> Path:
+    """第 i 帧亮度是 min(i, 255)。"""
+    with av.open(str(path), "w") as c:
+        s = c.add_stream("mpeg4", rate=fps)
+        s.width, s.height, s.pix_fmt = 64, 48, "yuv420p"
+        for i in range(n):
+            img = np.full((48, 64, 3), min(i, 255), dtype=np.uint8)
+            for p in s.encode(av.VideoFrame.from_ndarray(img, format="rgb24")):
+                c.mux(p)
+        for p in s.encode():
+            c.mux(p)
+    return path
