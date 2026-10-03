@@ -22,11 +22,13 @@ class DatasetSpec:
     split: str
     license: str
     camera: str | None = None  # 给视频评判用的相机；不写就用第一路
+    exclude_tasks: tuple[str, ...] = ()  # 这些任务不用（比如和测试集同任务的）
 
 
 def load_config(path: str | Path) -> list[DatasetSpec]:
     data = tomllib.loads(Path(path).read_text(encoding="utf-8"))
-    return [DatasetSpec(d["repo"], d["split"], d["license"], d.get("camera")) for d in data["dataset"]]
+    return [DatasetSpec(d["repo"], d["split"], d["license"], d.get("camera"), tuple(d.get("exclude_tasks", ())))
+            for d in data["dataset"]]
 
 
 def local_dir(data_root: str | Path, repo: str) -> Path:
@@ -46,14 +48,16 @@ def run_exam_a(
         if s.split != split:
             continue
         res = load(local_dir(data_root, s.repo))
-        episodes += res.episodes
+        kept = [e for e in res.episodes if e.task not in s.exclude_tasks]
+        episodes += kept
         datasets.append(
             {
                 "repo": s.repo,
                 "license": s.license,
-                "n_episodes": len(res.episodes),
-                "tasks": sorted({e.task for e in res.episodes}),
-                "robot_types": sorted({str(e.meta.get("robot_type")) for e in res.episodes}),
+                "n_episodes": len(kept),
+                "tasks": sorted({e.task for e in kept}),
+                "excluded_tasks": sorted(s.exclude_tasks),
+                "robot_types": sorted({str(e.meta.get("robot_type")) for e in kept}),
                 "read_failures": res.failures,
             }
         )

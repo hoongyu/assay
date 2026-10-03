@@ -59,3 +59,32 @@ def test_eval_command(tmp_path, capsys):
     saved = json.loads(out.read_text(encoding="utf-8"))
     assert saved["split"] == "dev" and saved["seed"] == 0
     assert "注入" in capsys.readouterr().out
+
+
+def test_excluded_tasks_left_out(tmp_path):
+    root = tmp_path / "data"
+    make_lerobot_v3(local_dir(root, "org/mix"), [("pick", moving6(300, i)) for i in range(6)]
+                    + [("fold", moving6(300, 10 + i)) for i in range(6)])
+    spec = DatasetSpec("org/mix", "dev", "apache-2.0", exclude_tasks=("fold",))
+    out = run_exam_a([spec], root, "dev", seed=0)
+    assert out["n_episodes"] == 6 and out["datasets"][0]["tasks"] == ["pick"]
+    assert out["datasets"][0]["excluded_tasks"] == ["fold"]
+
+
+def test_config_reads_excluded_tasks(tmp_path):
+    from jianjin.eval.exam_a import load_config
+
+    cfg = tmp_path / "a.toml"
+    cfg.write_text('[[dataset]]\nrepo = "o/m"\nsplit = "dev"\nlicense = "mit"\nexclude_tasks = ["fold"]\n',
+                   encoding="utf-8")
+    (spec,) = load_config(cfg)
+    assert spec.exclude_tasks == ("fold",) and spec.camera is None
+
+
+def test_fetch_downloads_only_the_named_camera():
+    from jianjin.eval.fetch import patterns_for
+
+    top = DatasetSpec("o/a", "dev", "mit", "observation.images.top")
+    assert patterns_for(top, True) == ["meta/*", "data/*", "videos/observation.images.top/*"]
+    assert patterns_for(top, False) == ["meta/*", "data/*"]
+    assert patterns_for(DatasetSpec("o/b", "dev", "mit"), True) == ["meta/*", "data/*"]  # 没写相机：不下视频
