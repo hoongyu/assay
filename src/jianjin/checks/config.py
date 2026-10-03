@@ -19,3 +19,4 @@ class CheckConfig:
     extra_factor: float = 2.0  # 路程超过同任务中位数这么多倍，算多余动作
     end_pose_max: float = 0.3  # 收尾姿态离同任务中位收尾姿态超过这么多个关节幅度，算没做完
     min_task_episodes: int = 5  # 同任务少于这么多条，不做同任务比较
+    video_slack_frames: float = 1.5  # 视频时长和关节数据差超过这么多帧，算两路对不上

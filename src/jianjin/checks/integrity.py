@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from jianjin.checks.config import CheckConfig
+from jianjin.checks.config import CheckConfig, NotApplicable
 from jianjin.checks.signal import runs
 from jianjin.types import Cause, Episode, Finding
 
@@ -72,4 +72,42 @@ def timestamp_gaps(ep: Episode, cfg: CheckConfig) -> list[Finding]:
                 hard=True,
             )
         )
+    return out
+
+
+def _cams(bad: dict[str, float], known: dict[str, float]) -> str:
+    if len(bad) == len(known) and len(known) > 1:
+        return f"{len(known)} 路相机都这样"
+    return "、".join(c.split(".")[-1] for c in sorted(bad))
+
+
+def video_length(ep: Episode, cfg: CheckConfig) -> list[Finding]:
+    """元数据里每路视频的时长要和关节数据一样长。只读元数据，不解码视频。
+
+    视频短：最后一段关节数据没有画面，训练时取不到帧，判作废。
+    视频长：多出来的画面对不上关节数据，要人看（叠毛巾 ep83 多出的 8 秒是复位画面）。
+    """
+    if not ep.cameras:
+        return []
+    known = {cam: ref.to_s - ref.from_s for cam, ref in ep.cameras.items() if ref.to_s is not None}
+    if not known:
+        raise NotApplicable("元数据里没写视频时长，没法和关节数据对")
+    slack = cfg.video_slack_frames / ep.fps
+    short = {c: ep.duration - n for c, n in known.items() if n < ep.duration - slack}
+    long = {c: n - ep.duration for c, n in known.items() if n > ep.duration + slack}
+    out = []
+    if short:
+        gap = max(short.values())
+        out.append(Finding(
+            check="video_length", cause=Cause.DATA_ERROR, t0=max(0.0, ep.duration - gap), t1=ep.duration,
+            score=gap, evidence=f"视频比关节数据短 {gap:.1f} 秒（{_cams(short, known)}），最后这段关节数据没有画面",
+            hard=True, source="meta",
+        ))
+    if long:
+        extra = max(long.values())
+        out.append(Finding(
+            check="video_length", cause=Cause.DATA_ERROR, t0=0.0, t1=ep.duration, score=extra,
+            evidence=f"视频比关节数据长 {extra:.1f} 秒（{_cams(long, known)}），两路时长对不上，要看多出来的画面是什么",
+            source="meta",
+        ))
     return out
