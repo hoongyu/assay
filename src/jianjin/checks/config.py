@@ -17,6 +17,8 @@ class CheckConfig:
     min_duration_s: float = 1.0  # 短于它，硬规则判过短
     max_gap_factor: float = 1.5  # 相邻时间戳间隔超过 factor/fps，算丢帧
     extra_factor: float = 2.0  # 路程超过同任务中位数这么多倍，算多余动作
+    # 「没做完」两个参数 2026-10-03 在加了双臂的开发集上选（scripts/tune_exam_a.py truncate_end）：每个数据集原样报出
+    # 不超过 5% 的前提下定位对的最多。(3.0, 0.1) 和 (6.0, 0.05) 打平，取下限大的。
     end_pose_max: float = 3.0  # 收尾姿态离同任务中位收尾姿态，超过收尾常见出入（四分位距）的这么多倍，算没做完
     end_pose_floor: float = 0.1  # 收尾常见出入至少按关节活动幅度的这么多算，免得一批太齐时一点小差别被放大
     end_spread_max: float = 0.15  # 同任务收尾位置普遍散开超过活动幅度的这么多，收尾本来就不固定，不查

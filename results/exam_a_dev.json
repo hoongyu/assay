@@ -8,8 +8,12 @@
     "min_duration_s": 1.0,
     "max_gap_factor": 1.5,
     "extra_factor": 2.0,
-    "end_pose_max": 0.3,
-    "min_task_episodes": 5
+    "end_pose_max": 3.0,
+    "end_pose_floor": 0.1,
+    "end_spread_max": 0.15,
+    "empty_max": 0.2,
+    "min_task_episodes": 5,
+    "video_slack_frames": 1.5
   },
   "datasets": [
     {
@@ -19,6 +23,7 @@
       "tasks": [
         "Pick up the cube and place it in the box."
       ],
+      "excluded_tasks": [],
       "robot_types": [
         "so100"
       ],
@@ -31,62 +36,295 @@
       "tasks": [
         "Put the red cube on top of the blue cube."
       ],
+      "excluded_tasks": [],
       "robot_types": [
         "so100"
       ],
       "read_failures": []
+    },
+    {
+      "repo": "jun-seo/bimanual_tilt",
+      "license": "apache-2.0",
+      "n_episodes": 60,
+      "tasks": [
+        "Pour water from bottle into cup"
+      ],
+      "excluded_tasks": [],
+      "robot_types": [
+        "bi_so_follower"
+      ],
+      "read_failures": []
+    },
+    {
+      "repo": "armnet/armnetbench_v01_lerobot_bimanual_so101",
+      "license": "apache-2.0",
+      "n_episodes": 869,
+      "tasks": [
+        "Hold the pink lamp still with your left arm and open the door with your right gripper",
+        "Insert the candle inside the lantern and close the door",
+        "Transfer the cube between your arms and drop it into the white basket"
+      ],
+      "excluded_tasks": [
+        "Fold the brown tea towel"
+      ],
+      "robot_types": [
+        "so-101"
+      ],
+      "read_failures": []
     }
   ],
-  "n_episodes": 106,
-  "n_eligible": 103,
+  "n_episodes": 1035,
+  "n_eligible": 1032,
   "kinds": [
     {
       "kind": "truncate_end",
       "cause": "没做完",
-      "n_injected": 103,
-      "detected": 99,
-      "localized": 99,
-      "n_clean": 106,
-      "clean_flagged": 2,
-      "detect_rate": 0.9611650485436893,
+      "n_injected": 1032,
+      "detected": 159,
+      "localized": 159,
+      "n_clean": 1035,
+      "clean_flagged": 4,
+      "detect_rate": 0.15406976744186046,
       "detect_ci": [
-        0.9043705100480193,
-        0.984796256454916
+        0.13332985833083524,
+        0.17737556226629078
       ],
-      "localize_rate": 0.9611650485436893,
+      "localize_rate": 0.15406976744186046,
       "localize_ci": [
-        0.9043705100480193,
-        0.984796256454916
+        0.13332985833083524,
+        0.17737556226629078
       ],
-      "clean_flag_rate": 0.018867924528301886,
+      "clean_flag_rate": 0.003864734299516908,
       "clean_flag_ci": [
-        0.005189500019088127,
-        0.0662005744153702
+        0.001503890685488114,
+        0.009894959726355231
       ]
     },
     {
       "kind": "insert_pause",
       "cause": "停顿过长",
-      "n_injected": 103,
-      "detected": 101,
-      "localized": 101,
-      "n_clean": 106,
-      "clean_flagged": 0,
-      "detect_rate": 0.9805825242718447,
+      "n_injected": 1032,
+      "detected": 1030,
+      "localized": 1030,
+      "n_clean": 1035,
+      "clean_flagged": 2,
+      "detect_rate": 0.998062015503876,
       "detect_ci": [
-        0.9319464805299941,
-        0.9946588866678016
+        0.9929613456686367,
+        0.999468384900207
       ],
-      "localize_rate": 0.9805825242718447,
+      "localize_rate": 0.998062015503876,
       "localize_ci": [
-        0.9319464805299941,
-        0.9946588866678016
+        0.9929613456686367,
+        0.999468384900207
       ],
-      "clean_flag_rate": 0.0,
+      "clean_flag_rate": 0.001932367149758454,
       "clean_flag_ci": [
-        0.0,
-        0.034973998922084165
+        0.0005300737209283828,
+        0.007018334044028277
       ]
     }
-  ]
+  ],
+  "by_dataset": {
+    "lerobot/svla_so100_pickplace": [
+      {
+        "kind": "truncate_end",
+        "cause": "没做完",
+        "n_injected": 50,
+        "detected": 48,
+        "localized": 48,
+        "n_clean": 50,
+        "clean_flagged": 1,
+        "detect_rate": 0.96,
+        "detect_ci": [
+          0.8653966212204534,
+          0.9889613473391734
+        ],
+        "localize_rate": 0.96,
+        "localize_ci": [
+          0.8653966212204534,
+          0.9889613473391734
+        ],
+        "clean_flag_rate": 0.02,
+        "clean_flag_ci": [
+          0.0035391680889764604,
+          0.10495686471836953
+        ]
+      },
+      {
+        "kind": "insert_pause",
+        "cause": "停顿过长",
+        "n_injected": 50,
+        "detected": 50,
+        "localized": 50,
+        "n_clean": 50,
+        "clean_flagged": 0,
+        "detect_rate": 1.0,
+        "detect_ci": [
+          0.9286499658256813,
+          1.0
+        ],
+        "localize_rate": 1.0,
+        "localize_ci": [
+          0.9286499658256813,
+          1.0
+        ],
+        "clean_flag_rate": 0.0,
+        "clean_flag_ci": [
+          0.0,
+          0.07135003417431873
+        ]
+      }
+    ],
+    "lerobot/svla_so100_stacking": [
+      {
+        "kind": "truncate_end",
+        "cause": "没做完",
+        "n_injected": 53,
+        "detected": 51,
+        "localized": 51,
+        "n_clean": 56,
+        "clean_flagged": 0,
+        "detect_rate": 0.9622641509433962,
+        "detect_ci": [
+          0.8724547684904087,
+          0.9895899311661807
+        ],
+        "localize_rate": 0.9622641509433962,
+        "localize_ci": [
+          0.8724547684904087,
+          0.9895899311661807
+        ],
+        "clean_flag_rate": 0.0,
+        "clean_flag_ci": [
+          0.0,
+          0.06419614448811528
+        ]
+      },
+      {
+        "kind": "insert_pause",
+        "cause": "停顿过长",
+        "n_injected": 53,
+        "detected": 51,
+        "localized": 51,
+        "n_clean": 56,
+        "clean_flagged": 0,
+        "detect_rate": 0.9622641509433962,
+        "detect_ci": [
+          0.8724547684904087,
+          0.9895899311661807
+        ],
+        "localize_rate": 0.9622641509433962,
+        "localize_ci": [
+          0.8724547684904087,
+          0.9895899311661807
+        ],
+        "clean_flag_rate": 0.0,
+        "clean_flag_ci": [
+          0.0,
+          0.06419614448811528
+        ]
+      }
+    ],
+    "jun-seo/bimanual_tilt": [
+      {
+        "kind": "truncate_end",
+        "cause": "没做完",
+        "n_injected": 60,
+        "detected": 60,
+        "localized": 60,
+        "n_clean": 60,
+        "clean_flagged": 3,
+        "detect_rate": 1.0,
+        "detect_ci": [
+          0.9398260695220669,
+          0.9999999999999999
+        ],
+        "localize_rate": 1.0,
+        "localize_ci": [
+          0.9398260695220669,
+          0.9999999999999999
+        ],
+        "clean_flag_rate": 0.05,
+        "clean_flag_ci": [
+          0.01714919117914121,
+          0.13700734625099836
+        ]
+      },
+      {
+        "kind": "insert_pause",
+        "cause": "停顿过长",
+        "n_injected": 60,
+        "detected": 60,
+        "localized": 60,
+        "n_clean": 60,
+        "clean_flagged": 0,
+        "detect_rate": 1.0,
+        "detect_ci": [
+          0.9398260695220669,
+          0.9999999999999999
+        ],
+        "localize_rate": 1.0,
+        "localize_ci": [
+          0.9398260695220669,
+          0.9999999999999999
+        ],
+        "clean_flag_rate": 0.0,
+        "clean_flag_ci": [
+          0.0,
+          0.06017393047793289
+        ]
+      }
+    ],
+    "armnet/armnetbench_v01_lerobot_bimanual_so101": [
+      {
+        "kind": "truncate_end",
+        "cause": "没做完",
+        "n_injected": 869,
+        "detected": 0,
+        "localized": 0,
+        "n_clean": 869,
+        "clean_flagged": 0,
+        "detect_rate": 0.0,
+        "detect_ci": [
+          0.0,
+          0.004401256768696633
+        ],
+        "localize_rate": 0.0,
+        "localize_ci": [
+          0.0,
+          0.004401256768696633
+        ],
+        "clean_flag_rate": 0.0,
+        "clean_flag_ci": [
+          0.0,
+          0.004401256768696633
+        ]
+      },
+      {
+        "kind": "insert_pause",
+        "cause": "停顿过长",
+        "n_injected": 869,
+        "detected": 869,
+        "localized": 869,
+        "n_clean": 869,
+        "clean_flagged": 2,
+        "detect_rate": 1.0,
+        "detect_ci": [
+          0.9955987432313033,
+          0.9999999999999999
+        ],
+        "localize_rate": 1.0,
+        "localize_ci": [
+          0.9955987432313033,
+          0.9999999999999999
+        ],
+        "clean_flag_rate": 0.0023014959723820483,
+        "clean_flag_ci": [
+          0.0006313670503754918,
+          0.008352622713632088
+        ]
+      }
+    ]
+  }
 }

@@ -88,3 +88,17 @@ def test_fetch_downloads_only_the_named_camera():
     assert patterns_for(top, True) == ["meta/*", "data/*", "videos/observation.images.top/*"]
     assert patterns_for(top, False) == ["meta/*", "data/*"]
     assert patterns_for(DatasetSpec("o/b", "dev", "mit"), True) == ["meta/*", "data/*"]  # 没写相机：不下视频
+
+
+def test_scores_broken_down_by_dataset(tmp_path):
+    root = tmp_path / "data"
+    for repo, task in [("org/a", "pick"), ("org/b", "place")]:
+        make_lerobot_v3(local_dir(root, repo), [(task, moving6(300, i)) for i in range(6)])
+    specs = [DatasetSpec("org/a", "dev", "mit"), DatasetSpec("org/b", "dev", "mit")]
+    out = run_exam_a(specs, root, "dev", seed=0)
+    assert set(out["by_dataset"]) == {"org/a", "org/b"}
+    for i, k in enumerate(out["kinds"]):
+        parts = [out["by_dataset"][r][i] for r in ("org/a", "org/b")]
+        assert all(p["kind"] == k["kind"] and p["n_injected"] == 6 and p["n_clean"] == 6 for p in parts)
+        for key in ("detected", "localized", "clean_flagged"):
+            assert sum(p[key] for p in parts) == k[key]
