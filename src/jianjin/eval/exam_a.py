@@ -22,11 +22,13 @@ class DatasetSpec:
     split: str
     license: str
     camera: str | None = None  # 给视频评判用的相机；不写就用第一路
+    exclude_tasks: tuple[str, ...] = ()  # 这些任务不用（比如和测试集同任务的）
 
 
 def load_config(path: str | Path) -> list[DatasetSpec]:
     data = tomllib.loads(Path(path).read_text(encoding="utf-8"))
-    return [DatasetSpec(d["repo"], d["split"], d["license"], d.get("camera")) for d in data["dataset"]]
+    return [DatasetSpec(d["repo"], d["split"], d["license"], d.get("camera"), tuple(d.get("exclude_tasks", ())))
+            for d in data["dataset"]]
 
 
 def local_dir(data_root: str | Path, repo: str) -> Path:
@@ -41,19 +43,22 @@ def run_exam_a(
     seed: int = 0,
 ) -> dict:
     cfg = cfg or CheckConfig()
-    episodes, datasets = [], []
+    episodes, datasets, owner = [], [], []  # owner：每条示范属于哪个数据集
     for s in specs:
         if s.split != split:
             continue
         res = load(local_dir(data_root, s.repo))
-        episodes += res.episodes
+        kept = [e for e in res.episodes if e.task not in s.exclude_tasks]
+        episodes += kept
+        owner += [s.repo] * len(kept)
         datasets.append(
             {
                 "repo": s.repo,
                 "license": s.license,
-                "n_episodes": len(res.episodes),
-                "tasks": sorted({e.task for e in res.episodes}),
-                "robot_types": sorted({str(e.meta.get("robot_type")) for e in res.episodes}),
+                "n_episodes": len(kept),
+                "tasks": sorted({e.task for e in kept}),
+                "excluded_tasks": sorted(s.exclude_tasks),
+                "robot_types": sorted({str(e.meta.get("robot_type")) for e in kept}),
                 "read_failures": res.failures,
             }
         )
@@ -61,12 +66,18 @@ def run_exam_a(
     eligible = [i for i, e in enumerate(episodes) if e.duration >= MIN_INJECT_S]
 
     kinds = []
+    by_dataset: dict[str, list[dict]] = {d["repo"]: [] for d in datasets}  # 同一次运行按数据集拆开的成绩
     for kind, inject in INJECTORS.items():
         rng = np.random.default_rng(seed)
         pairs = [inject(episodes[i], rng) for i in eligible]
         # 同任务比较拿原样示范当参照，不然整批都注入了缺陷，中位数本身就偏了
         injected = run_checks([p[0] for p in pairs], cfg, reference=episodes)
-        kinds.append(score_kind(kind, [p[1] for p in pairs], injected, clean))
+        defects = [p[1] for p in pairs]
+        kinds.append(score_kind(kind, defects, injected, clean))
+        for repo, scores in by_dataset.items():
+            mine = [j for j, i in enumerate(eligible) if owner[i] == repo]
+            mine_clean = [r for r, o in zip(clean, owner) if o == repo]
+            scores.append(score_kind(kind, [defects[j] for j in mine], [injected[j] for j in mine], mine_clean))
 
     return {
         "exam": "A（注入缺陷：在真机成功示范上人工造的失败，不是真实失败）",
@@ -77,6 +88,7 @@ def run_exam_a(
         "n_episodes": len(episodes),
         "n_eligible": len(eligible),
         "kinds": kinds,
+        "by_dataset": by_dataset,
     }
 
 

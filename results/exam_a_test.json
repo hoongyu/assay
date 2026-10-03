@@ -8,8 +8,12 @@
     "min_duration_s": 1.0,
     "max_gap_factor": 1.5,
     "extra_factor": 2.0,
-    "end_pose_max": 0.3,
-    "min_task_episodes": 5
+    "end_pose_max": 3.0,
+    "end_pose_floor": 0.1,
+    "end_spread_max": 0.15,
+    "empty_max": 0.2,
+    "min_task_episodes": 5,
+    "video_slack_frames": 1.5
   },
   "datasets": [
     {
@@ -19,6 +23,7 @@
       "tasks": [
         "Put the red cube in the right box and the blue cube in the left box."
       ],
+      "excluded_tasks": [],
       "robot_types": [
         "so100"
       ],
@@ -31,6 +36,7 @@
       "tasks": [
         "pink lego brick into the transparent box"
       ],
+      "excluded_tasks": [],
       "robot_types": [
         "so100_follower"
       ],
@@ -43,6 +49,7 @@
       "tasks": [
         "Fold the towel in half."
       ],
+      "excluded_tasks": [],
       "robot_types": [
         "bi_so_follower"
       ],
@@ -56,24 +63,24 @@
       "kind": "truncate_end",
       "cause": "没做完",
       "n_injected": 201,
-      "detected": 198,
-      "localized": 198,
+      "detected": 197,
+      "localized": 197,
       "n_clean": 202,
-      "clean_flagged": 11,
-      "detect_rate": 0.9850746268656716,
+      "clean_flagged": 0,
+      "detect_rate": 0.9800995024875622,
       "detect_ci": [
-        0.9570437091797073,
-        0.9949113624463686
+        0.9499567689299726,
+        0.9922346609358359
       ],
-      "localize_rate": 0.9850746268656716,
+      "localize_rate": 0.9800995024875622,
       "localize_ci": [
-        0.9570437091797073,
-        0.9949113624463686
+        0.9499567689299726,
+        0.9922346609358359
       ],
-      "clean_flag_rate": 0.054455445544554455,
+      "clean_flag_rate": 0.0,
       "clean_flag_ci": [
-        0.03067550195350162,
-        0.09486569088604103
+        0.0,
+        0.018662894186597848
       ]
     },
     {
@@ -100,5 +107,157 @@
         0.018662894186597848
       ]
     }
-  ]
+  ],
+  "by_dataset": {
+    "lerobot/svla_so100_sorting": [
+      {
+        "kind": "truncate_end",
+        "cause": "没做完",
+        "n_injected": 51,
+        "detected": 49,
+        "localized": 49,
+        "n_clean": 52,
+        "clean_flagged": 0,
+        "detect_rate": 0.9607843137254902,
+        "detect_ci": [
+          0.8678345101373474,
+          0.9891791437312488
+        ],
+        "localize_rate": 0.9607843137254902,
+        "localize_ci": [
+          0.8678345101373474,
+          0.9891791437312488
+        ],
+        "clean_flag_rate": 0.0,
+        "clean_flag_ci": [
+          0.0,
+          0.06879459041288215
+        ]
+      },
+      {
+        "kind": "insert_pause",
+        "cause": "停顿过长",
+        "n_injected": 51,
+        "detected": 50,
+        "localized": 50,
+        "n_clean": 52,
+        "clean_flagged": 0,
+        "detect_rate": 0.9803921568627451,
+        "detect_ci": [
+          0.8969519232441061,
+          0.9965303967465577
+        ],
+        "localize_rate": 0.9803921568627451,
+        "localize_ci": [
+          0.8969519232441061,
+          0.9965303967465577
+        ],
+        "clean_flag_rate": 0.0,
+        "clean_flag_ci": [
+          0.0,
+          0.06879459041288215
+        ]
+      }
+    ],
+    "lerobot/svla_so101_pickplace": [
+      {
+        "kind": "truncate_end",
+        "cause": "没做完",
+        "n_injected": 50,
+        "detected": 50,
+        "localized": 50,
+        "n_clean": 50,
+        "clean_flagged": 0,
+        "detect_rate": 1.0,
+        "detect_ci": [
+          0.9286499658256813,
+          1.0
+        ],
+        "localize_rate": 1.0,
+        "localize_ci": [
+          0.9286499658256813,
+          1.0
+        ],
+        "clean_flag_rate": 0.0,
+        "clean_flag_ci": [
+          0.0,
+          0.07135003417431873
+        ]
+      },
+      {
+        "kind": "insert_pause",
+        "cause": "停顿过长",
+        "n_injected": 50,
+        "detected": 49,
+        "localized": 49,
+        "n_clean": 50,
+        "clean_flagged": 0,
+        "detect_rate": 0.98,
+        "detect_ci": [
+          0.8950431352816304,
+          0.9964608319110235
+        ],
+        "localize_rate": 0.98,
+        "localize_ci": [
+          0.8950431352816304,
+          0.9964608319110235
+        ],
+        "clean_flag_rate": 0.0,
+        "clean_flag_ci": [
+          0.0,
+          0.07135003417431873
+        ]
+      }
+    ],
+    "CoRL2026-CSI/SO101-DualArm-teleop_fold_towel_100epi": [
+      {
+        "kind": "truncate_end",
+        "cause": "没做完",
+        "n_injected": 100,
+        "detected": 98,
+        "localized": 98,
+        "n_clean": 100,
+        "clean_flagged": 0,
+        "detect_rate": 0.98,
+        "detect_ci": [
+          0.9299868370580063,
+          0.9944981477650318
+        ],
+        "localize_rate": 0.98,
+        "localize_ci": [
+          0.9299868370580063,
+          0.9944981477650318
+        ],
+        "clean_flag_rate": 0.0,
+        "clean_flag_ci": [
+          0.0,
+          0.03699480747600191
+        ]
+      },
+      {
+        "kind": "insert_pause",
+        "cause": "停顿过长",
+        "n_injected": 100,
+        "detected": 100,
+        "localized": 100,
+        "n_clean": 100,
+        "clean_flagged": 0,
+        "detect_rate": 1.0,
+        "detect_ci": [
+          0.9630051925239981,
+          0.9999999999999999
+        ],
+        "localize_rate": 1.0,
+        "localize_ci": [
+          0.9630051925239981,
+          0.9999999999999999
+        ],
+        "clean_flag_rate": 0.0,
+        "clean_flag_ci": [
+          0.0,
+          0.03699480747600191
+        ]
+      }
+    ]
+  }
 }

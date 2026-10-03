@@ -9,7 +9,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from jianjin.checks.config import CheckConfig
+from jianjin.checks.config import CheckConfig, NotApplicable
 from jianjin.checks.signal import excursion, joint_scale, path_length
 from jianjin.types import Cause, Episode, Finding
 
@@ -40,8 +40,15 @@ def _compare(episodes, cfg, reference, summarize, judge) -> tuple[Found, Skipped
             skipped[ep.id] = f"同任务只有 {len(group)} 条，少于 {cfg.min_task_episodes} 条，没法比"
             continue
         if _key(ep) not in stats:
-            stats[_key(ep)] = summarize(group)
-        finding = judge(ep, stats[_key(ep)], len(group))
+            try:
+                stats[_key(ep)] = summarize(group)
+            except NotApplicable as exc:  # 这一批本身不满足规则的前提
+                stats[_key(ep)] = exc
+        stat = stats[_key(ep)]
+        if isinstance(stat, NotApplicable):
+            skipped[ep.id] = str(stat)
+            continue
+        finding = judge(ep, stat, len(group))
         if finding is not None:
             found[ep.id] = [finding]
     return found, skipped
@@ -78,15 +85,30 @@ def extra_motion(
 def end_pose(
     episodes: list[Episode], cfg: CheckConfig, reference: list[Episode] | None = None
 ) -> tuple[Found, Skipped]:
-    """最后一帧的姿态离同任务通常的收尾姿态太远，像是没做完就停了。"""
+    """最后一帧的姿态离同任务通常的收尾姿态太远，像是没做完就停了。
+
+    每个关节按同任务那批收尾位置的四分位距换算（下限是活动幅度的 end_pose_floor 倍）：收尾本来就不固定的关节
+    （比如停稳以后的手腕转角）差一点不算。整批收尾都不固定的（各关节收尾位置的四分位距按活动幅度算、取中位，
+    超过 end_spread_max），这条规则查不了，记进没查。2026-10-03 改，见设计文档考卷 A「第三批结果」。
+    """
 
     def summarize(group):
         scale = joint_scale(np.concatenate([e.state for e in group]))
-        return scale, np.median(np.array([e.state[-1] for e in group]), axis=0)
+        finals = np.array([e.state[-1] for e in group], dtype=np.float64)
+        q75, q25 = np.nanpercentile(finals, [75, 25], axis=0)
+        iqr = q75 - q25
+        moving = np.isfinite(scale)
+        spread = float(np.median(iqr[moving] / scale[moving])) if moving.any() else 0.0
+        if spread > cfg.end_spread_max:
+            raise NotApplicable(
+                f"同任务 {len(group)} 条示范停下来的姿态本来就不固定（各关节收尾位置一般差开活动幅度的 {spread:.0%}），"
+                "没法拿收尾姿态判没做完"
+            )
+        return np.nanmedian(finals, axis=0), np.maximum(iqr, cfg.end_pose_floor * scale)
 
     def judge(ep, stat, n):
-        scale, med = stat
-        off = np.nan_to_num(np.abs(ep.state[-1] - med) / scale)
+        med, unit = stat
+        off = np.nan_to_num(np.abs(ep.state[-1] - med) / unit)
         j = int(np.argmax(off))
         if off[j] <= cfg.end_pose_max:
             return None
@@ -98,8 +120,8 @@ def end_pose(
             t1=t1,
             score=float(off[j]),
             evidence=(
-                f"最后停的姿态离同任务 {n} 条示范的常见收尾姿态差得远："
-                f"{ep.state_names[j]} 差了 {off[j]:.0%} 个活动幅度，像是没做完就停了"
+                f"最后停的姿态和同任务 {n} 条示范的常见收尾姿态差得远：{ep.state_names[j]} 差出的距离"
+                f"是示范之间常见出入的 {off[j]:.1f} 倍，像是没做完就停了"
             ),
         )
 
