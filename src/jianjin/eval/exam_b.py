@@ -1,6 +1,7 @@
 """考卷 B：RoboVAD 帧级异常检测。按论文协议只评 csv 里列出的帧；micro AUC 把所有被评的帧合起来算。
 
-拣金零样本：不在 RoboVAD 上训练；打分器在 validation 上选，test 只跑一次。
+拣金零样本：不在 RoboVAD 上训练、不用它的标签调参；打分器在 train 上选，test 只跑一次。
+融合打分器（fuse:a+b）的尺度取自 train 全部帧的分布，同样不看标签。
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from jianjin.checks import NotApplicable
 from jianjin.eval.auc import roc_auc
 from jianjin.ingest.robovad import read_robovad
 from jianjin.scores import SCORERS
+from jianjin.scores.fuse import fuse, robust_stats
 from jianjin.scores.video import video_scorer
 
 SETTINGS = ["in_domain", "cross_anomaly", "cross_task", "cross_task+anomaly"]
@@ -117,8 +119,12 @@ def score_population(segments: Segments, episodes: dict, scorer) -> dict:
     }
 
 
-def make_scorer(name: str, cache_dir: str | Path = "cache", camera: str | None = None):
-    """关节打分器写名字（如 calm）；视频打分器写 video:<评判>:<分数>（如 video:robometer:drop）。"""
+def make_scorer(name: str, cache_dir: str | Path = "cache", camera: str | None = None, scale_episodes=()):
+    """关节打分器写名字（如 calm）；视频打分器写 video:<评判>:<分数>（如 video:robometer:drop）；
+    融合写 fuse:<a>+<b>，用 scale_episodes 定尺度。"""
+    if name.startswith("fuse:"):
+        parts = [make_scorer(n, cache_dir, camera) for n in name[len("fuse:"):].split("+")]
+        return fuse(parts, [robust_stats(p, scale_episodes) for p in parts])
     if name.startswith("video:"):
         _, judge_name, kind = name.split(":")
         return video_scorer(judge_name, kind, Path(cache_dir), camera)
@@ -134,13 +140,16 @@ def run_exam_b(root: str | Path, split: str, scorer_name: str,
         populations = {s: read_segments(root / "evaluation" / f"{s}.csv") for s in SETTINGS}
     else:
         populations = {split: _annotated_segments(split_names(root, split), episodes)}
-    scorer = make_scorer(scorer_name, cache_dir, camera)
+    scale_split = "train" if scorer_name.startswith("fuse:") else None
+    scale_eps = [episodes[n] for n in split_names(root, "train") if n in episodes] if scale_split else []
+    scorer = make_scorer(scorer_name, cache_dir, camera, scale_eps)
     results = [{"setting": k, **score_population(v, episodes, scorer)} for k, v in populations.items()]
     return {
         "exam": "B（RoboVAD 帧级异常检测；拣金零样本，不在 RoboVAD 上训练）",
         "split": split,
         "scorer": scorer_name,
         "camera": camera,
+        "scale_split": scale_split,
         "read_failures": res.failures,
         "results": results,
     }

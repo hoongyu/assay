@@ -92,3 +92,12 @@ def test_video_scorer_from_cache(tmp_path):
     out = run_exam_b(root, "validation", "video:fake:low", cache_dir=cache, camera="left")
     (r,) = out["results"]
     assert r["n_episodes"] == 2 and r["not_applicable"] == []
+
+
+def test_fused_scorer_scales_on_train_split(tmp_path):
+    root = setup(tmp_path)
+    (root / "splits" / "train.csv").write_text("episode_name\nh_stackcubes_ep1\nh_stackcubes_ep2\n", encoding="utf-8")
+    out = run_exam_b(root, "validation", "fuse:tracking+stillness")
+    (r,) = out["results"]
+    assert r["n_episodes"] == 2 and not math.isnan(r["micro_auc"])
+    assert out["scale_split"] == "train"
