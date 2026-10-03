@@ -1,0 +1,79 @@
+"""诊断：把关节规则和视频评判的发现合成一个判定（设计文档 4.3）。
+
+- 作废：客观硬规则触发；或者两个不同来源指向同一处问题。
+  「同一处」是时间区间重叠，而且原因相同，或者两条都只占示范的一段。
+  只看重叠不够：「指令不符」这类发现覆盖整条示范，和什么都重叠（2026-10-03 改）。
+- 存疑：有发现，但够不上作废，要人看。
+- 合格：什么都没报。没查的项目记在 not_checked，不当成通过。
+错杀一条好数据比漏掉一条坏数据贵，所以判得偏保守。
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from enum import StrEnum
+from itertools import combinations
+
+from jianjin.judges.base import Curve
+from jianjin.types import Finding, source_name
+
+
+class Label(StrEnum):
+    PASS = "合格"
+    DOUBT = "存疑"
+    REJECT = "作废"
+
+
+@dataclass
+class Verdict:
+    episode_id: str
+    label: Label
+    reasons: list[str]
+    causes: list[Finding]
+    not_checked: dict[str, str] = field(default_factory=dict)
+    progress: Curve | None = None
+
+
+def overlaps(a: tuple[float, float], b: tuple[float, float]) -> bool:
+    return a[0] <= b[1] and b[0] <= a[1]
+
+
+def _whole(f: Finding, duration: float) -> bool:
+    return f.t0 <= 0.0 and f.t1 >= duration - 1e-9
+
+
+def _agree(a: Finding, b: Finding, duration: float) -> bool:
+    if a.source == b.source or not overlaps((a.t0, a.t1), (b.t0, b.t1)):
+        return False
+    return a.cause == b.cause or not (_whole(a, duration) or _whole(b, duration))
+
+
+def label_of(findings: list[Finding], duration: float) -> tuple[Label, list[str]]:
+    hard = [f for f in findings if f.hard]
+    if hard:
+        return Label.REJECT, [f"客观硬规则：{f.evidence}" for f in hard]
+    agree = []
+    for a, b in combinations(findings, 2):
+        if not _agree(a, b, duration):
+            continue
+        when = f"第 {max(a.t0, b.t0):.1f} 到 {min(a.t1, b.t1):.1f} 秒"
+        if a.cause == b.cause:
+            agree.append(f"{source_name(a.source)}和{source_name(b.source)}都报了「{a.cause.value}」，{when}重叠")
+        else:
+            agree.append(f"{source_name(a.source)}报「{a.cause.value}」、{source_name(b.source)}报「{b.cause.value}」，"
+                         f"{when}重叠，指向同一处问题")
+    if agree:
+        return Label.REJECT, agree
+    if findings:
+        names = "、".join(sorted({source_name(f.source) for f in findings}))
+        if len({f.source for f in findings}) == 1:
+            return Label.DOUBT, [f"只有{names}报了问题，没有第二个来源印证，要人看"]
+        return Label.DOUBT, [f"{names}报的问题对不上（时间不重叠，或者原因不同），要人看"]
+    return Label.PASS, []
+
+
+def diagnose(episode_id: str, duration: float, findings: list[Finding],
+             not_checked: dict[str, str] | None = None, progress: Curve | None = None) -> Verdict:
+    label, reasons = label_of(findings, duration)
+    causes = sorted(findings, key=lambda f: (f.t0, f.t1))
+    return Verdict(episode_id, label, reasons, causes, dict(not_checked or {}), progress)

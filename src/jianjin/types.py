@@ -66,6 +66,14 @@ class Finding:
     score: float
     evidence: str
     hard: bool = False
+    source: str = "joints"  # 哪个独立来源：关节规则记 joints，视频评判记模型名
+
+
+SOURCE_NAMES = {"joints": "关节", "robometer": "Robometer", "topreward": "TOPReward"}
+
+
+def source_name(source: str) -> str:
+    return SOURCE_NAMES.get(source, source)
 
 
 @dataclass
