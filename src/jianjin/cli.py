@@ -42,18 +42,34 @@ def _cmd_check(args: argparse.Namespace) -> int:
 
 
 def _cmd_eval(args: argparse.Namespace) -> int:
-    if args.exam == "a":
+    if args.exam == "a-swap":
+        from jianjin.eval.exam_a import load_config
+        from jianjin.eval.task_swap import format_swap, run_swap
+
+        split = args.split or "dev"
+        score = threshold = None
+        if args.dev_result:
+            dev = json.loads(Path(args.dev_result).read_text(encoding="utf-8"))
+            score, threshold = dev["score"], dev["threshold"]
+        elif split != "dev":
+            raise SystemExit("test 要用 dev 定的分数和阈值：加 --dev-result results/exam_a_swap_dev.json")
+        out = run_swap(load_config(args.config), args.data_root, split, args.cache,
+                       judge=args.judge, score=score, threshold=threshold, seed=args.seed)
+        text = format_swap(out)
+    elif args.exam == "a":
         from jianjin.eval.exam_a import format_table, load_config, run_exam_a
 
         split = args.split or "dev"
         out = run_exam_a(load_config(args.config), args.data_root, split, seed=args.seed)
+        text = format_table(out)
     else:
         from jianjin.eval.exam_b import format_table, run_exam_b
 
         split = args.split or "validation"
         out = run_exam_b(args.robovad_root, split, args.scorer, cache_dir=args.cache, camera=args.camera)
-    print(format_table(out))
-    path = Path(args.out or f"results/exam_{args.exam}_{split}.json")
+        text = format_table(out)
+    print(text)
+    path = Path(args.out or f"results/exam_{args.exam.replace('-', '_')}_{split}.json")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"结果写到 {path}")
@@ -80,26 +96,34 @@ def _cmd_judge(args: argparse.Namespace) -> int:
     from jianjin.judges.cache import judge_episode
 
     judge = JUDGES[args.judge]()
-    if args.what == "robovad":
+    jobs: list[tuple] = []  # (示范, 相机)
+    if args.what == "exam_a":
+        from jianjin.eval.exam_a import load_config
+        from jianjin.eval.task_swap import swap_pairs
+
+        for split in args.split.split(","):
+            for orig, swapped, cam in swap_pairs(load_config(args.config), args.data_root, split, seed=args.seed):
+                jobs += [(orig, cam), (swapped, cam)]
+    elif args.what == "robovad":
         from jianjin.eval.exam_b import split_names
         from jianjin.ingest.robovad import read_robovad
 
         names = [n for s in args.split.split(",") for n in split_names(Path(args.robovad_root), s)]
-        episodes = read_robovad(args.robovad_root, names=names).episodes
+        jobs = [(ep, args.camera) for ep in read_robovad(args.robovad_root, names=names).episodes]
     else:
-        episodes = load(args.what).episodes
+        jobs = [(ep, args.camera) for ep in load(args.what).episodes]
     if args.limit:
-        episodes = episodes[: args.limit]
+        jobs = jobs[: args.limit]
     done = skipped = 0
-    for i, ep in enumerate(episodes, 1):
+    for i, (ep, cam) in enumerate(jobs, 1):
         try:
-            judge_episode(judge, ep, args.camera, Path(args.cache), sample_fps=args.sample_fps, max_side=args.max_side)
+            judge_episode(judge, ep, cam, Path(args.cache), sample_fps=args.sample_fps, max_side=args.max_side)
             done += 1
         except NotApplicable as exc:
             skipped += 1
             print(f"  跳过 {ep.id}：{exc}")
-        if i % 10 == 0 or i == len(episodes):
-            print(f"{i}/{len(episodes)}，完成 {done}，跳过 {skipped}", flush=True)
+        if i % 10 == 0 or i == len(jobs):
+            print(f"{i}/{len(jobs)}，完成 {done}，跳过 {skipped}", flush=True)
     return 0
 
 
@@ -112,7 +136,7 @@ def build_parser() -> argparse.ArgumentParser:
     c.set_defaults(func=_cmd_check)
 
     e = sub.add_parser("eval", help="跑考卷")
-    e.add_argument("exam", choices=["a", "b"])
+    e.add_argument("exam", choices=["a", "a-swap", "b"])
     e.add_argument("--config", default="configs/exam_a.toml")
     e.add_argument("--data-root", default="data")
     e.add_argument("--robovad-root", default="data/robovad")
@@ -122,6 +146,8 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--camera", default=None)
     e.add_argument("--seed", type=int, default=0)
     e.add_argument("--out", default=None)
+    e.add_argument("--judge", default="robometer", help="a-swap 读哪个视频评判的缓存")
+    e.add_argument("--dev-result", default=None, help="a-swap 跑 test 时，沿用这个 dev 结果里的分数和阈值")
     e.set_defaults(func=_cmd_eval)
 
     f = sub.add_parser("fetch", help="下载考卷数据")
@@ -132,10 +158,13 @@ def build_parser() -> argparse.ArgumentParser:
     f.set_defaults(func=_cmd_fetch)
 
     j = sub.add_parser("judge", help="在有 GPU 的机器上跑视频评判，结果写进缓存")
-    j.add_argument("what", help="robovad，或者一个数据集路径")
+    j.add_argument("what", help="robovad、exam_a（考卷 A 换描述的原样和换后各一份），或者一个数据集路径")
+    j.add_argument("--config", default="configs/exam_a.toml")
+    j.add_argument("--data-root", default="data")
+    j.add_argument("--seed", type=int, default=0)
     j.add_argument("--judge", default="robometer")
     j.add_argument("--robovad-root", default="data/robovad")
-    j.add_argument("--split", default="train", help="robovad 的划分，逗号分隔，如 train,test")
+    j.add_argument("--split", default="train", help="划分，逗号分隔，如 train,test 或 dev,test")
     j.add_argument("--camera", default=None)
     j.add_argument("--cache", default="cache")
     j.add_argument("--sample-fps", type=float, default=2.0)
