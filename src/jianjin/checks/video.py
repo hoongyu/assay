@@ -133,3 +133,21 @@ def progress_drop(episodes: list[Episode], curves: Curves, judge: str, cfg: Chec
                 source=judge,
             )]
     return found, skipped
+
+
+VIDEO_RULES = {"wrong_task": wrong_task, "progress_drop": progress_drop}
+
+
+def run_video_checks(episodes: list[Episode], curves: dict[str, Curves], cfg: CheckConfig | None = None,
+                     reference: list[Episode] | None = None) -> dict[str, tuple[list[Finding], dict[str, str]]]:
+    """curves：{模型名: {示范 id: 曲线}}。返回 {示范 id: (发现, 没查的)}，没查的键是「模型.规则」。"""
+    cfg = cfg or CheckConfig()
+    out: dict[str, tuple[list[Finding], dict[str, str]]] = {ep.id: ([], {}) for ep in episodes}
+    for judge, cs in curves.items():
+        for name, rule in VIDEO_RULES.items():
+            found, skipped = rule(episodes, cs, judge, cfg, reference=reference)
+            for eid, fs in found.items():
+                out[eid][0].extend(fs)
+            for eid, why in skipped.items():
+                out[eid][1][f"{judge}.{name}"] = why
+    return out

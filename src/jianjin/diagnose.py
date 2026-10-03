@@ -14,8 +14,10 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from itertools import combinations
 
+from jianjin.checks import CheckConfig, run_checks
+from jianjin.checks.video import Curves, run_video_checks
 from jianjin.judges.base import Curve
-from jianjin.types import Finding, source_name
+from jianjin.types import Episode, Finding, source_name
 
 
 class Label(StrEnum):
@@ -77,3 +79,25 @@ def diagnose(episode_id: str, duration: float, findings: list[Finding],
     label, reasons = label_of(findings, duration)
     causes = sorted(findings, key=lambda f: (f.t0, f.t1))
     return Verdict(episode_id, label, reasons, causes, dict(not_checked or {}), progress)
+
+
+PROGRESS_FROM = ("robometer", "topreward")  # 报告里画谁的进度曲线，按这个顺序找
+
+
+def diagnose_batch(episodes: list[Episode], curves: dict[str, Curves] | None = None,
+                   cfg: CheckConfig | None = None, reference: list[Episode] | None = None) -> list[Verdict]:
+    """关节规则加视频规则，逐条出判定。curves 是 {模型名: {示范 id: 曲线}}，没有就只跑关节体检。"""
+    curves = curves or {}
+    checks = {r.episode_id: r for r in run_checks(episodes, cfg, reference=reference)}
+    video = run_video_checks(episodes, curves, cfg, reference)
+    order = [j for j in PROGRESS_FROM if j in curves] + [j for j in curves if j not in PROGRESS_FROM]
+    out = []
+    for ep in episodes:
+        r = checks[ep.id]
+        vf, vn = video[ep.id]
+        not_checked = {**r.not_checked, **vn}
+        if not curves:
+            not_checked["视频评判"] = "没跑视频评判（没有 GPU，或者缓存里没有结果）"
+        progress = next((curves[j][ep.id] for j in order if ep.id in curves[j]), None)
+        out.append(diagnose(ep.id, ep.duration, r.findings + vf, not_checked, progress))
+    return out

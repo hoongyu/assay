@@ -73,6 +73,20 @@ def load_curve(cache_dir: Path, judge_name: str, ep: Episode, camera: str | None
     return _curve(data)
 
 
+def load_curves(episodes: list[Episode], cache_dir: Path, judge_name: str,
+                camera: str | None = None) -> dict[str, Curve]:
+    """一批示范从缓存里读出来的曲线；没缓存、没视频的跳过。"""
+    out = {}
+    for ep in episodes:
+        try:
+            c = load_curve(Path(cache_dir), judge_name, ep, camera)
+        except NotApplicable:
+            continue
+        if c is not None:
+            out[ep.id] = c
+    return out
+
+
 def judge_episode(judge: Judge, ep: Episode, camera: str | None, cache_dir: Path,
                   sample_fps: float = 2.0, max_side: int = 448) -> Curve:
     camera = _pick_camera(ep, camera)
