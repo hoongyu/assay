@@ -9,40 +9,70 @@ from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
 
-from jianjin.checks import run_checks
 from jianjin.ingest import load
 
 
 def _cmd_check(args: argparse.Namespace) -> int:
+    from datetime import datetime
+
+    from jianjin.diagnose import Label, diagnose_batch
+    from jianjin.judges.cache import load_curves
+    from jianjin.report import render
+    from jianjin.types import source_name
+
     res = load(args.path)
-    results = run_checks(res.episodes)
-    tasks = {ep.id: ep.task for ep in res.episodes}
-    counts: Counter[str] = Counter()
-    for r in results:
-        for f in r.findings:
-            counts[f.cause.value] += 1
-    print(f"{len(res.episodes)} 条示范，读取失败 {len(res.failures)} 个文件")
-    for cause, n in counts.most_common():
+    judges = [j for j in (args.judges or "").split(",") if j]
+    curves = {j: load_curves(res.episodes, Path(args.cache), j, args.camera) for j in judges}
+    verdicts = diagnose_batch(res.episodes, curves)
+    labels = Counter(v.label for v in verdicts)
+    print(f"{len(res.episodes)} 条示范：合格 {labels[Label.PASS]}，存疑 {labels[Label.DOUBT]}，"
+          f"作废 {labels[Label.REJECT]}；读取失败 {len(res.failures)} 个文件")
+    causes = Counter(f.cause.value for v in verdicts for f in v.causes)
+    for cause, n in causes.most_common():
         print(f"  {cause}：{n}")
+    for j in judges:
+        print(f"  {source_name(j)}：{len(curves[j])}/{len(res.episodes)} 条有缓存")
     for name, why in res.failures:
         print(f"  读取失败 {name}：{why}")
     if args.json:
+        tasks = {ep.id: ep.task for ep in res.episodes}
         rows = [
             {
-                "episode_id": r.episode_id,
-                "task": tasks[r.episode_id],
-                "findings": [{**asdict(f), "cause": f.cause.value} for f in r.findings],
-                "not_checked": r.not_checked,
+                "episode_id": v.episode_id,
+                "task": tasks[v.episode_id],
+                "label": v.label.value,
+                "reasons": v.reasons,
+                "findings": [{**asdict(f), "cause": f.cause.value} for f in v.causes],
+                "not_checked": v.not_checked,
             }
-            for r in results
+            for v in verdicts
         ]
+        Path(args.json).parent.mkdir(parents=True, exist_ok=True)
         Path(args.json).write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"明细写到 {args.json}")
+    if args.out:
+        html = render(verdicts, res.episodes, title=Path(args.path).name, judges=judges,
+                      failures=res.failures, generated=datetime.now().strftime("%Y-%m-%d %H:%M"))
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text(html, encoding="utf-8")
+        print(f"报告写到 {args.out}")
     return 0
 
 
 def _cmd_eval(args: argparse.Namespace) -> int:
-    if args.exam == "a-swap":
+    if args.exam == "b-episode":
+        from jianjin.eval.exam_b_episode import format_episode_b, run_episode_b
+
+        split = args.split or "train"
+        threshold = None
+        if args.dev_result:
+            threshold = json.loads(Path(args.dev_result).read_text(encoding="utf-8"))["threshold"]
+        elif split != "train":
+            raise SystemExit("test 要用 train 定的阈值：加 --dev-result results/exam_b_episode_train.json")
+        out = run_episode_b(args.robovad_root, split, args.cache, judge=args.judge,
+                            camera=args.camera or "left", threshold=threshold)
+        text = format_episode_b(out)
+    elif args.exam == "a-swap":
         from jianjin.eval.exam_a import load_config
         from jianjin.eval.task_swap import format_swap, run_swap
 
@@ -132,11 +162,15 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("check", help="对一个数据集做关节体检")
     c.add_argument("path")
-    c.add_argument("--json", help="把每条示范的发现写成 JSON")
+    c.add_argument("--json", help="把每条示范的判定和发现写成 JSON")
+    c.add_argument("--out", help="把报告写成一个 HTML 文件")
+    c.add_argument("--judges", default="", help="读哪些视频评判的缓存，逗号分隔，如 robometer,topreward")
+    c.add_argument("--cache", default="cache")
+    c.add_argument("--camera", default=None, help="视频评判用的那一路相机；不写就用第一路")
     c.set_defaults(func=_cmd_check)
 
     e = sub.add_parser("eval", help="跑考卷")
-    e.add_argument("exam", choices=["a", "a-swap", "b"])
+    e.add_argument("exam", choices=["a", "a-swap", "b", "b-episode"])
     e.add_argument("--config", default="configs/exam_a.toml")
     e.add_argument("--data-root", default="data")
     e.add_argument("--robovad-root", default="data/robovad")
@@ -146,8 +180,8 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--camera", default=None)
     e.add_argument("--seed", type=int, default=0)
     e.add_argument("--out", default=None)
-    e.add_argument("--judge", default="robometer", help="a-swap 读哪个视频评判的缓存")
-    e.add_argument("--dev-result", default=None, help="a-swap 跑 test 时，沿用这个 dev 结果里的分数和阈值")
+    e.add_argument("--judge", default="robometer", help="a-swap、b-episode 读哪个视频评判的缓存")
+    e.add_argument("--dev-result", default=None, help="沿用这个结果里的分数和阈值：a-swap 用 dev 的，b-episode 用 train 的")
     e.set_defaults(func=_cmd_eval)
 
     f = sub.add_parser("fetch", help="下载考卷数据")

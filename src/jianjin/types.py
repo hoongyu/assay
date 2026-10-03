@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
@@ -66,6 +67,22 @@ class Finding:
     score: float
     evidence: str
     hard: bool = False
+    source: str = "joints"  # 哪个独立来源：关节规则记 joints，视频评判记模型名
+
+
+SOURCE_NAMES = {"joints": "关节", "robometer": "Robometer", "topreward": "TOPReward"}
+
+
+def source_name(source: str) -> str:
+    return SOURCE_NAMES.get(source, source)
+
+
+_CJK_LATIN = re.compile(r"([\u4e00-\u9fff])([A-Za-z])|([A-Za-z])([\u4e00-\u9fff])")
+
+
+def spaced(text: str) -> str:
+    """汉字和英文字母挨着时中间加一个空格，比如「Robometer报」写成「Robometer 报」。"""
+    return _CJK_LATIN.sub(lambda m: f"{m[1]} {m[2]}" if m[1] else f"{m[3]} {m[4]}", text)
 
 
 @dataclass

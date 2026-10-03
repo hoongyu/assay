@@ -82,3 +82,16 @@ def test_load_curve_without_local_video(ep, tmp_path):
     assert load_curve(tmp_path / "cache", "fake", ep, "front") is not None
     ep.task = "something else"
     assert load_curve(tmp_path / "cache", "fake", ep, "front") is None
+
+
+def test_load_curves_reads_a_batch(tmp_path):
+    from helpers import write_cached_curve
+    from jianjin.judges.cache import load_curves
+
+    eps = [make_episode(np.zeros(90), ep_id=f"e{i}") for i in range(3)]
+    for e in eps:
+        e.cameras = {"front": VideoRef(tmp_path / "none.mp4", 0.0, 3.0)}
+    write_cached_curve(tmp_path / "cache", eps[0], "front", [0.1, 0.9])
+    got = load_curves(eps, tmp_path / "cache", "robometer", "front")
+    assert list(got) == ["e0"] and got["e0"].progress == [0.1, 0.9]
+    assert load_curves([make_episode(np.zeros(90))], tmp_path / "cache", "robometer") == {}  # 没视频也不报错

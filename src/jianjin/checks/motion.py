@@ -24,7 +24,7 @@ def long_pause(ep: Episode, cfg: CheckConfig) -> list[Finding]:
                 t0=t0,
                 t1=t1,
                 score=dur,
-                evidence=f"第 {t0:.1f} 到 {t1:.1f} 秒关节几乎不动，停了 {dur:.1f} 秒",
+                evidence=f"关节几乎不动，停了 {dur:.1f} 秒",
             )
         )
     return out
