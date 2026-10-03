@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>拣金质检报告 · ds</title><style>
+:root{--bg:#f6f5f1;--fg:#1d1d1b;--muted:#6b6a64;--card:#fff;--line:#e2e0d9;--curve:#2b5cab;
+--pass:#2f7d4f;--doubt:#a86b12;--reject:#c0392b;--pass-bg:#e5f1e9;--doubt-bg:#fbefd8;--reject-bg:#f9e2de}
+@media (prefers-color-scheme:dark){:root{--bg:#161615;--fg:#ecebe6;--muted:#9a9993;--card:#1f1f1d;--line:#34342f;
+--curve:#7aa7ef;--pass:#5cbf86;--doubt:#e0a640;--reject:#ef6f61;--pass-bg:#1c3125;--doubt-bg:#3a2d15;--reject-bg:#3d1f1b}}
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:1080px;padding:28px 16px 40px;background:var(--bg);color:var(--fg);
+font:15px/1.6 -apple-system,"PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif}
+h1{font-size:26px;margin:0 0 4px}
+h2{font-size:18px;margin:36px 0 12px}
+.sub,.note{color:var(--muted);margin:2px 0}
+.banner{background:var(--doubt-bg);border:1px solid var(--doubt);border-radius:8px;padding:8px 12px;margin:14px 0 0}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column}
+.tile b{font-size:34px;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile.pass b{color:var(--pass)}.tile.doubt b{color:var(--doubt)}.tile.reject b{color:var(--reject)}
+.tile em{font-style:normal;color:var(--muted);font-size:13px}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:14px 0 8px;background:var(--line)}
+.bar i.pass{background:var(--pass)}.bar i.doubt{background:var(--doubt)}.bar i.reject{background:var(--reject)}
+table{border-collapse:collapse;width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+th{color:var(--muted);font-weight:500;font-size:13px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filters button{font:inherit;font-size:13px;padding:4px 12px;border-radius:999px;border:1px solid var(--line);
+background:var(--card);color:var(--fg);cursor:pointer}
+.filters button.on{border-color:var(--fg)}
+.cards{display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:10px;padding:12px 16px}
+.card.pass{border-left-color:var(--pass)}.card.doubt{border-left-color:var(--doubt)}.card.reject{border-left-color:var(--reject)}
+.head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 12px}
+.badge{font-size:12px;padding:1px 9px;border-radius:999px;white-space:nowrap}
+.badge.pass{background:var(--pass-bg);color:var(--pass)}.badge.doubt{background:var(--doubt-bg);color:var(--doubt)}
+.badge.reject{background:var(--reject-bg);color:var(--reject)}
+code{font-family:ui-monospace,Consolas,monospace;font-size:13px;overflow-wrap:anywhere}
+.task{color:var(--muted)}.dur{color:var(--muted);font-size:13px;margin-left:auto}
+.reasons{margin:8px 0 0;padding-left:18px}
+.findings{list-style:none;margin:8px 0 0;padding:0}
+.findings li{padding:5px 0;border-top:1px dashed var(--line)}
+.cause{font-weight:600;margin-right:8px}.when{color:var(--muted);font-size:13px;margin-right:8px}
+.src{color:var(--muted);font-size:12px;margin-right:8px;padding:0 6px;border:1px solid var(--line);border-radius:4px}
+.spark{margin:10px 0 0}
+.spark svg{width:100%;max-width:440px;height:56px;display:block;background:var(--bg);border-radius:6px}
+.spark polyline{fill:none;stroke:var(--curve);stroke-width:2;vector-effect:non-scaling-stroke}
+.spark rect.mark{opacity:.28}.spark rect.mark.doubt{fill:var(--doubt)}.spark rect.mark.reject{fill:var(--reject)}
+figcaption{color:var(--muted);font-size:12px}
+details{margin-top:8px;color:var(--muted);font-size:13px}
+details ul{margin:4px 0 0;padding-left:18px}
+footer{margin-top:44px;color:var(--muted);font-size:13px;border-top:1px solid var(--line);padding-top:12px}
+@media (max-width:600px){.tiles{grid-template-columns:1fr}.dur{margin-left:0}}
+</style></head><body><header><h1>拣金质检报告</h1><p class="sub">ds · 3 条示范 · 生成于 2026-10-03 12:00</p><p class="sub">查了什么：关节体检；视频评判：Robometer</p></header><section class="funnel"><div class="tiles"><div class="tile pass"><b>1</b><span>合格</span><em>33%</em></div><div class="tile doubt"><b>1</b><span>存疑</span><em>33%</em></div><div class="tile reject"><b>1</b><span>作废</span><em>33%</em></div></div><div class="bar"><i class="pass" style="width:33.33%"></i><i class="doubt" style="width:33.33%"></i><i class="reject" style="width:33.33%"></i></div><p class="note">人工只需要看存疑的 1 条（33%）；作废的 1 条每条都写了依据。</p></section><section><h2>问题出在哪</h2><table class="causes"><thead><tr><th>原因</th><th>作废</th><th>存疑</th></tr></thead><tbody><tr><td>物体掉落</td><td>1</td><td>0</td></tr><tr><td>停顿过长</td><td>1</td><td>1</td></tr></tbody></table><p class="note">按示范计；一条示范报了几类原因，每类各记一次。</p></section><section><h2>按采集员</h2><p class="note">数据里没有采集员编号（公开数据都没有）。试点数据带上编号后，这里按人统计问题分布。</p></section><section><h2>每条示范</h2><nav class="filters"><button type="button" data-f="all" class="on">全部 3</button><button type="button" data-f="作废">作废 1</button><button type="button" data-f="存疑">存疑 1</button><button type="button" data-f="合格">合格 1</button></nav><div class="cards"><article class="card reject" data-label="作废"><div class="head"><span class="badge reject">作废</span><code>ds/ep0</code><span class="task">pick &lt;the&gt; cube</span><span class="dur">3.0 秒</span></div><ul class="reasons"><li>关节报「停顿过长」、Robometer 报「物体掉落」，第 1.5 到 2.0 秒重叠，指向同一处问题</li></ul><figure class="spark"><svg viewBox="0 0 320 56" preserveAspectRatio="none" role="img" aria-label="Robometer 的进度曲线"><rect class="mark reject" x="106.7" y="0" width="106.7" height="56"/><rect class="mark reject" x="160.0" y="0" width="106.7" height="56"/><polyline points="0.0,48.8 106.7,12.4 213.3,33.2 320.0,7.2"/></svg><figcaption>Robometer 的进度曲线，横轴 0 到 3.0 秒，色块是报出问题的时间段</figcaption></figure><ul class="findings"><li><span class="cause">停顿过长</span><span class="when">第 1.0 到 2.0 秒</span><span class="src">关节</span>关节几乎不动，停了 1.0 秒</li><li><span class="cause">物体掉落</span><span class="when">第 1.5 到 2.5 秒</span><span class="src">Robometer</span>进度从 80% 掉到 40%</li></ul></article><article class="card doubt" data-label="存疑"><div class="head"><span class="badge doubt">存疑</span><code>ds/ep1</code><span class="task">pick &lt;the&gt; cube</span><span class="dur">3.0 秒</span></div><ul class="reasons"><li>只有关节报了问题，没有第二个来源印证，要人看</li></ul><figure class="spark"><svg viewBox="0 0 320 56" preserveAspectRatio="none" role="img" aria-label="Robometer 的进度曲线"><rect class="mark doubt" x="106.7" y="0" width="106.7" height="56"/><polyline points="0.0,48.8 106.7,12.4 213.3,33.2 320.0,7.2"/></svg><figcaption>Robometer 的进度曲线，横轴 0 到 3.0 秒，色块是报出问题的时间段</figcaption></figure><ul class="findings"><li><span class="cause">停顿过长</span><span class="when">第 1.0 到 2.0 秒</span><span class="src">关节</span>关节几乎不动，停了 1.0 秒</li></ul><details><summary>没查 1 项</summary><ul><li>robometer.wrong_task：同任务只有 3 条</li></ul></details></article><article class="card pass" data-label="合格"><div class="head"><span class="badge pass">合格</span><code>ds/ep2</code><span class="task">pick &lt;the&gt; cube</span><span class="dur">3.0 秒</span></div></article></div></section><footer><p>判定规则：作废是客观硬规则触发（读数缺失、丢帧、示范过短），或者两个独立来源指向同一处问题；存疑是有发现但够不上作废，要人看；合格是什么都没报。错杀一条好数据比漏掉一条坏数据贵，所以判得偏保守。</p><p>没查的项目不当成通过。阈值都在开发数据上定，出处见拣金设计文档。</p></footer><script>
+document.querySelectorAll(".filters button").forEach(function (b) {
+  b.addEventListener("click", function () {
+    document.querySelectorAll(".filters button").forEach(function (x) { x.classList.toggle("on", x === b); });
+    document.querySelectorAll(".card").forEach(function (c) {
+      c.hidden = b.dataset.f !== "all" && c.dataset.label !== b.dataset.f;
+    });
+  });
+});
+</script></body></html>

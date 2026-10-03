@@ -1,4 +1,5 @@
-"""视频评判的规则：从缓存的进度曲线里找问题。每个视频模型算一个独立来源（Finding.source 记模型名）。
+"""视频评判的规则：从缓存的进度曲线里找问题。每个视频模型算一个独立来源（Finding.source 记模型名，
+证据文字里不再重复模型名）。
 
 阈值都在开发数据上定，出处写在阈值表旁边；某个模型还没定阈值的规则，记进 not_checked。
 """
@@ -12,7 +13,7 @@ import numpy as np
 
 from jianjin.checks.config import CheckConfig, NotApplicable
 from jianjin.judges.base import Curve
-from jianjin.types import Cause, Episode, Finding, source_name
+from jianjin.types import Cause, Episode, Finding, source_name, spaced
 
 Found = dict[str, list[Finding]]
 Skipped = dict[str, str]
@@ -94,8 +95,8 @@ def wrong_task(episodes: list[Episode], curves: Curves, judge: str, cfg: CheckCo
         value, med = 1.0 - fn(c), 1.0 - float(np.median(ref))
         found[ep.id] = [Finding(
             check="wrong_task", cause=Cause.WRONG_TASK, t0=0.0, t1=ep.duration, score=z,
-            evidence=(f"{name}看视频，{SCORE_LABELS[score_name]} {value:.0%}，同任务 {len(ref)} 条示范的中位数是 "
-                      f"{med:.0%}；做的可能不是「{ep.task}」"),
+            evidence=spaced(f"{SCORE_LABELS[score_name]} {value:.0%}，同任务 {len(ref)} 条示范的中位数是 "
+                            f"{med:.0%}；做的可能不是「{ep.task}」"),
             source=judge,
         )]
     return found, skipped
@@ -129,7 +130,7 @@ def progress_drop(episodes: list[Episode], curves: Curves, judge: str, cfg: Chec
         if d > thr:
             found[ep.id] = [Finding(
                 check="progress_drop", cause=Cause.DROP, t0=t0, t1=t1, score=d,
-                evidence=f"{name}看视频，进度在第 {t0:.1f} 到 {t1:.1f} 秒从 {hi:.0%} 掉到 {lo:.0%}，可能东西掉了或者退回去重做",
+                evidence=f"进度从 {hi:.0%} 掉到 {lo:.0%}，可能东西掉了或者退回去重做",
                 source=judge,
             )]
     return found, skipped

@@ -86,3 +86,11 @@ def test_batch_with_video_rules_and_progress():
     assert v0.progress is curves["e0"]
     assert vs[1].label == Label.PASS and "视频评判" not in vs[1].not_checked
     assert "还没在开发数据上给 TOPReward 定" in vs[1].not_checked["topreward.wrong_task"]
+
+
+def test_reasons_space_latin_names():
+    from jianjin.types import spaced
+
+    assert spaced("关节和Robometer都报了「多余动作」") == "关节和 Robometer 都报了「多余动作」"
+    _, reasons = label_of([f(Cause.LONG_PAUSE, 2, 6), f(Cause.DROP, 5, 7, source="robometer")], DUR)
+    assert "、Robometer 报「物体掉落」" in reasons[0]

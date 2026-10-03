@@ -17,7 +17,7 @@ from itertools import combinations
 from jianjin.checks import CheckConfig, run_checks
 from jianjin.checks.video import Curves, run_video_checks
 from jianjin.judges.base import Curve
-from jianjin.types import Episode, Finding, source_name
+from jianjin.types import Episode, Finding, source_name, spaced
 
 
 class Label(StrEnum):
@@ -65,12 +65,12 @@ def label_of(findings: list[Finding], duration: float) -> tuple[Label, list[str]
             agree.append(f"{source_name(a.source)}报「{a.cause.value}」、{source_name(b.source)}报「{b.cause.value}」，"
                          f"{when}重叠，指向同一处问题")
     if agree:
-        return Label.REJECT, agree
+        return Label.REJECT, [spaced(r) for r in agree]
     if findings:
         names = "、".join(sorted({source_name(f.source) for f in findings}))
         if len({f.source for f in findings}) == 1:
-            return Label.DOUBT, [f"只有{names}报了问题，没有第二个来源印证，要人看"]
-        return Label.DOUBT, [f"{names}报的问题对不上（时间不重叠，或者原因不同），要人看"]
+            return Label.DOUBT, [spaced(f"只有{names}报了问题，没有第二个来源印证，要人看")]
+        return Label.DOUBT, [spaced(f"{names}报的问题对不上（时间不重叠，或者原因不同），要人看")]
     return Label.PASS, []
 
 

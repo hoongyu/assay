@@ -60,11 +60,7 @@ def timestamp_gaps(ep: Episode, cfg: CheckConfig) -> list[Finding]:
         seg = dt[s:e]
         lost = int(np.sum(np.clip(np.round(seg * ep.fps) - 1, 0, None)))
         backwards = bool((seg <= 0).any())
-        evidence = (
-            f"第 {ts[s]:.1f} 秒附近时间戳倒退或重复"
-            if backwards
-            else f"第 {ts[s]:.1f} 秒附近丢了约 {lost} 帧"
-        )
+        evidence = "时间戳倒退或重复" if backwards else f"丢了约 {lost} 帧"
         out.append(
             Finding(
                 check="timestamp_gaps",
