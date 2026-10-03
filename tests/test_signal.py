@@ -28,3 +28,15 @@ def test_path_length_doubles_for_back_and_forth():
     back = np.concatenate([there, there[::-1], there])
     scale = np.array([1.0])
     assert np.isclose(path_length(back, scale), 3 * path_length(there, scale))
+
+
+import pytest  # noqa: E402
+
+from jianjin.checks.signal import excursion  # noqa: E402
+
+
+def test_excursion_is_farthest_any_joint_got_from_start():
+    s = np.stack([np.array([0.0, 0.5, 0.2]), np.array([1.0, 1.0, 3.0])], axis=1)
+    scale = np.array([1.0, 2.0])
+    assert excursion(s, scale) == pytest.approx(1.0)  # 第二个关节走了 2，按幅度 2 算是 1
+    assert excursion(s[:1], scale) == 0.0
