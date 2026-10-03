@@ -76,3 +76,10 @@ def test_load_detects_robovad(tmp_path):
     root = make_robovad(tmp_path / "rv", {"h_stackcubes_ep1": (np.zeros((60, 6)), np.zeros((60, 6)))})
     assert [e.id for e in load(root).episodes] == ["h_stackcubes_ep1"]
 
+
+
+def test_check_creates_output_folders(tmp_path):
+    ds = make_lerobot_v3(tmp_path / "d", [("pick", paused6())])
+    js, out = tmp_path / "new" / "v.json", tmp_path / "new" / "r.html"
+    assert main(["check", str(ds), "--json", str(js), "--out", str(out)]) == 0
+    assert js.exists() and out.exists()

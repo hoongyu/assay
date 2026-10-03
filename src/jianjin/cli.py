@@ -47,6 +47,7 @@ def _cmd_check(args: argparse.Namespace) -> int:
             }
             for v in verdicts
         ]
+        Path(args.json).parent.mkdir(parents=True, exist_ok=True)
         Path(args.json).write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"明细写到 {args.json}")
     if args.out:
