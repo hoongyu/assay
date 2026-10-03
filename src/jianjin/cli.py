@@ -51,8 +51,15 @@ def _cmd_check(args: argparse.Namespace) -> int:
         Path(args.json).write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"明细写到 {args.json}")
     if args.out:
+        shots = None
+        if not args.no_frames:
+            from jianjin.keyframes import shots_for
+
+            shots, missing = shots_for(verdicts, res.episodes, args.camera)
+            print(f"  画面：{len(shots)} 条存疑或作废的示范配了关键帧"
+                  + (f"，{missing} 条没有本地视频或读不出画面" if missing else ""))
         html = render(verdicts, res.episodes, title=Path(args.path).name, judges=judges,
-                      failures=res.failures, generated=datetime.now().strftime("%Y-%m-%d %H:%M"))
+                      failures=res.failures, generated=datetime.now().strftime("%Y-%m-%d %H:%M"), shots=shots)
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.out).write_text(html, encoding="utf-8")
         print(f"报告写到 {args.out}")
@@ -167,6 +174,7 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--judges", default="", help="读哪些视频评判的缓存，逗号分隔，如 robometer,topreward")
     c.add_argument("--cache", default="cache")
     c.add_argument("--camera", default=None, help="视频评判用的那一路相机；不写就用第一路")
+    c.add_argument("--no-frames", action="store_true", help="报告里不配关键帧（默认有本地视频就配）")
     c.set_defaults(func=_cmd_check)
 
     e = sub.add_parser("eval", help="跑考卷")

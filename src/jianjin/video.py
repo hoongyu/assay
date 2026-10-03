@@ -36,3 +36,27 @@ def read_clip(ref: VideoRef, sample_fps: float = 2.0, max_side: int = 448) -> tu
     if not frames:
         return np.zeros((0, th, tw, 3), dtype=np.uint8), np.zeros(0)
     return np.stack(frames), np.asarray(times)
+
+
+def frames_at(ref: VideoRef, times: list[float], max_side: int = 240) -> np.ndarray:
+    """示范里这几个时刻（相对示范开头的秒数）各取一帧：不早于该时刻的第一帧；超出视频就取最后一帧。"""
+    out = []
+    with av.open(str(ref.path)) as c:
+        s = c.streams.video[0]
+        w, h = s.codec_context.width, s.codec_context.height
+        scale = min(1.0, max_side / max(w, h))
+        tw, th = max(2, round(w * scale / 2) * 2), max(2, round(h * scale / 2) * 2)
+        for t in times:
+            target = ref.from_s + t
+            c.seek(int(max(target - 1.0, 0.0) / s.time_base), stream=s, backward=True)
+            got = None
+            for fr in c.decode(s):
+                if fr.time is None:
+                    continue
+                got = fr
+                if fr.time >= target - 1e-3:
+                    break
+            if got is None:
+                raise ValueError(f"{ref.path} 在第 {target:.2f} 秒附近读不到帧")
+            out.append(got.reformat(width=tw, height=th).to_ndarray(format="rgb24"))
+    return np.stack(out)

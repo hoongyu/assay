@@ -83,3 +83,16 @@ def test_check_creates_output_folders(tmp_path):
     js, out = tmp_path / "new" / "v.json", tmp_path / "new" / "r.html"
     assert main(["check", str(ds), "--json", str(js), "--out", str(out)]) == 0
     assert js.exists() and out.exists()
+
+
+def test_check_report_has_keyframes_when_video_is_local(tmp_path, capsys):
+    from helpers import make_mp4
+
+    ds = make_lerobot_v3(tmp_path / "d", [("pick", paused6())])
+    make_mp4(ds / "videos" / "observation.images.front" / "chunk-000" / "file-000.mp4", n=300)
+    out = tmp_path / "r.html"
+    assert main(["check", str(ds), "--out", str(out)]) == 0
+    assert '<div class="shots">' in out.read_text(encoding="utf-8")
+    assert "1 条存疑或作废的示范配了关键帧" in capsys.readouterr().out
+    assert main(["check", str(ds), "--out", str(out), "--no-frames"]) == 0
+    assert '<div class="shots">' not in out.read_text(encoding="utf-8")

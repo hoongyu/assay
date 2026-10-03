@@ -90,3 +90,11 @@ def test_curve_drawn_only_within_joint_data():
     assert html.count('<polyline points="') == 1
     pts = html.split('<polyline points="')[1].split('"')[0].split()
     assert len(pts) == 3
+
+
+def test_cards_show_keyframes_when_given():
+    vs, eps = small()
+    shots = {"ds/ep0": [(1.0, "data:image/jpeg;base64,AAAA"), (2.5, "data:image/jpeg;base64,BBBB")]}
+    html = render(vs, eps, title="ds", shots=shots)
+    assert html.count('<div class="shots">') == 1
+    assert '<img src="data:image/jpeg;base64,BBBB" alt="第 2.5 秒的画面"' in html
