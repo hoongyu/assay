@@ -98,3 +98,15 @@ def test_cards_show_keyframes_when_given():
     html = render(vs, eps, title="ds", shots=shots)
     assert html.count('<div class="shots">') == 1
     assert '<img src="data:image/jpeg;base64,BBBB" alt="第 2.5 秒的画面"' in html
+
+
+def test_frame_after_joint_data_is_labelled():
+    vs, eps = small()
+    html = render(vs, eps, title="ds", shots={"ds/ep0": [(3.5, "data:image/jpeg;base64,AAAA")]})
+    assert "第 3.5 秒（关节数据之后）" in html
+
+
+def test_note_without_rejects():
+    vs, eps = small()
+    html = render(vs[1:], eps[1:], title="ds")
+    assert "没有作废的" in html and "作废的 0 条" not in html

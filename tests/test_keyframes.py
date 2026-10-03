@@ -43,3 +43,19 @@ def test_shots_only_for_doubt_and_reject_with_local_video(tmp_path):
     assert [t for t, _ in shots[eps[0].id]] == [1.0, 2.0]
     shots, missing = shots_for(vs, [make_episode(x, ep_id=eps[0].id), eps[1]])  # 没有视频
     assert shots == {} and missing == 1
+
+
+def test_video_past_joint_data_adds_one_frame_from_the_extra_part(tmp_path):
+    from jianjin.types import VideoRef
+
+    x = np.tile(np.linspace(0, 1, 90)[:, None], (1, 6))
+    ds = make_lerobot_v3(tmp_path / "d", [("pick", x), ("pick", x)])
+    eps = load(ds).episodes
+    make_mp4(ds / "videos" / "observation.images.front" / "chunk-000" / "file-000.mp4", n=180)
+    cam = "observation.images.front"
+    ref = eps[0].cameras[cam]
+    eps[0].cameras[cam] = VideoRef(ref.path, ref.from_s, ref.to_s + 2.0)  # 视频比关节长 2 秒
+    longer = Finding("video_length", Cause.DATA_ERROR, 0.0, eps[0].duration, 2.0, "长", source="meta")
+    v = Verdict(eps[0].id, Label.DOUBT, ["r"], [longer])
+    shots, _ = shots_for([v], eps)
+    assert [t for t, _ in shots[eps[0].id]] == [0.0, 1.5, 2.95, 4.0]  # 多出来那段的正中

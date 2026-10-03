@@ -60,7 +60,7 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:13px;overflow-wrap:an
 .spark svg{width:100%;max-width:440px;height:56px;display:block;background:var(--bg);border-radius:6px}
 .spark polyline{fill:none;stroke:var(--curve);stroke-width:2;vector-effect:non-scaling-stroke}
 .spark rect.mark{opacity:.28}.spark rect.mark.doubt{fill:var(--doubt)}.spark rect.mark.reject{fill:var(--reject)}
-.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px;margin:10px 0 0;max-width:760px}
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(140px,45%),1fr));gap:6px;margin:10px 0 0;max-width:760px}
 .shots figure{margin:0}.shots img{width:100%;height:auto;display:block;border-radius:6px;background:var(--line)}
 figcaption{color:var(--muted);font-size:12px}
 details{margin-top:8px;color:var(--muted);font-size:13px}
@@ -111,8 +111,9 @@ def _funnel(verdicts: list[Verdict]) -> str:
                     f'<em>{_pct(c[lb], n)}</em></div>' for lb in TILES)
     bar = "".join(f'<i class="{CSS_CLASS[lb]}" style="width:{c[lb] / n * 100:.2f}%"></i>'
                   for lb in TILES if n and c[lb])
+    k = c[Label.REJECT]
     note = (f"人工只需要看存疑的 {c[Label.DOUBT]} 条（{_pct(c[Label.DOUBT], n)}）；"
-            f"作废的 {c[Label.REJECT]} 条每条都写了依据。")
+            + (f"作废的 {k} 条每条都写了依据。" if k else "没有作废的。"))
     return f'<section class="funnel"><div class="tiles">{tiles}</div><div class="bar">{bar}</div><p class="note">{note}</p></section>'
 
 
@@ -182,11 +183,15 @@ def _spark(v: Verdict, duration: float) -> str:
             f'<figcaption>{escape(name)}，横轴 0 到 {duration:.1f} 秒，色块是报出问题的时间段</figcaption></figure>')
 
 
-def _shots(shots: list[tuple[float, str]]) -> str:
+def _shots(shots: list[tuple[float, str]], duration: float) -> str:
     if not shots:
         return ""
-    figs = "".join(f'<figure><img src="{uri}" alt="第 {t:.1f} 秒的画面" loading="lazy">'
-                   f'<figcaption>第 {t:.1f} 秒</figcaption></figure>' for t, uri in shots)
+
+    def when(t: float) -> str:
+        return f"第 {t:.1f} 秒" + ("（关节数据之后）" if t > duration + 1e-6 else "")
+
+    figs = "".join(f'<figure><img src="{uri}" alt="{when(t)}的画面" loading="lazy">'
+                   f'<figcaption>{when(t)}</figcaption></figure>' for t, uri in shots)
     return f'<div class="shots">{figs}</div>'
 
 
@@ -205,7 +210,7 @@ def _card(v: Verdict, ep: Episode, shots=()) -> str:
     if v.reasons:
         parts.append('<ul class="reasons">' + "".join(f"<li>{escape(r)}</li>" for r in v.reasons) + "</ul>")
     parts.append(_spark(v, ep.duration))
-    parts.append(_shots(list(shots)))
+    parts.append(_shots(list(shots), ep.duration))
     if v.causes:
         parts.append('<ul class="findings">' + "".join(_finding(f, ep.duration) for f in v.causes) + "</ul>")
     if v.not_checked:

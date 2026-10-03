@@ -65,6 +65,9 @@ def shots_for(verdicts: list[Verdict], episodes: list[Episode], camera: str | No
             missing += 1
             continue
         times = keyframe_times(v, ep.duration)
+        extra = max((f.score for f in v.causes if f.check == "video_length" and not f.hard), default=0.0)
+        if extra > 0:  # 视频比关节数据长：多出来那段的正中再取一张，看录进了什么
+            times.append(ep.duration + extra / 2)
         if not times or not Path(ref.path).exists():
             missing += 1
             continue
