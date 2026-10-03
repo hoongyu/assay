@@ -9,35 +9,52 @@ from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
 
-from jianjin.checks import run_checks
 from jianjin.ingest import load
 
 
 def _cmd_check(args: argparse.Namespace) -> int:
+    from datetime import datetime
+
+    from jianjin.diagnose import Label, diagnose_batch
+    from jianjin.judges.cache import load_curves
+    from jianjin.report import render
+    from jianjin.types import source_name
+
     res = load(args.path)
-    results = run_checks(res.episodes)
-    tasks = {ep.id: ep.task for ep in res.episodes}
-    counts: Counter[str] = Counter()
-    for r in results:
-        for f in r.findings:
-            counts[f.cause.value] += 1
-    print(f"{len(res.episodes)} 条示范，读取失败 {len(res.failures)} 个文件")
-    for cause, n in counts.most_common():
+    judges = [j for j in (args.judges or "").split(",") if j]
+    curves = {j: load_curves(res.episodes, Path(args.cache), j, args.camera) for j in judges}
+    verdicts = diagnose_batch(res.episodes, curves)
+    labels = Counter(v.label for v in verdicts)
+    print(f"{len(res.episodes)} 条示范：合格 {labels[Label.PASS]}，存疑 {labels[Label.DOUBT]}，"
+          f"作废 {labels[Label.REJECT]}；读取失败 {len(res.failures)} 个文件")
+    causes = Counter(f.cause.value for v in verdicts for f in v.causes)
+    for cause, n in causes.most_common():
         print(f"  {cause}：{n}")
+    for j in judges:
+        print(f"  {source_name(j)}：{len(curves[j])}/{len(res.episodes)} 条有缓存")
     for name, why in res.failures:
         print(f"  读取失败 {name}：{why}")
     if args.json:
+        tasks = {ep.id: ep.task for ep in res.episodes}
         rows = [
             {
-                "episode_id": r.episode_id,
-                "task": tasks[r.episode_id],
-                "findings": [{**asdict(f), "cause": f.cause.value} for f in r.findings],
-                "not_checked": r.not_checked,
+                "episode_id": v.episode_id,
+                "task": tasks[v.episode_id],
+                "label": v.label.value,
+                "reasons": v.reasons,
+                "findings": [{**asdict(f), "cause": f.cause.value} for f in v.causes],
+                "not_checked": v.not_checked,
             }
-            for r in results
+            for v in verdicts
         ]
         Path(args.json).write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"明细写到 {args.json}")
+    if args.out:
+        html = render(verdicts, res.episodes, title=Path(args.path).name, judges=judges,
+                      failures=res.failures, generated=datetime.now().strftime("%Y-%m-%d %H:%M"))
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text(html, encoding="utf-8")
+        print(f"报告写到 {args.out}")
     return 0
 
 
@@ -144,7 +161,11 @@ def build_parser() -> argparse.ArgumentParser:
     sub = p.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("check", help="对一个数据集做关节体检")
     c.add_argument("path")
-    c.add_argument("--json", help="把每条示范的发现写成 JSON")
+    c.add_argument("--json", help="把每条示范的判定和发现写成 JSON")
+    c.add_argument("--out", help="把报告写成一个 HTML 文件")
+    c.add_argument("--judges", default="", help="读哪些视频评判的缓存，逗号分隔，如 robometer,topreward")
+    c.add_argument("--cache", default="cache")
+    c.add_argument("--camera", default=None, help="视频评判用的那一路相机；不写就用第一路")
     c.set_defaults(func=_cmd_check)
 
     e = sub.add_parser("eval", help="跑考卷")

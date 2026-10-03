@@ -34,5 +34,45 @@ def test_check_command_writes_json(tmp_path, capsys):
     rows = json.loads(out.read_text(encoding="utf-8"))
     assert rows[0]["episode_id"] == "d/ep000000"
     assert rows[0]["findings"][0]["cause"] == "停顿过长"
+    assert rows[0]["label"] == "存疑"
     printed = capsys.readouterr().out
     assert "1 条示范" in printed and "停顿过长" in printed
+
+
+def moving6(n, seed):
+    rng = np.random.default_rng(seed)
+    x = np.cumsum(rng.uniform(0.5, 1.5, n))
+    return np.tile(x[:, None], (1, 6)) * np.arange(1, 7)
+
+
+def test_check_writes_report(tmp_path, capsys):
+    ds = make_lerobot_v3(tmp_path / "d", [("pick", paused6())])
+    out = tmp_path / "r.html"
+    assert main(["check", str(ds), "--out", str(out)]) == 0
+    html = out.read_text(encoding="utf-8")
+    assert "拣金质检报告" in html and "没跑视频评判" in html
+    assert "存疑 1" in capsys.readouterr().out
+
+
+def test_check_with_cached_video(tmp_path, capsys):
+    from helpers import write_cached_curve
+
+    ds = make_lerobot_v3(tmp_path / "d", [("pick", moving6(300, i)) for i in range(6)])
+    cache = tmp_path / "cache"
+    cam = "observation.images.front"
+    for i, ep in enumerate(load(ds).episodes):
+        write_cached_curve(cache, ep, cam, [0.1, 0.5, 0.3 if i == 0 else 0.9])
+    js = tmp_path / "v.json"
+    assert main(["check", str(ds), "--judges", "robometer", "--cache", str(cache), "--camera", cam,
+                 "--json", str(js)]) == 0
+    rows = json.loads(js.read_text(encoding="utf-8"))
+    assert rows[0]["label"] == "存疑" and rows[0]["findings"][0]["source"] == "robometer"
+    assert "Robometer：6/6 条有缓存" in capsys.readouterr().out
+
+
+def test_load_detects_robovad(tmp_path):
+    from helpers import make_robovad
+
+    root = make_robovad(tmp_path / "rv", {"h_stackcubes_ep1": (np.zeros((60, 6)), np.zeros((60, 6)))})
+    assert [e.id for e in load(root).episodes] == ["h_stackcubes_ep1"]
+
