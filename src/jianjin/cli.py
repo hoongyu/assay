@@ -42,7 +42,19 @@ def _cmd_check(args: argparse.Namespace) -> int:
 
 
 def _cmd_eval(args: argparse.Namespace) -> int:
-    if args.exam == "a-swap":
+    if args.exam == "b-episode":
+        from jianjin.eval.exam_b_episode import format_episode_b, run_episode_b
+
+        split = args.split or "train"
+        threshold = None
+        if args.dev_result:
+            threshold = json.loads(Path(args.dev_result).read_text(encoding="utf-8"))["threshold"]
+        elif split != "train":
+            raise SystemExit("test 要用 train 定的阈值：加 --dev-result results/exam_b_episode_train.json")
+        out = run_episode_b(args.robovad_root, split, args.cache, judge=args.judge,
+                            camera=args.camera or "left", threshold=threshold)
+        text = format_episode_b(out)
+    elif args.exam == "a-swap":
         from jianjin.eval.exam_a import load_config
         from jianjin.eval.task_swap import format_swap, run_swap
 
@@ -136,7 +148,7 @@ def build_parser() -> argparse.ArgumentParser:
     c.set_defaults(func=_cmd_check)
 
     e = sub.add_parser("eval", help="跑考卷")
-    e.add_argument("exam", choices=["a", "a-swap", "b"])
+    e.add_argument("exam", choices=["a", "a-swap", "b", "b-episode"])
     e.add_argument("--config", default="configs/exam_a.toml")
     e.add_argument("--data-root", default="data")
     e.add_argument("--robovad-root", default="data/robovad")
@@ -146,8 +158,8 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--camera", default=None)
     e.add_argument("--seed", type=int, default=0)
     e.add_argument("--out", default=None)
-    e.add_argument("--judge", default="robometer", help="a-swap 读哪个视频评判的缓存")
-    e.add_argument("--dev-result", default=None, help="a-swap 跑 test 时，沿用这个 dev 结果里的分数和阈值")
+    e.add_argument("--judge", default="robometer", help="a-swap、b-episode 读哪个视频评判的缓存")
+    e.add_argument("--dev-result", default=None, help="沿用这个结果里的分数和阈值：a-swap 用 dev 的，b-episode 用 train 的")
     e.set_defaults(func=_cmd_eval)
 
     f = sub.add_parser("fetch", help="下载考卷数据")

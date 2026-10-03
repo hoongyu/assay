@@ -46,6 +46,12 @@ WRONG_TASK: dict[str, tuple[str, float]] = {
     "robometer": ("peak", 1.5477136091635564),
 }
 
+# 进度回落：模型 -> 阈值。进度从此前最高点往下掉超过这么多就报。
+PROGRESS_DROP: dict[str, float] = {
+    # 2026-10-03 RoboVAD train 上定：正常示范（307 条）进度回落的 95 分位（results/exam_b_episode_train.json）
+    "robometer": 0.3449116051197052,
+}
+
 
 def relative(values, ref) -> np.ndarray:
     """按参照那批的中位数和四分位距换算：比常态差多少个四分位距。"""
@@ -92,4 +98,38 @@ def wrong_task(episodes: list[Episode], curves: Curves, judge: str, cfg: CheckCo
                       f"{med:.0%}；做的可能不是「{ep.task}」"),
             source=judge,
         )]
+    return found, skipped
+
+
+def drawdown(c: Curve) -> tuple[float, float, float, float, float]:
+    """进度从此前最高点往下掉得最多的一次：(掉了多少, 最高点时刻, 最低点时刻, 最高, 最低)。"""
+    p = np.asarray(c.progress, dtype=np.float64)
+    t = np.asarray(c.times, dtype=np.float64)
+    run = np.maximum.accumulate(p)
+    k = int(np.argmax(run - p))
+    i = int(np.argmax(p[: k + 1]))
+    return float(run[k] - p[k]), float(t[i]), float(t[k]), float(p[i]), float(p[k])
+
+
+def progress_drop(episodes: list[Episode], curves: Curves, judge: str, cfg: CheckConfig,
+                  reference: list[Episode] | None = None, threshold: float | None = None) -> tuple[Found, Skipped]:
+    """进度突然往回掉：东西掉了，或者退回去重做。不和同任务比，cfg、reference 只为和别的规则同一个签名。"""
+    name = source_name(judge)
+    thr = threshold if threshold is not None else PROGRESS_DROP.get(judge)
+    if thr is None:
+        return _all_skipped(episodes, f"还没在开发数据上给 {name} 定「进度回落」的阈值")
+    found: Found = {}
+    skipped: Skipped = {}
+    for ep in episodes:
+        c = curves.get(ep.id)
+        if c is None:
+            skipped[ep.id] = f"缓存里没有 {name} 对这条示范的结果"
+            continue
+        d, t0, t1, hi, lo = drawdown(c)
+        if d > thr:
+            found[ep.id] = [Finding(
+                check="progress_drop", cause=Cause.DROP, t0=t0, t1=t1, score=d,
+                evidence=f"{name}看视频，进度在第 {t0:.1f} 到 {t1:.1f} 秒从 {hi:.0%} 掉到 {lo:.0%}，可能东西掉了或者退回去重做",
+                source=judge,
+            )]
     return found, skipped

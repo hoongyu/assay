@@ -53,3 +53,34 @@ def test_wrong_task_without_threshold_is_not_checked():
     eps = batch()
     found, skipped = wrong_task(eps, {ep.id: curve(0.9) for ep in eps}, "topreward", CheckConfig())
     assert not found and "还没在开发数据上给 TOPReward 定" in skipped["e0"]
+
+
+from jianjin.checks.video import drawdown, progress_drop  # noqa: E402
+
+
+def test_drawdown_finds_biggest_fall_from_running_peak():
+    c = Curve("robometer", "v", [0, 1, 2, 3, 4], [0.1, 0.6, 0.3, 0.7, 0.65])
+    assert drawdown(c) == pytest.approx((0.3, 1.0, 2.0, 0.6, 0.3))
+
+
+def test_drawdown_of_rising_curve_is_zero():
+    assert drawdown(Curve("robometer", "v", [0, 1, 2], [0.1, 0.2, 0.3]))[0] == 0.0
+
+
+def test_progress_drop_reports_where_progress_fell():
+    eps = [make_episode(np.zeros(90), ep_id=f"e{i}") for i in range(2)]
+    curves = {"e0": Curve("robometer", "v", [0, 1, 2], [0.2, 0.8, 0.3]),
+              "e1": Curve("robometer", "v", [0, 1, 2], [0.2, 0.5, 0.9])}
+    found, skipped = progress_drop(eps, curves, "robometer", CheckConfig(), threshold=0.3)
+    (f,) = found["e0"]
+    assert f.cause == Cause.DROP and f.source == "robometer" and (f.t0, f.t1) == (1.0, 2.0)
+    assert "80%" in f.evidence and "30%" in f.evidence
+    assert "e1" not in found and not skipped
+
+
+def test_progress_drop_without_threshold_or_curve():
+    eps = [make_episode(np.zeros(90), ep_id="e0")]
+    _, skipped = progress_drop(eps, {}, "topreward", CheckConfig())
+    assert "还没在开发数据上给 TOPReward 定" in skipped["e0"]
+    _, skipped = progress_drop(eps, {}, "robometer", CheckConfig(), threshold=0.3)
+    assert "缓存里没有" in skipped["e0"]
