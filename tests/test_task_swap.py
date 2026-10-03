@@ -64,6 +64,17 @@ def test_swap_pairs_swap_within_split_and_skip_short(tmp_path):
         assert {orig.task, swapped.task} == {"pick", "stack"}
 
 
+def test_swap_pairs_skip_datasets_without_camera_and_excluded_tasks(tmp_path):
+    """没写相机的（只用关节数据的双臂开发集）不进换描述考卷，也不改变别的示范换到哪个描述；排除的任务也不用。"""
+    root, specs = setup(tmp_path)
+    before = [(o.id, s.task) for o, s, _ in swap_pairs(specs, root, "dev", seed=0)]
+    make_lerobot_v3(local_dir(root, "org/d"), [("pour", moving6(300, i)) for i in range(N_EP)])
+    make_lerobot_v3(local_dir(root, "org/e"), [("fold", moving6(300, i)) for i in range(N_EP)])
+    more = [*specs, DatasetSpec("org/d", "dev", "mit"),
+            DatasetSpec("org/e", "dev", "mit", CAM, exclude_tasks=("fold",))]
+    assert [(o.id, s.task) for o, s, _ in swap_pairs(more, root, "dev", seed=0)] == before
+
+
 def write_curve(cache, ep, cam, progress):
     path = _path(cache, "robometer", ep, cam)
     path.parent.mkdir(parents=True, exist_ok=True)

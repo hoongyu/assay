@@ -21,7 +21,7 @@ class DatasetSpec:
     repo: str
     split: str
     license: str
-    camera: str | None = None  # 给视频评判用的相机；不写就用第一路
+    camera: str | None = None  # 给视频评判用的相机；不写的只用关节数据，不进视频考卷，也不下视频
     exclude_tasks: tuple[str, ...] = ()  # 这些任务不用（比如和测试集同任务的）
 
 
