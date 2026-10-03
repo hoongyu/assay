@@ -49,8 +49,9 @@ WRONG_TASK: dict[str, tuple[str, float]] = {
 
 # 进度回落：模型 -> 阈值。进度从此前最高点往下掉超过这么多就报。
 PROGRESS_DROP: dict[str, float] = {
-    # 2026-10-03 RoboVAD train 上定：正常示范（307 条）进度回落的 95 分位（results/exam_b_episode_train.json）
-    "robometer": 0.3449116051197052,
+    # 2026-10-03 改：去掉回原位那段以后，RoboVAD train 正常示范（307 条）进度回落的 95 分位
+    # （results/exam_b_episode_train.json）。原来不去掉时是 0.345。
+    "robometer": 0.23904454708099365,
 }
 
 
