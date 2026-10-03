@@ -34,3 +34,12 @@ def test_downscales(mp4):
 def test_open_ended_ref(mp4):
     frames, _ = read_clip(VideoRef(mp4, 0.0, None), sample_fps=1.0)
     assert len(frames) == 10
+
+
+from jianjin.video import frames_at  # noqa: E402
+
+
+def test_frames_at_takes_one_frame_per_time(mp4):
+    imgs = frames_at(VideoRef(mp4, 4.0, 6.0), [0.0, 0.5, 1.0], max_side=32)
+    assert imgs.shape == (3, 24, 32, 3)
+    assert [round(float(i.mean())) for i in imgs] == pytest.approx([120, 135, 150], abs=12)  # 第 120、135、150 帧

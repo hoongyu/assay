@@ -49,8 +49,9 @@ WRONG_TASK: dict[str, tuple[str, float]] = {
 
 # 进度回落：模型 -> 阈值。进度从此前最高点往下掉超过这么多就报。
 PROGRESS_DROP: dict[str, float] = {
-    # 2026-10-03 RoboVAD train 上定：正常示范（307 条）进度回落的 95 分位（results/exam_b_episode_train.json）
-    "robometer": 0.3449116051197052,
+    # 2026-10-03 改：去掉回原位那段以后，RoboVAD train 正常示范（307 条）进度回落的 95 分位
+    # （results/exam_b_episode_train.json）。原来不去掉时是 0.345。
+    "robometer": 0.23904454708099365,
 }
 
 
@@ -77,7 +78,7 @@ def wrong_task(episodes: list[Episode], curves: Curves, judge: str, cfg: CheckCo
     groups: dict[str, list[float]] = defaultdict(list)
     for ep in reference if reference is not None else episodes:
         if ep.id in curves:
-            groups[ep.task].append(fn(curves[ep.id]))
+            groups[ep.task].append(fn(clip(curves[ep.id], ep.duration)))
     found: Found = {}
     skipped: Skipped = {}
     for ep in episodes:
@@ -89,10 +90,10 @@ def wrong_task(episodes: list[Episode], curves: Curves, judge: str, cfg: CheckCo
         if len(ref) < cfg.min_task_episodes:
             skipped[ep.id] = f"同任务有 {name} 结果的只有 {len(ref)} 条，少于 {cfg.min_task_episodes} 条，没法比"
             continue
-        z = float(relative([fn(c)], ref)[0])
+        z = float(relative([fn(clip(c, ep.duration))], ref)[0])
         if z <= thr:
             continue
-        value, med = 1.0 - fn(c), 1.0 - float(np.median(ref))
+        value, med = 1.0 - fn(clip(c, ep.duration)), 1.0 - float(np.median(ref))
         found[ep.id] = [Finding(
             check="wrong_task", cause=Cause.WRONG_TASK, t0=0.0, t1=ep.duration, score=z,
             evidence=spaced(f"{SCORE_LABELS[score_name]} {value:.0%}，同任务 {len(ref)} 条示范的中位数是 "
@@ -112,9 +113,46 @@ def drawdown(c: Curve) -> tuple[float, float, float, float, float]:
     return float(run[k] - p[k]), float(t[i]), float(t[k]), float(p[i]), float(p[k])
 
 
+# 回原位那段：关节（不含夹爪）离开头姿态的距离，最后一次不小于全程最远的 RETURN_FROM 倍之后。
+# 手臂收回时进度模型常认不出已经做完（2026-10-03 核视频：叠方块报的 12 条、叠毛巾抽看的 3 条都是），
+# 「进度回落」只看这之前。0.7 在 RoboVAD train 和考卷 A 开发集上选：去掉的那段里不能有标注异常的开头，
+# 满足的取值里开发集原样报出最少（设计文档「核视频」一节）。没回到开头附近的示范，这个时刻落在结尾。
+RETURN_FROM = 0.7
+
+
+def return_start(ep: Episode, frac: float = RETURN_FROM) -> float:
+    """手臂开始回原位的时刻（秒）；没回原位、没动过的，返回整条的时长。"""
+    idx = [i for i, n in enumerate(ep.state_names) if i != ep.gripper_index and "grip" not in n.lower()]
+    if not idx or len(ep.state) == 0:
+        return ep.duration
+    q = ep.state[:, idx]
+    dist = np.nan_to_num(np.linalg.norm(q - q[0], axis=1))
+    far = float(dist.max())
+    if far <= 0:
+        return ep.duration
+    i = int(np.flatnonzero(dist >= frac * far)[-1])
+    return ep.duration if i == len(dist) - 1 else float(ep.timestamps[i])
+
+
+def clip(c: Curve, t_end: float) -> Curve:
+    """只留 t_end 以前（含）的点；一个都不剩时留第一个。"""
+    keep = [i for i, t in enumerate(c.times) if t <= t_end + 1e-6] or [0]
+
+    def pick(xs):
+        return None if xs is None else [xs[i] for i in keep]
+
+    return Curve(c.model, c.version, pick(c.times), pick(c.progress), pick(c.success))
+
+
+def rule_drawdown(ep: Episode, c: Curve) -> tuple[float, float, float, float, float]:
+    """「进度回落」看的那段：关节数据有的时间里，手臂开始回原位以前。"""
+    return drawdown(clip(c, min(ep.duration, return_start(ep))))
+
+
 def progress_drop(episodes: list[Episode], curves: Curves, judge: str, cfg: CheckConfig,
                   reference: list[Episode] | None = None, threshold: float | None = None) -> tuple[Found, Skipped]:
-    """进度突然往回掉：东西掉了，或者退回去重做。不和同任务比，cfg、reference 只为和别的规则同一个签名。"""
+    """进度突然往回掉：东西掉了，或者退回去重做。只看关节数据有的时间里、手臂开始回原位以前（见 RETURN_FROM）。
+    不和同任务比，cfg、reference 只为和别的规则同一个签名。"""
     name = source_name(judge)
     thr = threshold if threshold is not None else PROGRESS_DROP.get(judge)
     if thr is None:
@@ -126,7 +164,7 @@ def progress_drop(episodes: list[Episode], curves: Curves, judge: str, cfg: Chec
         if c is None:
             skipped[ep.id] = f"缓存里没有 {name} 对这条示范的结果"
             continue
-        d, t0, t1, hi, lo = drawdown(c)
+        d, t0, t1, hi, lo = rule_drawdown(ep, c)
         if d > thr:
             found[ep.id] = [Finding(
                 check="progress_drop", cause=Cause.DROP, t0=t0, t1=t1, score=d,

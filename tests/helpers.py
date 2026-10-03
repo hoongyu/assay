@@ -188,6 +188,7 @@ def make_robovad(
 
 def make_mp4(path: Path, n: int = 300, fps: int = 30) -> Path:
     """第 i 帧亮度是 min(i, 255)。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
     with av.open(str(path), "w") as c:
         s = c.add_stream("mpeg4", rate=fps)
         s.width, s.height, s.pix_fmt = 64, 48, "yuv420p"

@@ -42,7 +42,7 @@ def _path(cache_dir: Path, judge_name: str, ep: Episode, camera: str) -> Path:
     return Path(cache_dir) / judge_name / f"{safe}.json"
 
 
-def _pick_camera(ep: Episode, camera: str | None) -> str:
+def pick_camera(ep: Episode, camera: str | None) -> str:
     if not ep.cameras:
         raise NotApplicable("这条示范没有视频")
     if camera is None:
@@ -59,7 +59,7 @@ def _curve(data: dict) -> Curve:
 def load_curve(cache_dir: Path, judge_name: str, ep: Episode, camera: str | None = None) -> Curve | None:
     """有本地视频就核对视频指纹；没有（视频只在 GPU 机器上）就退一步，只核对示范名、相机和任务描述。"""
     if camera is None:
-        camera = _pick_camera(ep, camera)
+        camera = pick_camera(ep, camera)
     path = _path(cache_dir, judge_name, ep, camera)
     if not path.exists():
         return None
@@ -89,7 +89,7 @@ def load_curves(episodes: list[Episode], cache_dir: Path, judge_name: str,
 
 def judge_episode(judge: Judge, ep: Episode, camera: str | None, cache_dir: Path,
                   sample_fps: float = 2.0, max_side: int = 448) -> Curve:
-    camera = _pick_camera(ep, camera)
+    camera = pick_camera(ep, camera)
     path = _path(cache_dir, judge.name, ep, camera)
     key = _key(ep.cameras[camera], ep.task)
     params = {"sample_fps": sample_fps, "max_side": max_side}

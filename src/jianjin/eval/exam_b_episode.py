@@ -2,6 +2,7 @@
 
 阈值在 train 的正常示范上取 95 分位（正常的最多报出 5%）；test 只用 train 定的阈值跑一次。
 test 用 annotations.json 里的标注，不用 evaluation/*.csv（那是逐帧评测的帧清单）。
+规则和 `jianjin check` 里的「进度回落」是同一个函数（去掉回原位那段）。
 """
 
 from __future__ import annotations
@@ -11,7 +12,7 @@ from pathlib import Path
 
 import numpy as np
 
-from jianjin.checks.video import drawdown
+from jianjin.checks.video import rule_drawdown
 from jianjin.diagnose import overlaps
 from jianjin.eval.auc import roc_auc
 from jianjin.eval.exam_b import split_names
@@ -40,7 +41,7 @@ def run_episode_b(root: str | Path, split: str, cache_dir: str | Path = "cache",
         if c is None:
             missing += 1
             continue
-        d, t0, t1, _, _ = drawdown(c)
+        d, t0, t1, _, _ = rule_drawdown(ep, c)
         rows.append((bool(ep.meta["anomalies"]), d, (t0, t1), annotated_seconds(ep)))
     y = np.array([r[0] for r in rows], dtype=bool)
     s = np.array([r[1] for r in rows], dtype=np.float64)

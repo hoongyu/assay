@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 
 from jianjin.checks.batch import end_pose, extra_motion
 from jianjin.checks.config import CheckConfig, NotApplicable
-from jianjin.checks.integrity import missing_values, timestamp_gaps, too_short
+from jianjin.checks.integrity import missing_values, timestamp_gaps, too_short, video_length
 from jianjin.checks.motion import long_pause
 from jianjin.types import Episode, Finding
 
@@ -18,6 +18,7 @@ EPISODE_CHECKS: dict[str, EpisodeCheck] = {
     "missing_values": missing_values,
     "too_short": too_short,
     "timestamp_gaps": timestamp_gaps,
+    "video_length": video_length,
     "long_pause": long_pause,
 }
 

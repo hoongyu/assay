@@ -60,6 +60,8 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:13px;overflow-wrap:an
 .spark svg{width:100%;max-width:440px;height:56px;display:block;background:var(--bg);border-radius:6px}
 .spark polyline{fill:none;stroke:var(--curve);stroke-width:2;vector-effect:non-scaling-stroke}
 .spark rect.mark{opacity:.28}.spark rect.mark.doubt{fill:var(--doubt)}.spark rect.mark.reject{fill:var(--reject)}
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(140px,45%),1fr));gap:6px;margin:10px 0 0;max-width:760px}
+.shots figure{margin:0}.shots img{width:100%;height:auto;display:block;border-radius:6px;background:var(--line)}
 figcaption{color:var(--muted);font-size:12px}
 details{margin-top:8px;color:var(--muted);font-size:13px}
 details ul{margin:4px 0 0;padding-left:18px}
@@ -79,7 +81,7 @@ document.querySelectorAll(".filters button").forEach(function (b) {
 """
 
 FOOTER = (
-    "<footer><p>判定规则：作废是客观硬规则触发（读数缺失、丢帧、示范过短），或者两个独立来源指向同一处问题；"
+    "<footer><p>判定规则：作废是客观硬规则触发（读数缺失、丢帧、示范过短、视频比关节数据短），或者两个独立来源指向同一处问题；"
     "存疑是有发现但够不上作废，要人看；合格是什么都没报。错杀一条好数据比漏掉一条坏数据贵，所以判得偏保守。</p>"
     "<p>没查的项目不当成通过。阈值都在开发数据上定，出处见拣金设计文档。</p></footer>"
 )
@@ -109,8 +111,9 @@ def _funnel(verdicts: list[Verdict]) -> str:
                     f'<em>{_pct(c[lb], n)}</em></div>' for lb in TILES)
     bar = "".join(f'<i class="{CSS_CLASS[lb]}" style="width:{c[lb] / n * 100:.2f}%"></i>'
                   for lb in TILES if n and c[lb])
+    k = c[Label.REJECT]
     note = (f"人工只需要看存疑的 {c[Label.DOUBT]} 条（{_pct(c[Label.DOUBT], n)}）；"
-            f"作废的 {c[Label.REJECT]} 条每条都写了依据。")
+            + (f"作废的 {k} 条每条都写了依据。" if k else "没有作废的。"))
     return f'<section class="funnel"><div class="tiles">{tiles}</div><div class="bar">{bar}</div><p class="note">{note}</p></section>'
 
 
@@ -173,11 +176,23 @@ def _spark(v: Verdict, duration: float) -> str:
     marks = "".join(
         f'<rect class="mark {CSS_CLASS[v.label]}" x="{x(f.t0):.1f}" y="0" width="{max(x(f.t1) - x(f.t0), 2.0):.1f}" height="{h}"/>'
         for f in v.causes)
-    pts = " ".join(f"{x(t):.1f},{y(p):.1f}" for t, p in zip(c.times, c.progress))
+    pts = " ".join(f"{x(t):.1f},{y(p):.1f}" for t, p in zip(c.times, c.progress) if t <= duration + 1e-6)
     name = f"{source_name(c.model)} 的进度曲线"
     return (f'<figure class="spark"><svg viewBox="0 0 {w} {h}" preserveAspectRatio="none" role="img" '
             f'aria-label="{escape(name)}">{marks}<polyline points="{pts}"/></svg>'
             f'<figcaption>{escape(name)}，横轴 0 到 {duration:.1f} 秒，色块是报出问题的时间段</figcaption></figure>')
+
+
+def _shots(shots: list[tuple[float, str]], duration: float) -> str:
+    if not shots:
+        return ""
+
+    def when(t: float) -> str:
+        return f"第 {t:.1f} 秒" + ("（关节数据之后）" if t > duration + 1e-6 else "")
+
+    figs = "".join(f'<figure><img src="{uri}" alt="{when(t)}的画面" loading="lazy">'
+                   f'<figcaption>{when(t)}</figcaption></figure>' for t, uri in shots)
+    return f'<div class="shots">{figs}</div>'
 
 
 def _finding(f: Finding, duration: float) -> str:
@@ -187,7 +202,7 @@ def _finding(f: Finding, duration: float) -> str:
             f'<span class="src">{escape(source_name(f.source))}</span>{escape(f.evidence)}</li>')
 
 
-def _card(v: Verdict, ep: Episode) -> str:
+def _card(v: Verdict, ep: Episode, shots=()) -> str:
     cls = CSS_CLASS[v.label]
     parts = [f'<article class="card {cls}" data-label="{v.label.value}">',
              f'<div class="head"><span class="badge {cls}">{v.label.value}</span><code>{escape(v.episode_id)}</code>'
@@ -195,6 +210,7 @@ def _card(v: Verdict, ep: Episode) -> str:
     if v.reasons:
         parts.append('<ul class="reasons">' + "".join(f"<li>{escape(r)}</li>" for r in v.reasons) + "</ul>")
     parts.append(_spark(v, ep.duration))
+    parts.append(_shots(list(shots), ep.duration))
     if v.causes:
         parts.append('<ul class="findings">' + "".join(_finding(f, ep.duration) for f in v.causes) + "</ul>")
     if v.not_checked:
@@ -204,26 +220,27 @@ def _card(v: Verdict, ep: Episode) -> str:
     return "".join(parts)
 
 
-def _cards(verdicts: list[Verdict], episodes: list[Episode]) -> str:
+def _cards(verdicts: list[Verdict], episodes: list[Episode], shots=None) -> str:
     by_id = {ep.id: ep for ep in episodes}
     c = Counter(v.label for v in verdicts)
     buttons = [f'<button type="button" data-f="all" class="on">全部 {len(verdicts)}</button>'] + [
         f'<button type="button" data-f="{lb.value}">{lb.value} {c[lb]}</button>' for lb in ORDER]
     ordered = sorted(verdicts, key=lambda v: ORDER.index(v.label))  # 稳定排序：同一类里保持原来的顺序
-    cards = "".join(_card(v, by_id[v.episode_id]) for v in ordered)
+    cards = "".join(_card(v, by_id[v.episode_id], (shots or {}).get(v.episode_id, ())) for v in ordered)
     return (f'<section><h2>每条示范</h2><nav class="filters">{"".join(buttons)}</nav>'
             f'<div class="cards">{cards}</div></section>')
 
 
 def render(verdicts: list[Verdict], episodes: list[Episode], *, title: str, judges=(), failures=(),
-           generated: str = "") -> str:
+           generated: str = "", shots=None) -> str:
+    """shots：{示范 id: [(秒, 图片 data URI)]}，给存疑、作废的体检单配画面；不给就不配。"""
     body = "".join([
         _header(title, len(verdicts), list(judges), generated),
         _funnel(verdicts),
         _causes(verdicts),
         _operators(verdicts, episodes),
         _failures(list(failures)),
-        _cards(verdicts, episodes),
+        _cards(verdicts, episodes, shots),
         FOOTER,
     ])
     return ('<!doctype html>\n<html lang="zh-CN"><head><meta charset="utf-8">'

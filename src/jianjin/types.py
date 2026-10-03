@@ -70,7 +70,7 @@ class Finding:
     source: str = "joints"  # 哪个独立来源：关节规则记 joints，视频评判记模型名
 
 
-SOURCE_NAMES = {"joints": "关节", "robometer": "Robometer", "topreward": "TOPReward"}
+SOURCE_NAMES = {"joints": "关节", "meta": "元数据", "robometer": "Robometer", "topreward": "TOPReward"}
 
 
 def source_name(source: str) -> str:

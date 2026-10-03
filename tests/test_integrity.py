@@ -58,3 +58,55 @@ def test_timestamp_going_backwards_is_a_gap():
     ts[50] = ts[48]
     ep.timestamps = ts
     assert len(timestamp_gaps(ep, CFG)) >= 1
+
+
+from pathlib import Path  # noqa: E402
+
+import pytest  # noqa: E402
+
+from jianjin.checks.config import NotApplicable  # noqa: E402
+from jianjin.checks.integrity import video_length  # noqa: E402
+from jianjin.types import VideoRef  # noqa: E402
+
+
+def with_videos(ep, **lengths):
+    """lengths：相机名 -> 元数据里的视频时长（秒），None 是没写。"""
+    ep.cameras = {cam: VideoRef(Path(f"{cam}.mp4"), 10.0, None if n is None else 10.0 + n)
+                  for cam, n in lengths.items()}
+    return ep
+
+
+def test_video_as_long_as_joints_is_fine():
+    ep = with_videos(make_episode(ramp()), top=3.0, wrist=3.0 + 1.0 / 30)  # 差一帧以内不算
+    assert video_length(ep, CFG) == []
+
+
+def test_video_longer_than_joints_needs_a_look():
+    ep = with_videos(make_episode(ramp()), top=11.1, wrist=11.1)
+    (f,) = video_length(ep, CFG)
+    assert f.cause is Cause.DATA_ERROR and not f.hard and f.source == "meta"
+    assert (f.t0, f.t1) == (0.0, ep.duration)
+    assert "长 8.1 秒" in f.evidence and "2 路相机都这样" in f.evidence
+
+
+def test_video_shorter_than_joints_is_hard():
+    ep = with_videos(make_episode(ramp()), top=2.0, wrist=3.0)
+    (f,) = video_length(ep, CFG)
+    assert f.hard and "短 1.0 秒" in f.evidence and "top" in f.evidence
+    assert f.t0 == pytest.approx(2.0) and f.t1 == pytest.approx(3.0)
+
+
+def test_unknown_video_length_is_not_checked():
+    with pytest.raises(NotApplicable):
+        video_length(with_videos(make_episode(ramp()), left=None), CFG)
+
+
+def test_no_video_nothing_to_compare():
+    assert video_length(make_episode(ramp()), CFG) == []
+
+
+def test_runner_runs_video_length():
+    from jianjin.checks import run_checks
+
+    (r,) = run_checks([with_videos(make_episode(ramp()), top=11.1)])
+    assert [f.check for f in r.findings] == ["video_length"]
