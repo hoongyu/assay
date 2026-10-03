@@ -173,7 +173,7 @@ def _spark(v: Verdict, duration: float) -> str:
     marks = "".join(
         f'<rect class="mark {CSS_CLASS[v.label]}" x="{x(f.t0):.1f}" y="0" width="{max(x(f.t1) - x(f.t0), 2.0):.1f}" height="{h}"/>'
         for f in v.causes)
-    pts = " ".join(f"{x(t):.1f},{y(p):.1f}" for t, p in zip(c.times, c.progress))
+    pts = " ".join(f"{x(t):.1f},{y(p):.1f}" for t, p in zip(c.times, c.progress) if t <= duration + 1e-6)
     name = f"{source_name(c.model)} 的进度曲线"
     return (f'<figure class="spark"><svg viewBox="0 0 {w} {h}" preserveAspectRatio="none" role="img" '
             f'aria-label="{escape(name)}">{marks}<polyline points="{pts}"/></svg>'

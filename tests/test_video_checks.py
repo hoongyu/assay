@@ -84,3 +84,55 @@ def test_progress_drop_without_threshold_or_curve():
     assert "还没在开发数据上给 TOPReward 定" in skipped["e0"]
     _, skipped = progress_drop(eps, {}, "robometer", CheckConfig(), threshold=0.3)
     assert "缓存里没有" in skipped["e0"]
+
+
+from jianjin.checks.video import clip, return_start  # noqa: E402
+
+
+def out_and_back():
+    """0 到 1 秒走到远处，1 到 2 秒停住，2 到 3 秒走回开头的姿态；夹爪不动。"""
+    x = np.concatenate([np.linspace(0, 1, 30), np.ones(30), np.linspace(1, 0, 30)])
+    return make_episode(np.stack([x, x, np.zeros(90)], axis=1), names=["j0", "j1", "gripper"])
+
+
+def test_return_start_is_last_time_far_from_start_pose():
+    # 离开头姿态的距离正比于 x；最后一次不小于最远的 0.7 倍是第 68 帧（x = 1 - 8/29）
+    assert return_start(out_and_back()) == pytest.approx(68 / 30)
+
+
+def test_return_start_without_coming_back_is_episode_end():
+    ep = make_episode(np.tile(np.linspace(0, 1, 90)[:, None], (1, 2)))  # 一路走远，不回来
+    assert return_start(ep) == ep.duration
+
+
+def test_return_start_ignores_gripper():
+    ep = make_episode(np.stack([np.zeros(90), np.linspace(0, 1, 90)], axis=1), names=["j0", "gripper"])
+    assert return_start(ep) == ep.duration
+
+
+def test_clip_keeps_points_up_to_end():
+    c = Curve("robometer", "v", [0, 1, 2, 3], [0.1, 0.2, 0.3, 0.4], [0.0, 0.1, 0.2, 0.3])
+    k = clip(c, 2.0)
+    assert (k.times, k.progress, k.success) == ([0, 1, 2], [0.1, 0.2, 0.3], [0.0, 0.1, 0.2])
+    assert clip(c, -1.0).times == [0]
+
+
+def test_progress_drop_ignores_fall_while_returning_home():
+    ep = out_and_back()
+    home = Curve("robometer", "v", [0, 1, 2, 2.5, 3], [0.1, 0.5, 0.9, 0.4, 0.2])  # 2.27 秒开始回原位以后才掉
+    early = Curve("robometer", "v", [0, 1, 1.5, 2, 3], [0.1, 0.9, 0.3, 0.5, 0.2])  # 还在远处就掉了
+    found, _ = progress_drop([ep], {ep.id: home}, "robometer", CheckConfig(), threshold=0.3)
+    assert not found
+    found, _ = progress_drop([ep], {ep.id: early}, "robometer", CheckConfig(), threshold=0.3)
+    assert (found[ep.id][0].t0, found[ep.id][0].t1) == (1.0, 1.5)
+
+
+def test_video_rules_ignore_curve_past_joint_data():
+    eps = batch()  # 每条 10 秒，关节不动
+    curves = {ep.id: curve(0.9) for ep in eps}
+    curves["e0"] = Curve("robometer", "v", [0.0, 5.0, 10.0, 14.0], [0.1, 0.2, 0.3, 0.95])  # 高点在关节数据以外
+    found, _ = wrong_task(eps, curves, "robometer", CheckConfig())
+    assert list(found) == ["e0"]
+    late_drop = {"e1": Curve("robometer", "v", [0.0, 5.0, 10.0, 12.0], [0.1, 0.5, 0.9, 0.1])}
+    found, _ = progress_drop([eps[1]], late_drop, "robometer", CheckConfig(), threshold=0.3)
+    assert not found

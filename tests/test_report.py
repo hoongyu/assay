@@ -81,3 +81,12 @@ def test_short_episode_duration_keeps_two_decimals():
     v = diagnose("ds/tiny", ep.duration, [], {}, None)
     html = render([v], [ep], title="ds")
     assert '<span class="dur">0.03 秒</span>' in html
+
+
+def test_curve_drawn_only_within_joint_data():
+    vs, eps = small()
+    vs[2].progress = Curve("robometer", "v", [0.0, 1.5, 3.0, 5.0], [0.1, 0.5, 0.9, 0.2])  # 第 5 秒在示范以外
+    html = render([vs[2]], [eps[2]], title="ds")
+    assert html.count('<polyline points="') == 1
+    pts = html.split('<polyline points="')[1].split('"')[0].split()
+    assert len(pts) == 3
