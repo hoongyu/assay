@@ -4,7 +4,8 @@
 dev 上选分数、定阈值（原样示范报出不超过 5%）；test 只用 dev 定下的分数和阈值跑一次。
 选分数看的是「原样报出不超过 5% 时能检出多少」，不看 AUC：我们只在这个工作点上用它。
 
-rel_ 开头的分数和同一任务描述下那批原样示范比（中位数、四分位距），和考卷 A 的批次规则一个思路。
+rel_ 开头的分数和同一任务描述下那批原样示范比（中位数、四分位距，下限见 checks/video.py 的 SPREAD_FLOOR），
+和考卷 A 的批次规则一个思路。分数定义和换算都在 checks/video.py，拣金判「指令不符」用的是同一套。
 2026-10-03 在 dev 上看到：不同任务的进度高低本来就差很多（「放进盒子」最高进度挤在 0.92 到 0.94，
 「叠方块」散在 0.72 到 0.91），换了描述只让进度低 0.07 左右，一个绝对阈值只能迁就散的那批。
 这是造出来的错配，不是真实的「做错任务」。
@@ -18,36 +19,18 @@ from pathlib import Path
 import numpy as np
 
 from jianjin.checks import CheckConfig, NotApplicable
+from jianjin.checks.video import BASE_SCORES, relative
 from jianjin.eval.auc import roc_auc
 from jianjin.eval.exam_a import MIN_INJECT_S, DatasetSpec, local_dir
 from jianjin.eval.inject import swap_task
 from jianjin.eval.metrics import wilson
 from jianjin.ingest import load
-from jianjin.judges.base import Curve
 from jianjin.judges.cache import load_curve
 from jianjin.types import Episode
 
 CLEAN_FLAG_MAX = 0.05
-REL_SPREAD_FLOOR = 0.01  # 进度的 1 个百分点：一批太齐时，别把一点小差别放大成异常
 MIN_BATCH = CheckConfig().min_task_episodes  # 同任务比较至少要这么多条原样示范
 
-
-def _tail(x: list[float], k: int = 3) -> float:
-    return float(np.mean(x[-k:]))
-
-
-def _success_end(c: Curve) -> float:
-    if c.success is None:
-        raise NotApplicable(f"{c.model} 不给成功概率")
-    return 1.0 - _tail(c.success)
-
-
-BASE_SCORES = {
-    "end": lambda c: 1.0 - _tail(c.progress),       # 结尾进度低
-    "peak": lambda c: 1.0 - float(max(c.progress)),  # 全程最高进度低
-    "mean": lambda c: 1.0 - float(np.mean(c.progress)),
-    "success": _success_end,                         # 结尾成功概率低
-}
 SCORE_NAMES = [*BASE_SCORES, *(f"rel_{k}" for k in BASE_SCORES)]
 
 
@@ -59,10 +42,8 @@ def _relative(clean: np.ndarray, bad: np.ndarray, clean_tasks: np.ndarray,
         ref = clean[clean_tasks == t]
         if len(ref) < MIN_BATCH:
             raise NotApplicable(f"任务「{t}」只有 {len(ref)} 条原样示范，不够同任务比较")
-        med = float(np.median(ref))
-        spread = max(float(np.subtract(*np.percentile(ref, [75, 25]))), REL_SPREAD_FLOOR)
-        rc[clean_tasks == t] = (clean[clean_tasks == t] - med) / spread
-        rb[bad_tasks == t] = (bad[bad_tasks == t] - med) / spread
+        rc[clean_tasks == t] = relative(clean[clean_tasks == t], ref)
+        rb[bad_tasks == t] = relative(bad[bad_tasks == t], ref)
     return rc, rb
 
 

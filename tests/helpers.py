@@ -198,3 +198,21 @@ def make_mp4(path: Path, n: int = 300, fps: int = 30) -> Path:
         for p in s.encode():
             c.mux(p)
     return path
+
+
+# ---- 缓存的进度曲线 ----
+
+
+def write_cached_curve(cache: Path, ep: Episode, camera: str, progress: list[float],
+                       judge: str = "robometer", times: list[float] | None = None,
+                       success: list[float] | None = None) -> Path:
+    """直接写一份缓存 JSON，形状和 judge_episode 写的一样（本机没视频时按示范名和任务描述认）。"""
+    from jianjin.judges.cache import _path
+
+    path = _path(cache, judge, ep, camera)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    times = times if times is not None else list(np.linspace(0, ep.duration, len(progress)))
+    path.write_text(json.dumps({"episode": ep.id, "camera": camera, "task": ep.task, "model": judge,
+                                "version": "test", "times": [float(t) for t in times],
+                                "progress": progress, "success": success}), encoding="utf-8")
+    return path
