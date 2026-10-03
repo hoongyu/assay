@@ -57,15 +57,18 @@ def _row(name: str, clean: np.ndarray, bad: np.ndarray) -> dict:
 
 def swap_pairs(specs: list[DatasetSpec], data_root: str | Path, split: str,
                seed: int = 0) -> list[tuple[Episode, Episode, str]]:
-    """返回（原样，换了描述，相机）。短于 MIN_INJECT_S 秒或没有那路相机的示范不用。"""
+    """返回（原样，换了描述，相机）。短于 MIN_INJECT_S 秒或没有那路相机的示范不用，配置里排除的任务也不用。
+
+    没写相机的数据集（只用关节数据的双臂开发集）整个跳过：它们的元数据里列着相机，但本地没有视频，
+    混进来会改变别的示范换到哪个描述，和已有缓存对不上（2026-10-03 加双臂开发集时漏了这里，同日修）。
+    """
     loaded = []
     for s in specs:
-        if s.split != split:
+        if s.split != split or not s.camera:
             continue
         for ep in load(local_dir(data_root, s.repo)).episodes:
-            cam = s.camera or next(iter(ep.cameras), None)
-            if ep.duration >= MIN_INJECT_S and cam in ep.cameras:
-                loaded.append((ep, cam))
+            if ep.task not in s.exclude_tasks and ep.duration >= MIN_INJECT_S and s.camera in ep.cameras:
+                loaded.append((ep, s.camera))
     pool = sorted({ep.task for ep, _ in loaded})
     rng = np.random.default_rng(seed)
     out = []
