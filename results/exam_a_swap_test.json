@@ -1,0 +1,70 @@
+{
+  "exam": "A·换掉任务描述（同一条视频配别的数据集的任务；造出来的错配，不是真实做错任务）",
+  "split": "test",
+  "judge": "robometer",
+  "seed": 0,
+  "n_candidates": 201,
+  "missing": 0,
+  "n_pairs": 201,
+  "scores": [
+    {
+      "name": "end",
+      "auc": 0.943243979109428,
+      "detected_at_max": 145
+    },
+    {
+      "name": "rel_end",
+      "auc": 0.9903715254572907,
+      "detected_at_max": 188
+    },
+    {
+      "name": "peak",
+      "auc": 0.9333184822157867,
+      "detected_at_max": 149
+    },
+    {
+      "name": "rel_peak",
+      "auc": 0.9806440434642707,
+      "detected_at_max": 186
+    },
+    {
+      "name": "mean",
+      "auc": 0.8321823717234722,
+      "detected_at_max": 145
+    },
+    {
+      "name": "rel_mean",
+      "auc": 0.898170837355511,
+      "detected_at_max": 163
+    },
+    {
+      "name": "success",
+      "auc": 0.9177000569292839,
+      "detected_at_max": 136
+    },
+    {
+      "name": "rel_success",
+      "auc": 0.9788371574961016,
+      "detected_at_max": 159
+    }
+  ],
+  "clean_flag_max": 0.05,
+  "score": "rel_peak",
+  "threshold": 1.5477136091635564,
+  "chosen_on_this_split": false,
+  "detected": 184,
+  "detect_ci": [
+    0.8687385492370332,
+    0.9465255377452986
+  ],
+  "clean_flagged": 10,
+  "clean_flag_ci": [
+    0.02724499386393144,
+    0.08914542683186474
+  ],
+  "tasks": [
+    "Fold the towel in half.",
+    "Put the red cube in the right box and the blue cube in the left box.",
+    "pink lego brick into the transparent box"
+  ]
+}
