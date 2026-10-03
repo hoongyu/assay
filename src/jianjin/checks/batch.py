@@ -10,7 +10,7 @@ from collections import defaultdict
 import numpy as np
 
 from jianjin.checks.config import CheckConfig
-from jianjin.checks.signal import joint_scale, path_length
+from jianjin.checks.signal import excursion, joint_scale, path_length
 from jianjin.types import Cause, Episode, Finding
 
 Found = dict[str, list[Finding]]
@@ -101,6 +101,38 @@ def end_pose(
                 f"最后停的姿态离同任务 {n} 条示范的常见收尾姿态差得远："
                 f"{ep.state_names[j]} 差了 {off[j]:.0%} 个活动幅度，像是没做完就停了"
             ),
+        )
+
+    return _compare(episodes, cfg, reference, summarize, judge)
+
+
+def empty_recording(
+    episodes: list[Episode], cfg: CheckConfig, reference: list[Episode] | None = None
+) -> tuple[Found, Skipped]:
+    """手臂整条几乎没动：离开头姿态最远只到同任务中位数的一小部分，录下的不是示范（空录，或者录的是人在复位）。
+
+    「停顿过长」抓不到这种：它按本条示范自己的活动幅度换算速度，而且不算开头、结尾的静止。
+    2026-10-03 开发集上，空录和复位是 0.001 以下，正常示范在 0.75 以上，阈值取 0.2。
+    """
+
+    def summarize(group):
+        scale = joint_scale(np.concatenate([e.state for e in group]))
+        return scale, float(np.median([excursion(e.state, scale) for e in group]))
+
+    def judge(ep, stat, n):
+        scale, med = stat
+        if med <= 0 or ep.duration < cfg.min_duration_s:  # 过短的已经由「示范过短」判了
+            return None
+        ratio = excursion(ep.state, scale) / med
+        if ratio >= cfg.empty_max:
+            return None
+        return Finding(
+            check="empty_recording",
+            cause=Cause.EMPTY,
+            t0=0.0,
+            t1=ep.duration,
+            score=float(ratio),
+            evidence=f"手臂几乎没动：离开头姿态最远只到同任务 {n} 条示范中位数的 {ratio:.0%}",
         )
 
     return _compare(episodes, cfg, reference, summarize, judge)

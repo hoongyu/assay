@@ -14,6 +14,7 @@ class Cause(StrEnum):
     """失败原因类别，见设计文档第 5 节。"""
 
     INCOMPLETE = "没做完"
+    EMPTY = "空录"
     MISPLACED = "定位不准"
     GRASP_MISS = "夹爪没合上"
     DROP = "物体掉落"

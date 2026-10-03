@@ -94,3 +94,19 @@ def test_reasons_space_latin_names():
     assert spaced("关节和Robometer都报了「多余动作」") == "关节和 Robometer 都报了「多余动作」"
     _, reasons = label_of([f(Cause.LONG_PAUSE, 2, 6), f(Cause.DROP, 5, 7, source="robometer")], DUR)
     assert "、Robometer 报「物体掉落」" in reasons[0]
+
+
+def test_empty_recording_and_wrong_task_agree():
+    empty = f(Cause.EMPTY, 0, DUR)
+    wrong = f(Cause.WRONG_TASK, 0, DUR, source="robometer")
+    label, reasons = label_of([empty, wrong], DUR)
+    assert label == Label.REJECT
+    assert reasons == ["关节报「空录」、Robometer 报「指令不符」，说的都是整条没做指令里的任务"]
+
+
+def test_empty_recording_needs_the_right_partner():
+    empty = f(Cause.EMPTY, 0, DUR)
+    assert label_of([empty], DUR)[0] == Label.DOUBT
+    assert label_of([empty, f(Cause.DATA_ERROR, 0, DUR, source="meta")], DUR)[0] == Label.DOUBT
+    part = f(Cause.EMPTY, 0, 5)  # 不是整条的不算
+    assert label_of([part, f(Cause.WRONG_TASK, 0, DUR, source="robometer")], DUR)[0] == Label.DOUBT

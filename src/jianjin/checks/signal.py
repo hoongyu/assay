@@ -31,6 +31,14 @@ def path_length(state: np.ndarray, scale: np.ndarray) -> float:
     return float(np.nansum(step))
 
 
+def excursion(state: np.ndarray, scale: np.ndarray) -> float:
+    """各关节离开头那一帧最远走了几个活动幅度，取走得最远的那个关节。"""
+    if len(state) < 2:
+        return 0.0
+    d = np.abs(state - state[0]) / scale
+    return float(np.nanmax(d)) if np.isfinite(d).any() else 0.0
+
+
 def runs(mask: np.ndarray) -> list[tuple[int, int]]:
     """mask 里连续为 True 的区段，返回 [start, end) 下标。"""
     if mask.size == 0:

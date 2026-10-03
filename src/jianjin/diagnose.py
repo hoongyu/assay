@@ -3,6 +3,7 @@
 - 作废：客观硬规则触发；或者两个不同来源指向同一处问题。
   「同一处」是时间区间重叠，而且原因相同，或者两条都只占示范的一段。
   只看重叠不够：「指令不符」这类发现覆盖整条示范，和什么都重叠（2026-10-03 改）。
+  整条的「空录」和整条的「指令不符」算同一处问题（2026-10-03 加）。
 - 存疑：有发现，但够不上作废，要人看。
 - 合格：什么都没报。没查的项目记在 not_checked，不当成通过。
 错杀一条好数据比漏掉一条坏数据贵，所以判得偏保守。
@@ -17,7 +18,7 @@ from itertools import combinations
 from jianjin.checks import CheckConfig, run_checks
 from jianjin.checks.video import Curves, run_video_checks
 from jianjin.judges.base import Curve
-from jianjin.types import Episode, Finding, source_name, spaced
+from jianjin.types import Cause, Episode, Finding, source_name, spaced
 
 
 class Label(StrEnum):
@@ -44,10 +45,18 @@ def _whole(f: Finding, duration: float) -> bool:
     return f.t0 <= 0.0 and f.t1 >= duration - 1e-9
 
 
+# 原因不同、但说的是同一件事的：两个来源各报一条，而且都覆盖整条示范，就算指向同一处问题。
+# 关节的「空录」（手臂几乎没动）和视频的「指令不符」（没看到在做这个任务），都是说这条没做指令里的任务。
+SAME_PROBLEM = {frozenset({Cause.EMPTY, Cause.WRONG_TASK}): "整条没做指令里的任务"}
+
+
 def _agree(a: Finding, b: Finding, duration: float) -> bool:
     if a.source == b.source or not overlaps((a.t0, a.t1), (b.t0, b.t1)):
         return False
-    return a.cause == b.cause or not (_whole(a, duration) or _whole(b, duration))
+    whole_a, whole_b = _whole(a, duration), _whole(b, duration)
+    if whole_a and whole_b:
+        return a.cause == b.cause or frozenset({a.cause, b.cause}) in SAME_PROBLEM
+    return a.cause == b.cause or not (whole_a or whole_b)
 
 
 def label_of(findings: list[Finding], duration: float) -> tuple[Label, list[str]]:
@@ -61,6 +70,9 @@ def label_of(findings: list[Finding], duration: float) -> tuple[Label, list[str]
         when = f"第 {max(a.t0, b.t0):.1f} 到 {min(a.t1, b.t1):.1f} 秒"
         if a.cause == b.cause:
             agree.append(f"{source_name(a.source)}和{source_name(b.source)}都报了「{a.cause.value}」，{when}重叠")
+        elif frozenset({a.cause, b.cause}) in SAME_PROBLEM:
+            agree.append(f"{source_name(a.source)}报「{a.cause.value}」、{source_name(b.source)}报「{b.cause.value}」，"
+                         f"说的都是{SAME_PROBLEM[frozenset({a.cause, b.cause})]}")
         else:
             agree.append(f"{source_name(a.source)}报「{a.cause.value}」、{source_name(b.source)}报「{b.cause.value}」，"
                          f"{when}重叠，指向同一处问题")

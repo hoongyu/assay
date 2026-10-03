@@ -59,3 +59,29 @@ def test_reference_used_instead_of_batch():
     assert end_pose(halves, CFG)[0] == {}
     found, _ = end_pose(halves, CFG, reference=good)
     assert set(found) == {f"half{i}" for i in range(5)}
+
+
+from jianjin.checks.batch import empty_recording  # noqa: E402
+
+
+def test_arm_that_never_moved_is_empty_recording():
+    eps = [make_episode(there(), ep_id=f"ok{i}") for i in range(5)]
+    still = np.full(60, 0.3) + np.random.default_rng(0).normal(0, 1e-4, 60)  # 只有读数噪声
+    eps.append(make_episode(still, ep_id="still"))
+    found, skipped = empty_recording(eps, CFG)
+    assert skipped == {} and set(found) == {"still"}
+    (f,) = found["still"]
+    assert f.cause is Cause.EMPTY and not f.hard and (f.t0, f.t1) == (0.0, eps[-1].duration)
+    assert "手臂几乎没动" in f.evidence and f.score < 0.01
+
+
+def test_partial_motion_is_not_empty():
+    eps = [make_episode(there(), ep_id=f"ok{i}") for i in range(5)]
+    eps.append(make_episode(there()[:30], ep_id="half"))  # 走了一半，归「没做完」管
+    assert empty_recording(eps, CFG)[0] == {}
+
+
+def test_too_short_left_to_hard_rule():
+    eps = [make_episode(there(), ep_id=f"ok{i}") for i in range(5)]
+    eps.append(make_episode(np.zeros(10), ep_id="tiny"))  # 0.33 秒，「示范过短」已经判了
+    assert empty_recording(eps, CFG)[0] == {}
