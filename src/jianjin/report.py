@@ -89,6 +89,10 @@ def _pct(k: int, n: int) -> str:
     return f"{k / n:.0%}" if n else "—"
 
 
+def _dur(seconds: float) -> str:
+    return f"{seconds:.1f} 秒" if seconds >= 1 else f"{seconds:.2f} 秒"  # 过短的示范别显示成 0.0 秒
+
+
 def _header(title: str, n: int, judges: list[str], generated: str) -> str:
     checked = "关节体检" + (f"；视频评判：{'、'.join(source_name(j) for j in judges)}" if judges else "")
     when = f" · 生成于 {escape(generated)}" if generated else ""
@@ -187,7 +191,7 @@ def _card(v: Verdict, ep: Episode) -> str:
     cls = CSS_CLASS[v.label]
     parts = [f'<article class="card {cls}" data-label="{v.label.value}">',
              f'<div class="head"><span class="badge {cls}">{v.label.value}</span><code>{escape(v.episode_id)}</code>'
-             f'<span class="task">{escape(ep.task)}</span><span class="dur">{ep.duration:.1f} 秒</span></div>']
+             f'<span class="task">{escape(ep.task)}</span><span class="dur">{_dur(ep.duration)}</span></div>']
     if v.reasons:
         parts.append('<ul class="reasons">' + "".join(f"<li>{escape(r)}</li>" for r in v.reasons) + "</ul>")
     parts.append(_spark(v, ep.duration))

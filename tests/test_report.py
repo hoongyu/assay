@@ -74,3 +74,10 @@ def test_whole_episode_finding_says_whole():
     vs[2] = diagnose("ds/ep2", 3.0, [whole], {}, None)
     html = render(vs, eps, title="ds")
     assert '<span class="when">整条</span>' in html and "第 0.0 到 3.0 秒" not in html
+
+
+def test_short_episode_duration_keeps_two_decimals():
+    ep = make_episode(np.zeros(1), ep_id="ds/tiny")
+    v = diagnose("ds/tiny", ep.duration, [], {}, None)
+    html = render([v], [ep], title="ds")
+    assert '<span class="dur">0.03 秒</span>' in html
