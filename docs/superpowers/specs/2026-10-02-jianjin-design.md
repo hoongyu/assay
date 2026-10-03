@@ -242,6 +242,25 @@ test 用「Robometer 进度往回掉」只跑了一次。和论文表 II 的 9 �
 - 单条示范的例子：`h_pickandplace_ep9` 的掉落标在第 3.9 到 4.5 秒，Robometer 的进度在第 4 秒附近从 0.61 掉到 0.41。同一批里正常的 `h_pickandplace_ep16` 开头也有一次 0.26 到 0.22 的小回落，这是误报的来源。
 - 缓存（996 个 JSON）在 `cache/robometer/`，不进仓库；成绩在 `results/exam_b_*_robometer_drop.json`。
 
+#### 第三批结果：关节加速度和视频融合（2026-10-03，没采用）
+
+- 做法：Robometer 进度回落（drop）和关节加速度（accel）各按 train 全部帧的中位数、四分位距定尺度，等权相加。没看标签。两样都是 train 上各自那一类里最好的；权重定成等权，没调。
+- 先试过每条示范各自标准化再相加：train 上 micro 从 0.700 掉到 0.643，因为抹掉了条与条之间的差别。否决。
+- train（367 条）：micro 0.700 → 0.720，macro 0.658 → 0.708。
+- test 只跑了一次（micro/macro，括号里是只用视频）：
+
+| 设置 | 融合 | 只用视频 | 融合在 10 个方法里排 |
+|---|---|---|---|
+| in_domain | 67.5/67.3 | 66.9/65.6 | 4 |
+| cross_anomaly | 58.4/60.8 | 68.4/67.0 | 4 |
+| cross_task | 66.8/69.9 | 60.2/60.2 | 4 |
+| cross_task+anomaly | 54.4/55.3 | 56.4/53.9 | 8 |
+
+- 结论：异常类型在 train 里见过的设置（in_domain、cross_task）融合更好，cross_task 涨 6.6；异常类型没见过的两个设置变差，cross_anomaly 掉 10.0。四个设置的 micro 平均：融合 61.8，只用视频 63.0。
+- 解释：加速度只对 train 里有的那几类异常（撞击之类）管用，换成新类型就成了噪声。这和 2a 看到的现象一致：加速度在 validation 上 AUC 只有 0.33，在 train 上是 0.62，换一批数据方向就会变。
+- 决定：考卷 B 的主成绩仍用「只用视频」。融合留作打分器 `fuse:video:robometer:drop+accel`，不作默认。路演可以说「关节信号在见过的异常类型上能补视频，换新类型就失效」。
+- 成绩在 `results/exam_b_{train,test}_fuse.json`。test 上已经看过融合的结果，以后不能再拿 test 挑融合方式。
+
 ### 考卷 C：RoboMIND 失败示范（拿得到才做）
 
 - 论文说有 5,000 条真实失败示范，每条都标了原因。Hugging Face 上的版本是 Apache-2.0 授权，要同意共享联系方式才能下载，总共 12.3 TB，目录里只看到 `success_episodes`。
