@@ -3,6 +3,8 @@ name = "jianjin"
 version = "0.1.0"
 description = "数采场示范数据的自动质检"
 requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 dependencies = ["numpy>=2.0", "h5py>=3.11", "pyarrow>=17", "av>=13"]
 
 [project.optional-dependencies]
