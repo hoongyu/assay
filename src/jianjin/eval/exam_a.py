@@ -21,11 +21,12 @@ class DatasetSpec:
     repo: str
     split: str
     license: str
+    camera: str | None = None  # 给视频评判用的相机；不写就用第一路
 
 
 def load_config(path: str | Path) -> list[DatasetSpec]:
     data = tomllib.loads(Path(path).read_text(encoding="utf-8"))
-    return [DatasetSpec(d["repo"], d["split"], d["license"]) for d in data["dataset"]]
+    return [DatasetSpec(d["repo"], d["split"], d["license"], d.get("camera")) for d in data["dataset"]]
 
 
 def local_dir(data_root: str | Path, repo: str) -> Path:

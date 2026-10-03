@@ -53,6 +53,18 @@ def insert_pause(ep: Episode, rng: np.random.Generator) -> tuple[Episode, Defect
     return new, Defect("insert_pause", Cause.LONG_PAUSE, k / ep.fps, (k + hold) / ep.fps)
 
 
+def swap_task(ep: Episode, rng: np.random.Generator, pool: list[str]) -> tuple[Episode, Defect]:
+    """换成别的任务描述，关节和视频不动，对应「做的不是这个任务」。只有视频评判查得出来。"""
+    others = sorted(t for t in set(pool) if t != ep.task)
+    if not others:
+        raise ValueError(f"任务池里除了「{ep.task}」没有别的任务")
+    task = others[int(rng.integers(len(others)))]
+    new = replace(ep, id=f"{ep.id}+swap_task", task=task,
+                  meta={**ep.meta, "injected": "swap_task", "original_task": ep.task})
+    return new, Defect("swap_task", Cause.WRONG_TASK, 0.0, ep.duration)
+
+
+# 只动关节数据的注入；swap_task 要任务池和视频评判，单独在 task_swap.py 里跑
 INJECTORS = {
     "truncate_end": truncate_end,
     "insert_pause": insert_pause,
