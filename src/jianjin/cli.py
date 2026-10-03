@@ -51,7 +51,7 @@ def _cmd_eval(args: argparse.Namespace) -> int:
         from jianjin.eval.exam_b import format_table, run_exam_b
 
         split = args.split or "validation"
-        out = run_exam_b(args.robovad_root, split, args.scorer)
+        out = run_exam_b(args.robovad_root, split, args.scorer, cache_dir=args.cache, camera=args.camera)
     print(format_table(out))
     path = Path(args.out or f"results/exam_{args.exam}_{split}.json")
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -74,6 +74,35 @@ def _cmd_fetch(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_judge(args: argparse.Namespace) -> int:
+    from jianjin.checks import NotApplicable
+    from jianjin.judges import JUDGES
+    from jianjin.judges.cache import judge_episode
+
+    judge = JUDGES[args.judge]()
+    if args.what == "robovad":
+        from jianjin.eval.exam_b import split_names
+        from jianjin.ingest.robovad import read_robovad
+
+        names = [n for s in args.split.split(",") for n in split_names(Path(args.robovad_root), s)]
+        episodes = read_robovad(args.robovad_root, names=names).episodes
+    else:
+        episodes = load(args.what).episodes
+    if args.limit:
+        episodes = episodes[: args.limit]
+    done = skipped = 0
+    for i, ep in enumerate(episodes, 1):
+        try:
+            judge_episode(judge, ep, args.camera, Path(args.cache), sample_fps=args.sample_fps, max_side=args.max_side)
+            done += 1
+        except NotApplicable as exc:
+            skipped += 1
+            print(f"  跳过 {ep.id}：{exc}")
+        if i % 10 == 0 or i == len(episodes):
+            print(f"{i}/{len(episodes)}，完成 {done}，跳过 {skipped}", flush=True)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="jianjin", description="数采场示范数据的自动质检")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -87,8 +116,10 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--config", default="configs/exam_a.toml")
     e.add_argument("--data-root", default="data")
     e.add_argument("--robovad-root", default="data/robovad")
-    e.add_argument("--split", choices=["dev", "test", "validation"], default=None)
+    e.add_argument("--split", choices=["dev", "test", "train", "validation"], default=None)
     e.add_argument("--scorer", default="tracking")
+    e.add_argument("--cache", default="cache")
+    e.add_argument("--camera", default=None)
     e.add_argument("--seed", type=int, default=0)
     e.add_argument("--out", default=None)
     e.set_defaults(func=_cmd_eval)
@@ -99,6 +130,18 @@ def build_parser() -> argparse.ArgumentParser:
     f.add_argument("--data-root", default="data")
     f.add_argument("--videos", action="store_true", help="连视频一起下")
     f.set_defaults(func=_cmd_fetch)
+
+    j = sub.add_parser("judge", help="在有 GPU 的机器上跑视频评判，结果写进缓存")
+    j.add_argument("what", help="robovad，或者一个数据集路径")
+    j.add_argument("--judge", default="robometer")
+    j.add_argument("--robovad-root", default="data/robovad")
+    j.add_argument("--split", default="train", help="robovad 的划分，逗号分隔，如 train,test")
+    j.add_argument("--camera", default=None)
+    j.add_argument("--cache", default="cache")
+    j.add_argument("--sample-fps", type=float, default=2.0)
+    j.add_argument("--max-side", type=int, default=448)
+    j.add_argument("--limit", type=int, default=0)
+    j.set_defaults(func=_cmd_judge)
     return p
 
 

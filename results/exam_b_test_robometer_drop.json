@@ -1,0 +1,57 @@
+{
+  "exam": "B（RoboVAD 帧级异常检测；拣金零样本，不在 RoboVAD 上训练）",
+  "split": "test",
+  "scorer": "video:robometer:drop",
+  "camera": "left",
+  "read_failures": [],
+  "results": [
+    {
+      "setting": "in_domain",
+      "n_episodes": 259,
+      "n_frames": 196033,
+      "n_anomalous": 7985,
+      "micro_auc": 0.6686754530251965,
+      "macro_auc": 0.655809705242492,
+      "n_macro_episodes": 193,
+      "missing_episodes": [],
+      "not_applicable": [],
+      "missing_frames": 0
+    },
+    {
+      "setting": "cross_anomaly",
+      "n_episodes": 297,
+      "n_frames": 220291,
+      "n_anomalous": 11245,
+      "micro_auc": 0.6839165736495108,
+      "macro_auc": 0.6703057173979232,
+      "n_macro_episodes": 231,
+      "missing_episodes": [],
+      "not_applicable": [],
+      "missing_frames": 0
+    },
+    {
+      "setting": "cross_task",
+      "n_episodes": 308,
+      "n_frames": 176815,
+      "n_anomalous": 5761,
+      "micro_auc": 0.6024446622634329,
+      "macro_auc": 0.601526408199678,
+      "n_macro_episodes": 132,
+      "missing_episodes": [],
+      "not_applicable": [],
+      "missing_frames": 0
+    },
+    {
+      "setting": "cross_task+anomaly",
+      "n_episodes": 283,
+      "n_frames": 163281,
+      "n_anomalous": 6094,
+      "micro_auc": 0.5635376243742836,
+      "macro_auc": 0.5388473082345032,
+      "n_macro_episodes": 107,
+      "missing_episodes": [],
+      "not_applicable": [],
+      "missing_frames": 0
+    }
+  ]
+}
