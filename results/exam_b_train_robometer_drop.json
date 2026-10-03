@@ -1,0 +1,21 @@
+{
+  "exam": "B（RoboVAD 帧级异常检测；拣金零样本，不在 RoboVAD 上训练）",
+  "split": "train",
+  "scorer": "video:robometer:drop",
+  "camera": "left",
+  "read_failures": [],
+  "results": [
+    {
+      "setting": "train",
+      "n_episodes": 367,
+      "n_frames": 163445,
+      "n_anomalous": 2233,
+      "micro_auc": 0.6995893464263022,
+      "macro_auc": 0.6579731363058113,
+      "n_macro_episodes": 60,
+      "missing_episodes": [],
+      "not_applicable": [],
+      "missing_frames": 0
+    }
+  ]
+}
