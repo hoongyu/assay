@@ -17,6 +17,7 @@ class Cause(StrEnum):
     EMPTY = "空录"
     MISPLACED = "定位不准"
     GRASP_MISS = "夹爪没合上"
+    REGRASP = "二次抓取"
     DROP = "物体掉落"
     EXTRA_MOTION = "多余动作"
     LONG_PAUSE = "停顿过长"

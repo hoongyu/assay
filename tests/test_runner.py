@@ -17,6 +17,7 @@ def test_runner_collects_findings_and_not_checked():
     tiny_causes = {f.check for f in results["tiny"].findings}
     assert "too_short" in tiny_causes
     assert "end_pose" in results["tiny"].not_checked
+    assert "regrasp" in results["paused"].not_checked
 
 
 def test_runner_keeps_input_order():

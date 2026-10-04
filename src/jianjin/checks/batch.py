@@ -6,11 +6,12 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass
 
 import numpy as np
 
 from jianjin.checks.config import CheckConfig, NotApplicable
-from jianjin.checks.signal import excursion, joint_scale, path_length
+from jianjin.checks.signal import excursion, gripper_channels, joint_scale, level_changes, path_length
 from jianjin.types import Cause, Episode, Finding
 
 Found = dict[str, list[Finding]]
@@ -158,3 +159,90 @@ def empty_recording(
         )
 
     return _compare(episodes, cfg, reference, summarize, judge)
+
+
+@dataclass(frozen=True)
+class RegraspScore:
+    """一条示范和参照那批比，多开合了几次（取多出最多的那只手）。"""
+
+    n: int  # 参照那批有几条
+    excess: float  # 开合次数减常见上限
+    channel: str  # 哪只手的夹爪通道
+    count: int  # 开合次数（张开、合上各算一次）
+    upper: float  # 常见上限：参照那批开合次数的 regrasp_quantile 分位
+    times: tuple[float, ...]  # 每次换档的时刻，秒，从示范开头算
+
+
+def _grip(ep: Episode, source: str) -> np.ndarray:
+    """source 是 action、主臂数据在而且宽度和从臂一样，就读主臂；否则读从臂。"""
+    if source == "action" and ep.action is not None and ep.action.shape == ep.state.shape:
+        return ep.action
+    return ep.state
+
+
+def _hand(name: str) -> str:
+    low = name.lower()
+    return "左手夹爪" if "left" in low else ("右手夹爪" if "right" in low else "夹爪")
+
+
+def regrasp_scores(
+    episodes: list[Episode], cfg: CheckConfig, reference: list[Episode] | None = None
+) -> tuple[dict[str, RegraspScore], Skipped]:
+    """每条能比的示范多开合了几次；没法比的写原因。「二次抓取」规则和考卷都用它。"""
+
+    def summarize(group):
+        chans = gripper_channels(group[0].state_names, group[0].gripper_index)
+        if not chans:
+            raise NotApplicable("认不出夹爪通道")
+        stats = {}
+        for c in chans:
+            sig = [_grip(e, cfg.regrasp_source)[:, c] for e in group]
+            lo, hi = np.nanpercentile(np.concatenate(sig), [5, 95])
+            counts = [len(level_changes(s, lo, hi, cfg.grip_band)) for s in sig]
+            if np.median(counts) == 0:  # 这只手基本不用
+                continue
+            stats[c] = (float(lo), float(hi), float(np.quantile(counts, cfg.regrasp_quantile, method="higher")))
+        if not stats:
+            raise NotApplicable(f"同任务 {len(group)} 条示范的夹爪基本不开合，不查二次抓取")
+        return stats
+
+    def judge(ep, stats, n):
+        g = _grip(ep, cfg.regrasp_source)
+        best = None
+        for c, (lo, hi, upper) in stats.items():
+            idx = level_changes(g[:, c], lo, hi, cfg.grip_band)
+            if best is None or len(idx) - upper > best.excess:
+                best = RegraspScore(n, len(idx) - upper, ep.state_names[c], len(idx), upper,
+                                    tuple(i / ep.fps for i in idx))
+        return best
+
+    found, skipped = _compare(episodes, cfg, reference, summarize, judge)
+    return {k: v[0] for k, v in found.items()}, skipped
+
+
+def regrasp(
+    episodes: list[Episode], cfg: CheckConfig, reference: list[Episode] | None = None
+) -> tuple[Found, Skipped]:
+    """夹爪开合次数超过同任务那批的「常见上限 + regrasp_margin」：像是抓了不止一回（二次抓取）。
+
+    次数：读数按参照那批的 5 到 95 分位归一化，两档滞回数换档（signal.level_changes）；常见上限是参照那批
+    开合次数的 regrasp_quantile 分位。时间段写整条示范（和「多余动作」一样），换档时刻写进证据。
+    2026-10-04 加，见 docs/superpowers/specs/2026-10-04-regrasp-design.md。
+    """
+    scores, skipped = regrasp_scores(episodes, cfg, reference)
+    found: Found = {}
+    for ep in episodes:
+        s = scores.get(ep.id)
+        if s is None or s.excess <= cfg.regrasp_margin:
+            continue
+        shown = "、".join(f"{t:.1f}" for t in s.times[:12]) + ("......" if len(s.times) > 12 else "")
+        found[ep.id] = [Finding(
+            check="regrasp",
+            cause=Cause.REGRASP,
+            t0=0.0,
+            t1=ep.duration,
+            score=float(s.excess),
+            evidence=(f"{_hand(s.channel)}开合了 {s.count} 次（张开、合上各算一次），同任务 {s.n} 条示范常见不超过 "
+                      f"{s.upper:.0f} 次，像是抓了不止一回；换档在 {shown} 秒"),
+        )]
+    return found, skipped

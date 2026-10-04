@@ -1,7 +1,10 @@
+from dataclasses import replace
+
 import numpy as np
+import pytest
 
 from helpers import make_episode
-from jianjin.checks.batch import end_pose, extra_motion
+from jianjin.checks.batch import end_pose, extra_motion, regrasp, regrasp_scores
 from jianjin.checks.config import CheckConfig
 from jianjin.types import Cause
 
@@ -112,3 +115,88 @@ def test_batch_without_a_common_end_pose_is_not_checked():
     found, skipped = end_pose(eps, END)
     assert found == {} and len(skipped) == 8
     assert "停下来的姿态本来就不固定" in skipped["r0"]
+
+
+REG = CheckConfig(grip_band=0.15, regrasp_quantile=0.75, regrasp_margin=0, regrasp_source="action")
+
+
+def grip(cycles: int, n: int = 90) -> np.ndarray:
+    """夹爪从合着开始，在 n 帧里开合 cycles 回（张开、合上各换一次档，共 2×cycles 次）。"""
+    g = np.zeros(n)
+    seg = (n - 10) // (2 * cycles) if cycles else 0
+    for k in range(cycles):
+        start = 5 + 2 * k * seg
+        g[start:start + seg] = 1.0
+    return g
+
+
+def grip_ep(cycles, ep_id, action_cycles=None, task="pick the cube"):
+    state = np.column_stack([np.linspace(0, 1, 90), grip(cycles)])
+    action = None if action_cycles is None else np.column_stack([np.linspace(0, 1, 90), grip(action_cycles)])
+    return make_episode(state, ep_id=ep_id, task=task, names=["j0", "gripper"], action=action)
+
+
+def test_regrasp_flags_extra_cycles():
+    eps = [grip_ep(2, f"ok{i}") for i in range(6)] + [grip_ep(4, "again")]
+    found, skipped = regrasp(eps, REG)
+    assert skipped == {} and set(found) == {"again"}
+    f = found["again"][0]
+    assert f.cause is Cause.REGRASP and not f.hard and (f.t0, f.t1) == (0.0, eps[-1].duration)
+    assert f.score == 4 and "开合了 8 次" in f.evidence and "常见不超过 4 次" in f.evidence
+
+
+def test_regrasp_upper_follows_the_batch():
+    """叠方块那种本来 2 到 6 次的批：6 次不报，8 次才报。"""
+    eps = [grip_ep(c, f"e{i}") for i, c in enumerate([1, 2, 2, 3, 3, 3])] + [grip_ep(4, "again")]
+    found, _ = regrasp(eps, REG)
+    assert set(found) == {"again"}
+
+
+def test_regrasp_margin():
+    eps = [grip_ep(2, f"ok{i}") for i in range(6)] + [grip_ep(4, "again")]
+    assert regrasp(eps, replace(REG, regrasp_margin=4))[0] == {}
+    assert set(regrasp(eps, replace(REG, regrasp_margin=3))[0]) == {"again"}
+
+
+def test_regrasp_reads_master_arm_then_falls_back():
+    """从臂夹着东西合不到底，少数了换档；主臂（采集员的手）数得到。没有主臂数据就读从臂。"""
+    eps = [grip_ep(2, f"ok{i}", action_cycles=2) for i in range(6)] + [grip_ep(2, "again", action_cycles=4)]
+    assert set(regrasp(eps, REG)[0]) == {"again"}
+    assert regrasp(eps, replace(REG, regrasp_source="state"))[0] == {}
+    no_action = [grip_ep(2, f"ok{i}") for i in range(6)] + [grip_ep(4, "again")]
+    assert set(regrasp(no_action, REG)[0]) == {"again"}
+
+
+def test_regrasp_not_checked_without_gripper_or_when_unused():
+    plain = [make_episode(there(), ep_id=f"p{i}") for i in range(5)]
+    found, skipped = regrasp(plain, REG)
+    assert found == {} and len(skipped) == 5 and all("认不出夹爪" in w for w in skipped.values())
+    still = [grip_ep(0, f"s{i}") for i in range(5)]
+    found, skipped = regrasp(still, REG)
+    assert found == {} and len(skipped) == 5 and all("基本不开合" in w for w in skipped.values())
+
+
+def test_regrasp_two_hands_counted_separately():
+    def two(left, right, ep_id):
+        s = np.column_stack([np.linspace(0, 1, 90), grip(left), np.linspace(0, 1, 90), grip(right)])
+        return make_episode(s, ep_id=ep_id, names=["left_j0", "left_gripper.pos", "right_j0", "right_gripper.pos"])
+
+    eps = [two(2, 1, f"ok{i}") for i in range(6)] + [two(2, 3, "again")]
+    found, _ = regrasp(eps, REG)
+    assert set(found) == {"again"} and "右手夹爪开合了 6 次" in found["again"][0].evidence
+
+
+def test_regrasp_reference_from_clean_batch():
+    """考卷里整批都重抓了：拿这批自己比看不出来，传原样示范当参照就看得出来。"""
+    bad = [grip_ep(4, f"b{i}") for i in range(6)]
+    clean = [grip_ep(2, f"c{i}") for i in range(6)]
+    assert regrasp(bad, REG)[0] == {}
+    assert set(regrasp(bad, REG, reference=clean)[0]) == {f"b{i}" for i in range(6)}
+
+
+def test_regrasp_scores_cover_unflagged_episodes():
+    eps = [grip_ep(2, f"ok{i}") for i in range(6)] + [grip_ep(4, "again")]
+    scores, skipped = regrasp_scores(eps, REG)
+    assert skipped == {} and len(scores) == 7
+    assert scores["ok0"].excess == 0 and scores["again"].excess == 4 and scores["again"].count == 8
+    assert scores["again"].times[0] == pytest.approx(5 / 30)
