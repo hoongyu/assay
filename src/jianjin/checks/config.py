@@ -33,7 +33,7 @@ class CheckConfig:
     grip_dwell_s: float = 0.2
     regrasp_quantile: float = 0.75  # 参照批开合次数的这个分位当「常见上限」
     # 下面两个 2026-10-04 在 RoboVAD train 上选（results/exam_b_regrasp_train.json）：正常示范最多报出 5% 的前提下，
-    # 抓空和掉落检出最多。主臂、从臂在余量 0、1 时都检出 48/60，从臂正常报出 0/307（主臂 1/307）、AUC 0.898 比 0.887 高；
-    # 余量 0 和 1 打平，取大的。
+    # 抓空和掉落检出最多。主臂、从臂在余量 0、1 时都检出 48/60、正常报出 0/307，从臂 AUC 0.903 比主臂 0.890 高；
+    # 余量 0 和 1 打平，取大的。加最短停留之前（*_v1.json）选的也是这两个。
     regrasp_margin: int = 1  # 开合次数超过「常见上限 + 这么多」才报
     regrasp_source: str = "state"  # 夹爪读主臂（action）还是从臂（state）
