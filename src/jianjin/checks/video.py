@@ -45,6 +45,9 @@ SCORE_LABELS = {"end": "结尾进度", "peak": "全程最高进度", "mean": "�
 WRONG_TASK: dict[str, tuple[str, float]] = {
     # 2026-10-03 考卷 A「换掉任务描述」dev 上定，原样报出不超过 5%（results/exam_a_swap_dev.json）
     "robometer": ("peak", 1.5477136091635564),
+    # 2026-10-04 同上，TOPReward 对话格式（results/exam_a_swap_dev_topreward.json）；
+    # 只在规则能用的 rel_ 分数里选，lerobot 默认格式只有 45/103，没选（设计文档 TOPReward 一节）
+    "topreward": ("success", 3.320597328099884),
 }
 
 # 进度回落：模型 -> 阈值。进度从此前最高点往下掉超过这么多就报。
@@ -52,6 +55,9 @@ PROGRESS_DROP: dict[str, float] = {
     # 2026-10-03 改：去掉回原位那段以后，RoboVAD train 正常示范（307 条）进度回落的 95 分位
     # （results/exam_b_episode_train.json）。原来不去掉时是 0.345。
     "robometer": 0.23904454708099365,
+    # 2026-10-04 TOPReward 对话格式，RoboVAD train 正常示范（307 条）进度回落的 95 分位
+    # （results/exam_b_episode_train_topreward.json）。进度是每条示范里最小最大归一化的，所以阈值高
+    "topreward": 0.7070742137558385,
 }
 
 

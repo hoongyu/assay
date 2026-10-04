@@ -51,8 +51,8 @@ def test_wrong_task_uses_reference_when_given():
 
 def test_wrong_task_without_threshold_is_not_checked():
     eps = batch()
-    found, skipped = wrong_task(eps, {ep.id: curve(0.9) for ep in eps}, "topreward", CheckConfig())
-    assert not found and "还没在开发数据上给 TOPReward 定" in skipped["e0"]
+    found, skipped = wrong_task(eps, {ep.id: curve(0.9) for ep in eps}, "newjudge", CheckConfig())
+    assert not found and "还没在开发数据上给 newjudge 定" in skipped["e0"]
 
 
 from jianjin.checks.video import drawdown, progress_drop  # noqa: E402
@@ -80,8 +80,8 @@ def test_progress_drop_reports_where_progress_fell():
 
 def test_progress_drop_without_threshold_or_curve():
     eps = [make_episode(np.zeros(90), ep_id="e0")]
-    _, skipped = progress_drop(eps, {}, "topreward", CheckConfig())
-    assert "还没在开发数据上给 TOPReward 定" in skipped["e0"]
+    _, skipped = progress_drop(eps, {}, "newjudge", CheckConfig())
+    assert "还没在开发数据上给 newjudge 定" in skipped["e0"]
     _, skipped = progress_drop(eps, {}, "robometer", CheckConfig(), threshold=0.3)
     assert "缓存里没有" in skipped["e0"]
 

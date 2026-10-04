@@ -85,7 +85,24 @@ def test_batch_with_video_rules_and_progress():
     assert v0.label == Label.DOUBT and [f.cause for f in v0.causes] == [Cause.WRONG_TASK]
     assert v0.progress is curves["e0"]
     assert vs[1].label == Label.PASS and "视频评判" not in vs[1].not_checked
-    assert "还没在开发数据上给 TOPReward 定" in vs[1].not_checked["topreward.wrong_task"]
+    assert "缓存里没有 TOPReward" in vs[1].not_checked["topreward.wrong_task"]
+
+
+def test_two_video_judges_agreeing_reject():
+    """两个视频模型都报同一条「指令不符」：判作废（2026-10-04 TOPReward 定了阈值以后才有这条路）。"""
+    eps = smooth_batch()
+    rob = {ep.id: rising(0.9) for ep in eps}
+    rob["e0"] = rising(0.3)
+
+    def top(success):
+        return Curve("topreward", "v", [0.0, 4.0, 8.0], [0.0, 0.5, 1.0], success)
+
+    tr = {ep.id: top([0.5, 0.8, 0.9]) for ep in eps}
+    tr["e0"] = top([0.1, 0.05, 0.05])
+    vs = diagnose_batch(eps, {"robometer": rob, "topreward": tr})
+    assert vs[0].label == Label.REJECT
+    assert sorted(f.source for f in vs[0].causes) == ["robometer", "topreward"]
+    assert all(v.label == Label.PASS for v in vs[1:])
 
 
 def test_reasons_space_latin_names():
