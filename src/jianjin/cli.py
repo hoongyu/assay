@@ -67,6 +67,8 @@ def _cmd_check(args: argparse.Namespace) -> int:
 
 
 def _cmd_eval(args: argparse.Namespace) -> int:
+    # 读视频评判缓存的考卷，不是 Robometer 的成绩文件名带上评判名，免得盖掉 Robometer 的
+    suffix = f"_{args.judge}" if args.exam in ("a-swap", "b-episode") and args.judge != "robometer" else ""
     if args.exam == "b-episode":
         from jianjin.eval.exam_b_episode import format_episode_b, run_episode_b
 
@@ -75,7 +77,7 @@ def _cmd_eval(args: argparse.Namespace) -> int:
         if args.dev_result:
             threshold = json.loads(Path(args.dev_result).read_text(encoding="utf-8"))["threshold"]
         elif split != "train":
-            raise SystemExit("test 要用 train 定的阈值：加 --dev-result results/exam_b_episode_train.json")
+            raise SystemExit(f"test 要用 train 定的阈值：加 --dev-result results/exam_b_episode_train{suffix}.json")
         out = run_episode_b(args.robovad_root, split, args.cache, judge=args.judge,
                             camera=args.camera or "left", threshold=threshold)
         text = format_episode_b(out)
@@ -89,7 +91,7 @@ def _cmd_eval(args: argparse.Namespace) -> int:
             dev = json.loads(Path(args.dev_result).read_text(encoding="utf-8"))
             score, threshold = dev["score"], dev["threshold"]
         elif split != "dev":
-            raise SystemExit("test 要用 dev 定的分数和阈值：加 --dev-result results/exam_a_swap_dev.json")
+            raise SystemExit(f"test 要用 dev 定的分数和阈值：加 --dev-result results/exam_a_swap_dev{suffix}.json")
         out = run_swap(load_config(args.config), args.data_root, split, args.cache,
                        judge=args.judge, score=score, threshold=threshold, seed=args.seed)
         text = format_swap(out)
@@ -106,7 +108,7 @@ def _cmd_eval(args: argparse.Namespace) -> int:
         out = run_exam_b(args.robovad_root, split, args.scorer, cache_dir=args.cache, camera=args.camera)
         text = format_table(out)
     print(text)
-    path = Path(args.out or f"results/exam_{args.exam.replace('-', '_')}_{split}.json")
+    path = Path(args.out or f"results/exam_{args.exam.replace('-', '_')}_{split}{suffix}.json")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"结果写到 {path}")

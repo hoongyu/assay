@@ -136,7 +136,7 @@ def test_relative_score_needs_enough_episodes_per_task(tmp_path):
     assert "peak" in names and not any(n.startswith("rel_") for n in names)
 
 
-def test_judge_then_eval_commands(tmp_path, capsys):
+def test_judge_then_eval_commands(tmp_path, capsys, monkeypatch):
     from helpers import make_mp4
     from jianjin.cli import main
 
@@ -157,6 +157,9 @@ def test_judge_then_eval_commands(tmp_path, capsys):
     assert dev["n_pairs"] == 2 * N_EP and dev["missing"] == 0
     with pytest.raises(SystemExit):
         main(["eval", "a-swap", "--split", "test", *common])
+    monkeypatch.chdir(tmp_path)
+    assert main(["eval", "a-swap", "--judge", "fake", "--split", "dev", *common]) == 0
+    assert (tmp_path / "results" / "exam_a_swap_dev_fake.json").exists()  # 带评判名，免得盖掉 Robometer 的
 
 
 def test_choose_only_scores_the_rule_can_use():
