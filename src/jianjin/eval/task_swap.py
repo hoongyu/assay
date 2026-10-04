@@ -3,6 +3,8 @@
 每对是（原样示范，换了描述的示范），分数越高越像「做的不是这个任务」。
 dev 上选分数、定阈值（原样示范报出不超过 5%）；test 只用 dev 定下的分数和阈值跑一次。
 选分数看的是「原样报出不超过 5% 时能检出多少」，不看 AUC：我们只在这个工作点上用它。
+只在 rel_ 开头的分数里选：拣金判「指令不符」只和同任务那批比，不带 rel_ 的分数规则用不上，只列出来参考
+（2026-10-04 改：TOPReward 对话格式在 dev 上绝对的 success 检出最多，原来的选法会挑中它）。
 
 rel_ 开头的分数和同一任务描述下那批原样示范比（中位数、四分位距，下限见 checks/video.py 的 SPREAD_FLOOR），
 和考卷 A 的批次规则一个思路。分数定义和换算都在 checks/video.py，拣金判「指令不符」用的是同一套。
@@ -53,6 +55,19 @@ def _row(name: str, clean: np.ndarray, bad: np.ndarray) -> dict:
     thr = float(np.quantile(clean, 1 - CLEAN_FLAG_MAX, method="higher")) if len(clean) else math.nan
     return {"name": name, "auc": roc_auc(np.r_[clean, bad], y), "clean": clean, "bad": bad,
             "threshold_at_max": thr, "detected_at_max": int((bad > thr).sum())}
+
+
+def _choose(rows: list[dict]) -> str:
+    """在规则能用的分数（rel_ 开头）里，先比原样报出不超过 5% 时的检出，再比 AUC。一个都没有就返回 rel_end，
+    它不在 rows 里，阈值记 nan、检出 0：这一批规则查不了。"""
+    usable = [r for r in rows if r["name"].startswith("rel_")]
+    if not usable:
+        return "rel_end"
+
+    def rank(r: dict) -> tuple:
+        return (r["detected_at_max"], -1.0 if math.isnan(r["auc"]) else r["auc"])
+
+    return max(usable, key=rank)["name"]
 
 
 def swap_pairs(specs: list[DatasetSpec], data_root: str | Path, split: str,
@@ -111,10 +126,7 @@ def run_swap(specs: list[DatasetSpec], data_root: str | Path, split: str, cache_
 
     chosen_here = score is None
     if chosen_here:
-        def rank(r: dict) -> tuple:
-            return (r["detected_at_max"], -1.0 if math.isnan(r["auc"]) else r["auc"])
-
-        score = max(rows, key=rank)["name"] if rows else "end"
+        score = _choose(rows)
     row = next((r for r in rows if r["name"] == score), None)
     clean = row["clean"] if row else np.zeros(0)
     bad = row["bad"] if row else np.zeros(0)
@@ -157,7 +169,8 @@ def format_swap(out: dict) -> str:
         f"分母：{out['n_candidates']} 对候选，缓存缺 {out['missing']} 对，实际评 {n} 对",
     ]
     if out["chosen_on_this_split"]:
-        lines.append(f"各分数：AUC，以及在这一批上按原样报出不超过 {out['clean_flag_max']:.0%} 定阈值时的检出")
+        lines.append(f"各分数：AUC，以及在这一批上按原样报出不超过 {out['clean_flag_max']:.0%} 定阈值时的检出"
+                     "（只在 rel_ 开头的里选：「指令不符」规则只和同任务那批比）")
         lines += [f"  {r['name']}：AUC {r['auc']:.3f}，检出 {r['detected_at_max']}/{n}" for r in out["scores"]]
     else:  # 在这一批上现定阈值的检出不能当成绩，不打印
         lines.append("各分数的 AUC（只供参考，成绩只看 dev 选中的那个）：" +

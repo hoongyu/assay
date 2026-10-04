@@ -157,3 +157,14 @@ def test_judge_then_eval_commands(tmp_path, capsys):
     assert dev["n_pairs"] == 2 * N_EP and dev["missing"] == 0
     with pytest.raises(SystemExit):
         main(["eval", "a-swap", "--split", "test", *common])
+
+
+def test_choose_only_scores_the_rule_can_use():
+    """「指令不符」规则只和同任务那批比：绝对分数检出再多也不选。"""
+    from jianjin.eval.task_swap import _choose
+
+    rows = [{"name": "success", "detected_at_max": 57, "auc": 0.884},
+            {"name": "rel_success", "detected_at_max": 49, "auc": 0.940},
+            {"name": "rel_end", "detected_at_max": 43, "auc": 0.703}]
+    assert _choose(rows) == "rel_success"
+    assert _choose([{"name": "end", "detected_at_max": 9, "auc": 0.9}]) == "rel_end"  # 没有能用的：规则查不了
