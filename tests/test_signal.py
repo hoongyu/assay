@@ -40,3 +40,22 @@ def test_excursion_is_farthest_any_joint_got_from_start():
     scale = np.array([1.0, 2.0])
     assert excursion(s, scale) == pytest.approx(1.0)  # 第二个关节走了 2，按幅度 2 算是 1
     assert excursion(s[:1], scale) == 0.0
+
+
+def test_level_changes_counts_with_hysteresis():
+    from jianjin.checks.signal import level_changes
+
+    x = np.array([0, 0, 10, 10, 0, 0, 10, 10, 0], dtype=float)  # 开合两回
+    assert level_changes(x, 0, 10, 0.15) == [2, 4, 6, 8]
+    jitter = np.array([0, 4, 6, 4, 6, 0], dtype=float)  # 在中间那段抖，不算换档
+    assert level_changes(jitter, 0, 10, 0.15) == []
+    assert level_changes(np.array([0, 10, np.nan, 0]), 0, 10, 0.15) == [1, 3]
+    assert level_changes(np.ones(5), 1, 1, 0.15) == []  # 没有幅度
+
+
+def test_gripper_channels_by_name_then_index():
+    from jianjin.checks.signal import gripper_channels
+
+    assert gripper_channels(["left_j0", "left_gripper.pos", "right_j0", "right_gripper.pos"], 1) == [1, 3]
+    assert gripper_channels(["j0", "j1"], 1) == [1]
+    assert gripper_channels(["j0"], None) == []

@@ -48,3 +48,33 @@ def runs(mask: np.ndarray) -> list[tuple[int, int]]:
     starts = np.flatnonzero(d == 1)
     ends = np.flatnonzero(d == -1)
     return list(zip(starts.tolist(), ends.tolist()))
+
+
+def gripper_channels(names: list[str], gripper_index: int | None) -> list[int]:
+    """夹爪是哪几个通道：名字里有 gripper 的都算（双臂两只手各一个）；名字认不出，用读入时定的 gripper_index。"""
+    found = [i for i, n in enumerate(names) if "gripper" in n.lower()]
+    if found:
+        return found
+    return [] if gripper_index is None else [gripper_index]
+
+
+def level_changes(x: np.ndarray, lo: float, hi: float, band: float) -> list[int]:
+    """读数按 [lo, hi] 归一化，低于 0.5 - band 算一档、高于 0.5 + band 算另一档，夹在中间的不算；
+    返回每次换到另一档的那一帧的下标。读数是 NaN 的帧跳过；hi 不比 lo 大时返回空。"""
+    span = hi - lo
+    if not span > 1e-9:
+        return []
+    z = (np.asarray(x, dtype=np.float64) - lo) / span
+    changes: list[int] = []
+    level = 0
+    for i, v in enumerate(z):
+        if v <= 0.5 - band:
+            now = -1
+        elif v >= 0.5 + band:
+            now = 1
+        else:  # 夹在中间，或者是 NaN
+            continue
+        if level != 0 and now != level:
+            changes.append(i)
+        level = now
+    return changes
