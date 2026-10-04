@@ -372,6 +372,7 @@ test 用「Robometer 进度往回掉」只跑了一次。和论文表 II 的 9 �
 
 - 论文说有 5,000 条真实失败示范，每条都标了原因。Hugging Face 上的版本是 Apache-2.0 授权，要同意共享联系方式才能下载，总共 12.3 TB，目录里只看到 `success_episodes`。
 - 2026-10-02 核：失败示范**已经公开**，在 Hugging Face 仓库的 `failure_data/` 目录，路径是 `<任务>/<失败原因>/<示范>/data/trajectory.hdf5`，95 个任务、1,678 条、440.9 GB，不是论文说的 5,000 条（另外的是否在 ModelScope 的 2.0 版里，未确认）。原因类别见第 5 节。成功示范按任务算，压缩后中位数 14 GB 一个任务，UR 机型中位数 1.4 GB，可以只挑小任务下。
+- 2026-10-04 核：失败示范**没有同一批采集的成功示范**。Hugging Face 上的成功示范（`benchmark1_0/1_1/1_2_compressed`，按机型分，479 个任务）和失败示范的 95 个任务名一个都对不上；名字相近的 6 个都跨了机型（如 UR 的 `ur_wrist_upright_cup` 对 Franka 的 `241223_upright_cup`）。ModelScope 上的 V2.0（16 个数据集，按机型分）任务都重新起了名；UR5 那个有 150 个任务，挑了 5 对名字相近的看采集日期：失败示范是 3、4 月采的（如 `ur_hang_towel_on_the_rack` 全在 03-06），V2.0 的成功示范在 4 月底到 9 月（`hang_towel_on_rack` 是 05-08 和 07-07），没有一对是同一天。没有同批的成功示范，量不出误报，「和同任务那批比」的规则也没有参照。账号 hongyu0219 已能下载 Hugging Face 上的 RoboMIND。
 - HDF5 结构：`master`（主臂）、`puppet`（从臂）、`observations/{rgb_images,depth_images}/<相机>`；Franka 和 UR 的 `joint_position` 8 维、最后一维是夹爪；AgileX 分 `_left`、`_right` 各 7 维；没有单独的 action，取 `master`；图像逐帧编码，Franka 和 UR 是 BGR。出处：官方仓库 `static/all_robot_h5_info.md`。帧率没写，拿到数据再核。
 - 拿得到：报按示范的检出率，以及原因分类的准确率；只下一两个机型的几个任务。
 - 拿不到：只用考卷 A 和 B，并在材料里说明。
