@@ -185,3 +185,11 @@ uv run jianjin check data/robovad --judges robometer,topreward --camera left --o
 - [ ] 设计文档：TOPReward 一节（两种格式的对照、冻结的选择、dev/train/test 成绩）；「整条判定在真数据上的样子」重跑；4.3 的现状。
 - [ ] README：「怎么判」表格、成绩、「还在做的」、授权表里 TOPReward 那行。
 - [ ] `.hackertrip/STATUS.md` 头部和日志。
+
+---
+
+## 执行记录（2026-10-04）
+
+- Task 1 到 6 照做，冻结的选择没变：对话格式；换描述 rel_success，阈值 3.321；进度回落阈值 0.707。
+- test 各跑了一次：换描述检出 128/201、原样报出 0/201；进度回落检出 71/387、正常报出 12/242。
+- 偏离计划一处：Task 7 重出报告时，TOPReward 的「进度回落」在开发集的成功示范上，放方块 50 条报了 40 条、叠方块 56 条报了 14 条，都是开头几帧的假回落。改成不启用（`checks/video.py` 的 `PROGRESS_DROP_OFF`），报告里记进没查、写原因。test 那一次的结果照记，没有改了规则再看 test。
