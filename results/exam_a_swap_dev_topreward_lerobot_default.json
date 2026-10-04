@@ -1,0 +1,69 @@
+{
+  "exam": "A·换掉任务描述（同一条视频配别的数据集的任务；造出来的错配，不是真实做错任务）",
+  "split": "dev",
+  "judge": "topreward",
+  "seed": 0,
+  "n_candidates": 103,
+  "missing": 0,
+  "n_pairs": 103,
+  "scores": [
+    {
+      "name": "end",
+      "auc": 0.411254595155057,
+      "detected_at_max": 1
+    },
+    {
+      "name": "rel_end",
+      "auc": 0.4173814685644264,
+      "detected_at_max": 1
+    },
+    {
+      "name": "peak",
+      "auc": 0.5,
+      "detected_at_max": 0
+    },
+    {
+      "name": "rel_peak",
+      "auc": 0.5,
+      "detected_at_max": 0
+    },
+    {
+      "name": "mean",
+      "auc": 0.5938354227542653,
+      "detected_at_max": 12
+    },
+    {
+      "name": "rel_mean",
+      "auc": 0.5730983127533227,
+      "detected_at_max": 4
+    },
+    {
+      "name": "success",
+      "auc": 0.5529267602978603,
+      "detected_at_max": 44
+    },
+    {
+      "name": "rel_success",
+      "auc": 0.567914035253087,
+      "detected_at_max": 45
+    }
+  ],
+  "clean_flag_max": 0.05,
+  "score": "rel_success",
+  "threshold": 0.015740379451267827,
+  "chosen_on_this_split": true,
+  "detected": 45,
+  "detect_ci": [
+    0.3450827172797554,
+    0.5332418304619483
+  ],
+  "clean_flagged": 5,
+  "clean_flag_ci": [
+    0.020910505724241017,
+    0.108642028120254
+  ],
+  "tasks": [
+    "Pick up the cube and place it in the box.",
+    "Put the red cube on top of the blue cube."
+  ]
+}
