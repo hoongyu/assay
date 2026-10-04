@@ -69,7 +69,19 @@ def _cmd_check(args: argparse.Namespace) -> int:
 def _cmd_eval(args: argparse.Namespace) -> int:
     # 读视频评判缓存的考卷，不是 Robometer 的成绩文件名带上评判名，免得盖掉 Robometer 的
     suffix = f"_{args.judge}" if args.exam in ("a-swap", "b-episode") and args.judge != "robometer" else ""
-    if args.exam == "b-episode":
+    if args.exam == "b-regrasp":
+        from jianjin.eval.exam_b_regrasp import format_regrasp_b, run_regrasp_b
+
+        split = args.split or "train"
+        source = margin = None
+        if args.dev_result:
+            dev = json.loads(Path(args.dev_result).read_text(encoding="utf-8"))
+            source, margin = dev["source"], dev["margin"]
+        elif split != "train":
+            raise SystemExit("test 要用 train 选定的：加 --dev-result results/exam_b_regrasp_train.json")
+        out = run_regrasp_b(args.robovad_root, split, source=source, margin=margin)
+        text = format_regrasp_b(out)
+    elif args.exam == "b-episode":
         from jianjin.eval.exam_b_episode import format_episode_b, run_episode_b
 
         split = args.split or "train"
@@ -180,7 +192,7 @@ def build_parser() -> argparse.ArgumentParser:
     c.set_defaults(func=_cmd_check)
 
     e = sub.add_parser("eval", help="跑考卷")
-    e.add_argument("exam", choices=["a", "a-swap", "b", "b-episode"])
+    e.add_argument("exam", choices=["a", "a-swap", "b", "b-episode", "b-regrasp"])
     e.add_argument("--config", default="configs/exam_a.toml")
     e.add_argument("--data-root", default="data")
     e.add_argument("--robovad-root", default="data/robovad")
@@ -191,7 +203,7 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--seed", type=int, default=0)
     e.add_argument("--out", default=None)
     e.add_argument("--judge", default="robometer", help="a-swap、b-episode 读哪个视频评判的缓存")
-    e.add_argument("--dev-result", default=None, help="沿用这个结果里的分数和阈值：a-swap 用 dev 的，b-episode 用 train 的")
+    e.add_argument("--dev-result", default=None, help="沿用这个结果里的选择：a-swap 用 dev 的，b-episode、b-regrasp 用 train 的")
     e.set_defaults(func=_cmd_eval)
 
     f = sub.add_parser("fetch", help="下载考卷数据")
