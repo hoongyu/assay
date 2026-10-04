@@ -1,0 +1,28 @@
+{
+  "exam": "B·按示范计（RoboVAD：示范有没有异常标注；规则是进度从最高点回落）",
+  "split": "test",
+  "judge": "topreward",
+  "camera": "left",
+  "n_episodes": 629,
+  "missing": 0,
+  "n_anomalous": 387,
+  "n_normal": 242,
+  "auc": 0.6251414782070173,
+  "threshold": 0.7070742137558385,
+  "chosen_on_this_split": false,
+  "detected": 71,
+  "detect_ci": [
+    0.14807560350609425,
+    0.22507198364941836
+  ],
+  "localized": 60,
+  "localize_ci": [
+    0.12238611206188085,
+    0.19447268700147372
+  ],
+  "normal_flagged": 12,
+  "normal_flag_ci": [
+    0.028589853213848722,
+    0.08466030461135254
+  ]
+}
