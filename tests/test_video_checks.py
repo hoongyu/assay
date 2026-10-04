@@ -51,8 +51,8 @@ def test_wrong_task_uses_reference_when_given():
 
 def test_wrong_task_without_threshold_is_not_checked():
     eps = batch()
-    found, skipped = wrong_task(eps, {ep.id: curve(0.9) for ep in eps}, "topreward", CheckConfig())
-    assert not found and "还没在开发数据上给 TOPReward 定" in skipped["e0"]
+    found, skipped = wrong_task(eps, {ep.id: curve(0.9) for ep in eps}, "newjudge", CheckConfig())
+    assert not found and "还没在开发数据上给 newjudge 定" in skipped["e0"]
 
 
 from jianjin.checks.video import drawdown, progress_drop  # noqa: E402
@@ -80,8 +80,8 @@ def test_progress_drop_reports_where_progress_fell():
 
 def test_progress_drop_without_threshold_or_curve():
     eps = [make_episode(np.zeros(90), ep_id="e0")]
-    _, skipped = progress_drop(eps, {}, "topreward", CheckConfig())
-    assert "还没在开发数据上给 TOPReward 定" in skipped["e0"]
+    _, skipped = progress_drop(eps, {}, "newjudge", CheckConfig())
+    assert "还没在开发数据上给 newjudge 定" in skipped["e0"]
     _, skipped = progress_drop(eps, {}, "robometer", CheckConfig(), threshold=0.3)
     assert "缓存里没有" in skipped["e0"]
 
@@ -136,3 +136,13 @@ def test_video_rules_ignore_curve_past_joint_data():
     late_drop = {"e1": Curve("robometer", "v", [0.0, 5.0, 10.0, 12.0], [0.1, 0.5, 0.9, 0.1])}
     found, _ = progress_drop([eps[1]], late_drop, "robometer", CheckConfig(), threshold=0.3)
     assert not found
+
+
+def test_progress_drop_off_for_topreward_says_why():
+    """TOPReward 的「进度回落」定过阈值但没启用（开头几帧打分不稳，成功示范上报出大量假回落）：记进没查，写原因。"""
+    eps = [make_episode(np.zeros(90), ep_id="e0")]
+    curves = {"e0": Curve("topreward", "v", [0, 1, 2], [0.8, 0.0, 1.0], [0.4, 0.01, 0.95])}
+    found, skipped = progress_drop(eps, curves, "topreward", CheckConfig())
+    assert not found and "没启用" in skipped["e0"]
+    found, _ = progress_drop(eps, curves, "topreward", CheckConfig(), threshold=0.5)  # 明给阈值时照查，考卷要用
+    assert list(found) == ["e0"]

@@ -54,3 +54,9 @@ def test_non_finite_logprob_is_an_error():
 
 def test_registered():
     assert JUDGES["topreward"] is TOPRewardJudge
+
+
+def test_chat_format_is_default_and_in_version():
+    """版本号要和 Colab 上跑出来的缓存对得上（2026-10-04）。"""
+    assert TOPRewardJudge().version == "TOPReward/Qwen3-VL-4B-Instruct/lerobot-0.6.1/fp16/f32a15/chat"
+    assert TOPRewardJudge(chat=False).version == "TOPReward/Qwen3-VL-4B-Instruct/lerobot-0.6.1/fp16/f32a15"

@@ -9,6 +9,12 @@ TOPReward 没有自己的权重：拿现成的 Qwen3-VL，看一段视频和一�
 和 lerobot 自带加载方式的区别：自带的 TOPRewardModel 先把整个模型读进内存再搬到显卡，
 Colab 免费档 13.6 GB 内存装不下 8B（2026-10-02 摸底时崩在这一步）。这里直接加载到显卡，
 默认用 4B（半精度约 9 GB）。用到了 lerobot 的编码步骤和键名，所以锁 lerobot==0.6.1。
+
+提示格式默认用对话格式（lerobot 的 add_chat_template=True：模型以助手身份回答，后面接「True」）。
+lerobot 的默认格式把「The answer is: True」直接接在用户那段话后面，「True」的概率只有万分之几，
+比出来的多半是任务描述本身的先验，不是视频。2026-10-04 两种格式都在 Colab 上跑了，在 dev、train 上比：
+换描述 rel_success 检出 49/103 对 45/103（AUC 0.940 对 0.568），进度回落 14/60 对 2/60，
+见设计文档 TOPReward 一节。chat=False 是 lerobot 默认格式，留着复现对照。
 """
 
 from __future__ import annotations
@@ -44,11 +50,13 @@ class TOPRewardJudge:
     name = "topreward"
 
     def __init__(self, vlm_name: str = VLM, max_frames: int = MAX_FRAMES, n_anchors: int = N_ANCHORS,
-                 score_fn: ScoreFn | None = None):
+                 chat: bool = True, score_fn: ScoreFn | None = None):
         self.vlm_name = vlm_name
         self.max_frames = max_frames
         self.n_anchors = n_anchors
-        self.version = f"TOPReward/{vlm_name.split('/')[-1]}/lerobot-0.6.1/fp16/f{max_frames}a{n_anchors}"
+        self.chat = chat
+        self.version = (f"TOPReward/{vlm_name.split('/')[-1]}/lerobot-0.6.1/fp16/f{max_frames}a{n_anchors}"
+                        + ("/chat" if chat else ""))
         self._score = score_fn
 
     def _load(self) -> None:
@@ -67,7 +75,8 @@ class TOPRewardJudge:
         model = Qwen3VLForConditionalGeneration.from_pretrained(
             self.vlm_name, dtype=torch.float16, device_map="cuda"  # T4 不支持 BF16
         ).eval()
-        encoder = TOPRewardEncoderProcessorStep(vlm_name=self.vlm_name, max_frames=None)
+        encoder = TOPRewardEncoderProcessorStep(vlm_name=self.vlm_name, max_frames=None,
+                                                add_chat_template=self.chat)
         key = encoder.image_key
 
         def score(frames: np.ndarray, task: str, fps: float) -> float:

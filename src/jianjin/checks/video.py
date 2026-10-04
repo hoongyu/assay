@@ -45,6 +45,9 @@ SCORE_LABELS = {"end": "结尾进度", "peak": "全程最高进度", "mean": "�
 WRONG_TASK: dict[str, tuple[str, float]] = {
     # 2026-10-03 考卷 A「换掉任务描述」dev 上定，原样报出不超过 5%（results/exam_a_swap_dev.json）
     "robometer": ("peak", 1.5477136091635564),
+    # 2026-10-04 同上，TOPReward 对话格式（results/exam_a_swap_dev_topreward.json）；
+    # 只在规则能用的 rel_ 分数里选，lerobot 默认格式只有 45/103，没选（设计文档 TOPReward 一节）
+    "topreward": ("success", 3.320597328099884),
 }
 
 # 进度回落：模型 -> 阈值。进度从此前最高点往下掉超过这么多就报。
@@ -52,6 +55,15 @@ PROGRESS_DROP: dict[str, float] = {
     # 2026-10-03 改：去掉回原位那段以后，RoboVAD train 正常示范（307 条）进度回落的 95 分位
     # （results/exam_b_episode_train.json）。原来不去掉时是 0.345。
     "robometer": 0.23904454708099365,
+}
+
+# 定过阈值但没启用的：模型 -> 为什么（报告里记进没查）。
+PROGRESS_DROP_OFF: dict[str, str] = {
+    # 2026-10-04：对话格式在 RoboVAD train 正常示范（307 条）上的 95 分位是 0.707，检出 14/60（AUC 0.598）；
+    # test 跑过一次，检出 71/387、正常报出 12/242（results/exam_b_episode_{train,test}_topreward.json）。
+    # 但考卷 A 两个开发集的成功示范上，放方块 50 条报了 40 条、叠方块 56 条报了 14 条，都是开头的假回落：
+    # 只看 2 帧时「True」常有四成左右，多看几帧、还没做什么时掉到几个百分点，做完才升上去。
+    "topreward": "TOPReward 看最开头几帧时打分不稳（常先给四成再掉到几个百分点），在成功示范上会报出大量假的「进度回落」，这条没启用",
 }
 
 
@@ -154,6 +166,8 @@ def progress_drop(episodes: list[Episode], curves: Curves, judge: str, cfg: Chec
     """进度突然往回掉：东西掉了，或者退回去重做。只看关节数据有的时间里、手臂开始回原位以前（见 RETURN_FROM）。
     不和同任务比，cfg、reference 只为和别的规则同一个签名。"""
     name = source_name(judge)
+    if threshold is None and judge in PROGRESS_DROP_OFF:
+        return _all_skipped(episodes, PROGRESS_DROP_OFF[judge])
     thr = threshold if threshold is not None else PROGRESS_DROP.get(judge)
     if thr is None:
         return _all_skipped(episodes, f"还没在开发数据上给 {name} 定「进度回落」的阈值")
