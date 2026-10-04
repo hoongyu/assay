@@ -28,5 +28,8 @@ class CheckConfig:
     # 「二次抓取」2026-10-04 加，见 docs/superpowers/specs/2026-10-04-regrasp-design.md
     grip_band: float = 0.15  # 夹爪读数按参照批 5 到 95 分位归一化：低于 0.5-band 算合、高于 0.5+band 算开（借 Loop-Engineering-for-VLA，没调）
     regrasp_quantile: float = 0.75  # 参照批开合次数的这个分位当「常见上限」
-    regrasp_margin: int = 0  # 开合次数超过「常见上限 + 这么多」才报（RoboVAD train 上定）
-    regrasp_source: str = "action"  # 夹爪读主臂（action）还是从臂（state）（RoboVAD train 上定）
+    # 下面两个 2026-10-04 在 RoboVAD train 上选（results/exam_b_regrasp_train.json）：正常示范最多报出 5% 的前提下，
+    # 抓空和掉落检出最多。主臂、从臂在余量 0、1 时都检出 48/60，从臂正常报出 0/307（主臂 1/307）、AUC 0.898 比 0.887 高；
+    # 余量 0 和 1 打平，取大的。
+    regrasp_margin: int = 1  # 开合次数超过「常见上限 + 这么多」才报
+    regrasp_source: str = "state"  # 夹爪读主臂（action）还是从臂（state）
