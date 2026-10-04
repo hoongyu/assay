@@ -113,6 +113,7 @@ uv run jianjin check <数据集目录> --judges robometer,topreward --camera obs
 uv run --extra hub jianjin fetch exam_a   # 下载考卷 A 的公开数据，默认只下关节数据
 uv run jianjin eval a --split dev          # 考卷 A 开发集；测试集用 --split test
 uv run jianjin eval b-episode --split train
+uv run jianjin eval b-regrasp --split train  # 二次抓取；test 加 --dev-result results/exam_b_regrasp_train.json
 uv run pytest
 ```
 
