@@ -185,6 +185,12 @@ def _hand(name: str) -> str:
     return "左手夹爪" if "left" in low else ("右手夹爪" if "right" in low else "夹爪")
 
 
+def _changes(ep: Episode, c: int, lo: float, hi: float, cfg: CheckConfig) -> list[int]:
+    """这条示范第 c 个通道换档的帧；在一档里待不够 grip_dwell_s 秒的那一趟不算。"""
+    min_frames = max(1, round(cfg.grip_dwell_s * ep.fps))
+    return level_changes(_grip(ep, cfg.regrasp_source)[:, c], lo, hi, cfg.grip_band, min_frames)
+
+
 def regrasp_scores(
     episodes: list[Episode], cfg: CheckConfig, reference: list[Episode] | None = None
 ) -> tuple[dict[str, RegraspScore], Skipped]:
@@ -196,9 +202,8 @@ def regrasp_scores(
             raise NotApplicable("认不出夹爪通道")
         stats = {}
         for c in chans:
-            sig = [_grip(e, cfg.regrasp_source)[:, c] for e in group]
-            lo, hi = np.nanpercentile(np.concatenate(sig), [5, 95])
-            counts = [len(level_changes(s, lo, hi, cfg.grip_band)) for s in sig]
+            lo, hi = np.nanpercentile(np.concatenate([_grip(e, cfg.regrasp_source)[:, c] for e in group]), [5, 95])
+            counts = [len(_changes(e, c, lo, hi, cfg)) for e in group]
             if np.median(counts) == 0:  # 这只手基本不用
                 continue
             stats[c] = (float(lo), float(hi), float(np.quantile(counts, cfg.regrasp_quantile, method="higher")))
@@ -207,10 +212,9 @@ def regrasp_scores(
         return stats
 
     def judge(ep, stats, n):
-        g = _grip(ep, cfg.regrasp_source)
         best = None
         for c, (lo, hi, upper) in stats.items():
-            idx = level_changes(g[:, c], lo, hi, cfg.grip_band)
+            idx = _changes(ep, c, lo, hi, cfg)
             if best is None or len(idx) - upper > best.excess:
                 best = RegraspScore(n, len(idx) - upper, ep.state_names[c], len(idx), upper,
                                     tuple(i / ep.fps for i in idx))
@@ -225,7 +229,8 @@ def regrasp(
 ) -> tuple[Found, Skipped]:
     """夹爪开合次数超过同任务那批的「常见上限 + regrasp_margin」：像是抓了不止一回（二次抓取）。
 
-    次数：读数按参照那批的 5 到 95 分位归一化，两档滞回数换档（signal.level_changes）；常见上限是参照那批
+    次数：读数按参照那批的 5 到 95 分位归一化，两档滞回数换档（signal.level_changes），在一档里待不够
+    grip_dwell_s 秒的那一趟不算；常见上限是参照那批
     开合次数的 regrasp_quantile 分位。时间段写整条示范（和「多余动作」一样），换档时刻写进证据。
     2026-10-04 加，见 docs/superpowers/specs/2026-10-04-regrasp-design.md。
     """

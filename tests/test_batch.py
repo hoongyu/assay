@@ -117,7 +117,7 @@ def test_batch_without_a_common_end_pose_is_not_checked():
     assert "停下来的姿态本来就不固定" in skipped["r0"]
 
 
-REG = CheckConfig(grip_band=0.15, regrasp_quantile=0.75, regrasp_margin=0, regrasp_source="action")
+REG = CheckConfig(grip_band=0.15, grip_dwell_s=0.2, regrasp_quantile=0.75, regrasp_margin=0, regrasp_source="action")
 
 
 def grip(cycles: int, n: int = 90) -> np.ndarray:
@@ -200,3 +200,13 @@ def test_regrasp_scores_cover_unflagged_episodes():
     assert skipped == {} and len(scores) == 7
     assert scores["ok0"].excess == 0 and scores["again"].excess == 4 and scores["again"].count == 8
     assert scores["again"].times[0] == pytest.approx(5 / 30)
+
+
+def test_regrasp_ignores_a_brief_overshoot():
+    """放手时夹爪一闪张大又合上（停不到 grip_dwell_s），不算多开合一回；停留下限设成 0 就会算。"""
+    blip = grip(2)
+    blip[80:82] = 1.0
+    odd = make_episode(np.column_stack([np.linspace(0, 1, 90), blip]), ep_id="blip", names=["j0", "gripper"])
+    eps = [grip_ep(2, f"ok{i}") for i in range(6)] + [odd]
+    assert regrasp(eps, REG)[0] == {}
+    assert set(regrasp(eps, replace(REG, grip_dwell_s=0.0))[0]) == {"blip"}

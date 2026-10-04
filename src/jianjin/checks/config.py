@@ -27,6 +27,10 @@ class CheckConfig:
     video_slack_frames: float = 1.5  # 视频时长和关节数据差超过这么多帧，算两路对不上
     # 「二次抓取」2026-10-04 加，见 docs/superpowers/specs/2026-10-04-regrasp-design.md
     grip_band: float = 0.15  # 夹爪读数按参照批 5 到 95 分位归一化：低于 0.5-band 算合、高于 0.5+band 算开（借 Loop-Engineering-for-VLA，没调）
+    # 在一档里至少待这么久才算换档。2026-10-04 第一版没有这条，乐高块（考卷 A 测试集）上放手时一闪张大（2 到 4 帧）
+    # 被数成多开合一回；按动作常识定 0.2 秒（采集员张开再合上，一下至少零点几秒），看过的真重抓停了 10、12 帧。
+    # RoboVAD train 和两个开发集上 0.1、0.2 秒和不加一样，0.3 秒少检出一条。
+    grip_dwell_s: float = 0.2
     regrasp_quantile: float = 0.75  # 参照批开合次数的这个分位当「常见上限」
     # 下面两个 2026-10-04 在 RoboVAD train 上选（results/exam_b_regrasp_train.json）：正常示范最多报出 5% 的前提下，
     # 抓空和掉落检出最多。主臂、从臂在余量 0、1 时都检出 48/60，从臂正常报出 0/307（主臂 1/307）、AUC 0.898 比 0.887 高；

@@ -59,3 +59,14 @@ def test_gripper_channels_by_name_then_index():
     assert gripper_channels(["left_j0", "left_gripper.pos", "right_j0", "right_gripper.pos"], 1) == [1, 3]
     assert gripper_channels(["j0", "j1"], 1) == [1]
     assert gripper_channels(["j0"], None) == []
+
+
+def test_level_changes_ignores_brief_visits():
+    """在一档里待不够 min_frames 的那一趟不算，前后同一档的接起来。"""
+    from jianjin.checks.signal import level_changes
+
+    x = np.array([0, 0, 0, 10, 10, 10, 10, 0, 0, 0, 10, 0, 0, 0], dtype=float)  # 第 10 帧一闪到开
+    assert level_changes(x, 0, 10, 0.15) == [3, 7, 10, 11]
+    assert level_changes(x, 0, 10, 0.15, min_frames=2) == [3, 7]
+    edges = np.array([0, 10, 10, 10, 10, 0], dtype=float)  # 开头、结尾那一趟再短也算：不是去了又回来
+    assert level_changes(edges, 0, 10, 0.15, min_frames=2) == [1, 5]
