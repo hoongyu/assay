@@ -48,3 +48,40 @@ def runs(mask: np.ndarray) -> list[tuple[int, int]]:
     starts = np.flatnonzero(d == 1)
     ends = np.flatnonzero(d == -1)
     return list(zip(starts.tolist(), ends.tolist()))
+
+
+def gripper_channels(names: list[str], gripper_index: int | None) -> list[int]:
+    """夹爪是哪几个通道：名字里有 gripper 的都算（双臂两只手各一个）；名字认不出，用读入时定的 gripper_index。"""
+    found = [i for i, n in enumerate(names) if "gripper" in n.lower()]
+    if found:
+        return found
+    return [] if gripper_index is None else [gripper_index]
+
+
+def level_changes(x: np.ndarray, lo: float, hi: float, band: float, min_frames: int = 1) -> list[int]:
+    """读数按 [lo, hi] 归一化，低于 0.5 - band 算一档、高于 0.5 + band 算另一档，夹在中间的不算；
+    返回每次换到另一档的那一帧的下标。读数是 NaN 的帧跳过；hi 不比 lo 大时返回空。
+    中间那种在一档里待不够 min_frames 帧、又回到原来那一档的一趟不算（一闪就回去，不是真的开合），前后接起来；
+    开头、结尾那一趟再短也算（录制刚开始、刚停，不是去了又回来）。"""
+    span = hi - lo
+    if not span > 1e-9:
+        return []
+    z = (np.asarray(x, dtype=np.float64) - lo) / span
+    visits: list[list[int]] = []  # [档, 进这一档的那一帧, 在这一档待了几帧]
+    for i, v in enumerate(z):
+        if v <= 0.5 - band:
+            now = -1
+        elif v >= 0.5 + band:
+            now = 1
+        else:  # 夹在中间，或者是 NaN
+            continue
+        if visits and visits[-1][0] == now:
+            visits[-1][2] += 1
+        else:
+            visits.append([now, i, 1])
+    kept: list[list[int]] = []
+    for k, (level, start, n) in enumerate(visits):
+        brief = 0 < k < len(visits) - 1 and n < min_frames
+        if not brief and (not kept or kept[-1][0] != level):
+            kept.append([level, start, n])
+    return [start for _, start, _ in kept[1:]]

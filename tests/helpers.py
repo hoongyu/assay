@@ -154,8 +154,10 @@ def make_robovad(
     evaluation: dict[str, list[tuple[str, int, int, int]]] | None = None,
     validation: list[str] | None = None,
     t0: float = 1.1,
+    splits: dict[str, list[str]] | None = None,
 ) -> Path:
-    """episodes：{示范名: (state T×6, action T×6)}；evaluation：{设置名: [(示范名, 起, 止, 标签)]}。"""
+    """episodes：{示范名: (state T×6, action T×6)}；evaluation：{设置名: [(示范名, 起, 止, 标签)]}；
+    splits：{划分名: [示范名]}，写成 splits/<划分名>.csv（会盖掉默认的空 train.csv）。"""
     (root / "proprioception").mkdir(parents=True)
     for name, (state, action) in episodes.items():
         n = len(state)
@@ -180,6 +182,8 @@ def make_robovad(
         "\n".join(["episode_name", *(validation or [])]) + "\n", encoding="utf-8"
     )
     (root / "splits" / "train.csv").write_text("episode_name\n", encoding="utf-8")
+    for split, names in (splits or {}).items():
+        (root / "splits" / f"{split}.csv").write_text("\n".join(["episode_name", *names]) + "\n", encoding="utf-8")
     return root
 
 
