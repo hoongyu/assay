@@ -231,11 +231,32 @@ def _cards(verdicts: list[Verdict], episodes: list[Episode], shots=None) -> str:
             f'<div class="cards">{cards}</div></section>')
 
 
+def _summary(s) -> str:
+    """本批小结（jianjin.summary.Summary）：中英各一段，注明是模型写的还是模板。"""
+    if s is None:
+        return ""
+    notes = {
+        "zh": (f"Nemotron 写的（{s.model}，Nebius Token Factory），数字由拣金按统计填",
+               "模板文字" + ("：模型的输出没过数字核对，或者调用失败" if s.problems.get("zh") else "")),
+        "en": (f"Written by Nemotron ({s.model}, Nebius Token Factory); every number was filled in by jianjin "
+               "from its own statistics", "Template text" + (": the model's draft failed the number check, or the call "
+                                                             "failed" if s.problems.get("en") else "")),
+    }
+    paras = []
+    for lang, html_lang in (("zh", "zh-CN"), ("en", "en")):
+        if lang in s.texts:
+            note = notes[lang][0] if s.source[lang] == "model" else notes[lang][1]
+            paras.append(f'<p lang="{html_lang}">{escape(s.texts[lang])}</p><p class="note">{escape(note)}</p>')
+    return f'<section class="summary"><h2>本批小结</h2>{"".join(paras)}</section>'
+
+
 def render(verdicts: list[Verdict], episodes: list[Episode], *, title: str, judges=(), failures=(),
-           generated: str = "", shots=None) -> str:
-    """shots：{示范 id: [(秒, 图片 data URI)]}，给存疑、作废的体检单配画面；不给就不配。"""
+           generated: str = "", shots=None, summary=None) -> str:
+    """shots：{示范 id: [(秒, 图片 data URI)]}，给存疑、作废的体检单配画面；不给就不配。
+    summary：本批小结（jianjin.summary.Summary）；不给就没有这一节。"""
     body = "".join([
         _header(title, len(verdicts), list(judges), generated),
+        _summary(summary),
         _funnel(verdicts),
         _causes(verdicts),
         _operators(verdicts, episodes),

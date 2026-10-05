@@ -103,3 +103,13 @@ def test_fetch_robomind_parses():
 
     args = build_parser().parse_args(["fetch", "robomind", "--workers", "2"])
     assert args.what == "robomind" and args.workers == 2
+
+
+def test_check_summary_without_key_uses_template(tmp_path, monkeypatch, capsys):
+    monkeypatch.delenv("NEBIUS_API_KEY", raising=False)
+    ds = make_lerobot_v3(tmp_path / "d", [("pick", paused6())])
+    out = tmp_path / "r.html"
+    assert main(["check", str(ds), "--out", str(out), "--no-frames", "--summary", "--cache", str(tmp_path / "c")]) == 0
+    html = out.read_text(encoding="utf-8")
+    assert "本批小结" in html and "1 条示范" in html and "模板" in html
+    assert "NEBIUS_API_KEY" in capsys.readouterr().out

@@ -110,3 +110,17 @@ def test_note_without_rejects():
     vs, eps = small()
     html = render(vs[1:], eps[1:], title="ds")
     assert "没有作废的" in html and "作废的 0 条" not in html
+
+
+def test_summary_section_only_when_given():
+    from jianjin.summary import Summary
+
+    vs, eps = small()
+    s = Summary(texts={"zh": "本批 3 条，先看存疑的。", "en": "Batch ds: 3 <episodes>."},
+                source={"zh": "model", "en": "template"}, model="nvidia/Nemotron-3_5-Lightning",
+                problems={"zh": [], "en": ["第 1 次：自己写了阿拉伯数字：3"]})
+    html = render(vs, eps, title="ds", summary=s)
+    assert "本批小结" in html and "本批 3 条，先看存疑的。" in html and "Batch ds: 3 &lt;episodes&gt;." in html
+    assert "nvidia/Nemotron-3_5-Lightning" in html and "数字由拣金按统计填" in html
+    assert "Template text" in html and html.index("本批小结") < html.index("每条示范")
+    assert "本批小结" not in render(vs, eps, title="ds")

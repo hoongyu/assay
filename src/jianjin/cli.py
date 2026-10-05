@@ -58,8 +58,24 @@ def _cmd_check(args: argparse.Namespace) -> int:
             shots, missing = shots_for(verdicts, res.episodes, args.camera)
             print(f"  画面：{len(shots)} 条存疑或作废的示范配了关键帧"
                   + (f"，{missing} 条没有本地视频或读不出画面" if missing else ""))
+        summary = None
+        if args.summary:
+            import os
+
+            from jianjin.summary import batch_facts, summarize, token_factory_chat
+
+            key = os.environ.get("NEBIUS_API_KEY")
+            if not key:
+                print("  本批小结：没设 NEBIUS_API_KEY，用模板文字")
+            summary = summarize(batch_facts(verdicts, res.episodes, Path(args.path).name),
+                                chat=token_factory_chat(key) if key else None, model=args.summary_model,
+                                cache_dir=args.cache)
+            for lang, src in summary.source.items():
+                print(f"  本批小结（{lang}）：{'模型写的' if src == 'model' else '模板'}"
+                      + (f"；{'；'.join(summary.problems[lang])}" if summary.problems.get(lang) else ""))
         html = render(verdicts, res.episodes, title=Path(args.path).name, judges=judges,
-                      failures=res.failures, generated=datetime.now().strftime("%Y-%m-%d %H:%M"), shots=shots)
+                      failures=res.failures, generated=datetime.now().strftime("%Y-%m-%d %H:%M"), shots=shots,
+                      summary=summary)
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.out).write_text(html, encoding="utf-8")
         print(f"报告写到 {args.out}")
@@ -213,6 +229,10 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--cache", default="cache")
     c.add_argument("--camera", default=None, help="视频评判用的那一路相机；不写就用第一路")
     c.add_argument("--no-frames", action="store_true", help="报告里不配关键帧（默认有本地视频就配）")
+    c.add_argument("--summary", action="store_true",
+                   help="报告顶部加本批小结：Nemotron（Nebius Token Factory）写文字，数字由拣金填；密钥读环境变量 "
+                        "NEBIUS_API_KEY，没设就用模板")
+    c.add_argument("--summary-model", default="nvidia/Nemotron-3_5-Lightning", help="本批小结用哪个模型")
     c.set_defaults(func=_cmd_check)
 
     e = sub.add_parser("eval", help="跑考卷")
