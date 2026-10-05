@@ -21,7 +21,7 @@ from jianjin.i18n import check_name
 from jianjin.types import CAUSE_EN, Bi, Cause, Episode, en, spaced
 
 # 给采集员的提醒：每类原因一句，中英各一句，由我们写。模型只能用 {advice_i} 占位符引用，不许自己编建议
-# （2026-10-05 第一次真调用，模型自己写了「确保 Robometer 的进度回落检查能跑」，对采集员没用）。
+# （2026-10-05 第一次真调用，模型自己写了「下次采集确保某项检查在所有示范上都能跑」，对采集员没用）。
 ADVICE = {
     Cause.INCOMPLETE: ("做完整个任务、手臂回到起始姿态以后再停止录制。",
                        "Stop recording only after the task is done and the arm is back in its start pose."),
