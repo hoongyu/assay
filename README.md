@@ -2,11 +2,11 @@
 
 [中文](README.zh-CN.md)
 
-Automatic quality control for robot teleoperation demonstrations. For every recorded episode, jianjin returns PASS, DOUBT or REJECT and names the problem and the second it happens, so QA reviewers only look at the episodes the machine is unsure about, and every rejection comes with evidence. It runs on site; the report is a single HTML file that opens offline, so the data never has to leave the collection site.
+Automatic quality control for robot teleoperation demonstrations. For every recorded episode, jianjin returns PASS, DOUBT or REJECT and says why: the problem, the evidence and, where the problem is local, when it happens (a time span, or for a regrasp the times the gripper switched). QA reviewers only look at the episodes the machine is unsure about, and every rejection comes with evidence. The checks run on site and the report is a single HTML file that opens offline, so the data never has to leave the collection site.
 
-- **Public "successful" datasets are not clean.** In 308 episodes from five public LeRobot datasets, all published as successful, jianjin flagged 39; 18 are real problems, from one-second recordings to a gripper that loses the towel corner and grabs it again.
-- **It holds up on real QA labels.** On 1,678 episodes rejected by Beijing Humanoid's QA team (RoboMIND), the regrasp rule finds 61% of regrasps, with parameters tuned on another dataset and never touched.
-- **NVIDIA Nemotron on Nebius Token Factory** writes the batch summary, and jianjin fills in every number, so the model cannot invent one.
+- **Public demonstration datasets are not clean.** In 308 episodes from five public LeRobot datasets, none marked as failed, jianjin rejected 6, and all 6 are unusable: under one second, an arm that never moves, a person resetting the scene. It sent 33 more to a person: 12 are real problems, 12 false positives, 9 not checked yet.
+- **It holds up on real QA labels.** RoboMIND published 1,678 episodes that Beijing Humanoid's QA team rejected, with the reason. Of the 162 regrasp rejections jianjin can compare, the regrasp rule flags 99 (61%), with parameters chosen on another dataset and not retuned.
+- **NVIDIA Nemotron on Nebius Token Factory** writes the batch summary with placeholders, and jianjin fills in every number; any digit the model writes itself is rejected.
 
 ![The top of a jianjin report: batch summary, verdict funnel, problem table](docs/images/report-stacking.png)
 
@@ -14,7 +14,7 @@ Automatic quality control for robot teleoperation demonstrations. For every reco
 
 ![An episode card: regrasp detected, with progress curve and keyframes](docs/images/card-towel-ep2-regrasp.png)
 
-*One episode card. The right gripper opened and closed 6 times where this task usually needs at most 4. On video, it loses the towel corner at 12.9 s and grabs it again at 13.6 s.*
+*One episode card. The right gripper switched between open and closed 6 times, where this task usually switches at most 4 times. Two of the switch times on the card, open at 12.8 s and closed at 13.5 s, match the video: the gripper loses the towel corner at 12.9 s and grabs it again at 13.6 s.*
 
 Entered in the Nebius × NVIDIA Global AI Hackathon (Physical AI track) and the first Haichuang π embodied-AI competition (首届「海创π」具身智能专项赛).
 
@@ -31,7 +31,7 @@ Open `report.html` in a browser. Without a GPU only the joint checks run, and th
 
 ## Why
 
-Embodied-AI training data is mostly collected by teleoperation: an operator drives a leader arm, the robot follows, and video and joint data are recorded. China has built dedicated data-collection sites for this, at least 15 large ones according to a count by China Business Journal. Data sells for 500 to 1,000 CNY per hour. QA and labeling are still largely manual; the head of one large site estimated that of 100 hours collected, maybe 50 survive the QA funnel (his estimate, not an industry statistic). Whether rejection reasons reach the operators is not reported; our guess is that they rarely do, so the same mistakes repeat on the next shift. Sources and how we checked them: [background notes (Chinese)](docs/research/2026-10-02-background.md).
+Embodied-AI training data is mostly collected by teleoperation: an operator drives a leader arm, the robot follows, and video and joint data are recorded. China has built dedicated data-collection sites for this: at least 15 large ones according to a count by China Business Journal, typically with a hundred or more robots each. Beijing Humanoid's site has over 120 robots, can produce over 100,000 hours a year, and sells data at 500 to 1,000 CNY per hour. QA and labeling still rely largely on manual work; the head of one large site estimated that of 100 hours collected, maybe 50 come out of the funnel usable (an estimate, not an industry statistic), and a data-company executive said collected data often falls short of what algorithm teams need. Whether rejection reasons reach the operators is not reported; our guess is that they rarely do, so the same mistakes repeat on the next shift. Sources and how we checked them: [background notes (Chinese)](docs/research/2026-10-02-background.md).
 
 jianjin does two things:
 
@@ -50,7 +50,7 @@ jianjin does two things:
 | Video judge: TOPReward (wraps Qwen3-VL-4B), zero-shot | Asks the model whether the robot completed the task; the probability of "yes" is far below the batch | Wrong task | GPU, cached |
 | NVIDIA Nemotron on Nebius Token Factory (optional) | Writes the batch summary for the QA lead and the operators, in Chinese and English | Nothing: it never judges | API call |
 
-Verdicts are conservative, because throwing away a good episode costs more than missing a bad one:
+Verdicts are conservative by choice: a rejection needs strong evidence, so good episodes are rarely thrown away. The price is that some bad episodes pass; on the RoboVAD test set, 140 of 387 anomalous episodes got PASS.
 
 - **REJECT**: an objective hard rule fires, or two independent sources (the joint rules count as one, each video model as one) point at the same problem, for example both video models report the same wrong task.
 - **DOUBT**: something was found, but not enough to reject; a person should look.
@@ -62,17 +62,19 @@ The report shows the verdict funnel for the batch, the problem distribution, per
 
 Thresholds are chosen on development data; test sets are only used to report. Where we looked at a test set more than once, we say so. Brackets are 95% Wilson intervals. Full record: [design doc (Chinese)](docs/superpowers/specs/2026-10-02-jianjin-design.md), section 6.
 
-### Bad episodes hidden in public "successful" datasets
+### Bad episodes hidden in public demonstration datasets
 
-Five public LeRobot datasets (SO-100, SO-101, single-arm and bimanual), 308 episodes, all published as successful demonstrations. jianjin flagged 39: 33 DOUBT (11%) and 6 REJECT.
+Five public LeRobot datasets (SO-100, SO-101, single-arm and bimanual), 308 episodes, published for training with no episode marked as failed (the dataset cards say nothing about quality). jianjin flagged 39: 6 REJECT and 33 DOUBT (11%).
 
-- **Real problems, 18**: 3 shorter than one second; 3 where the arm barely moves (one checked on video: 14 seconds of a motionless arm, then a human hand in the last frame; two checked on joint data only); 1 recording of a person resetting the cubes; 1 that stops while the arm is still returning; 1 towel fold where the right gripper loses the corner and grasps again (RoboMIND calls this a regrasp); 9 whose video runs longer than the joint data (the two we watched show the scene being reset).
-- **False positives, 12, confirmed on video**: cubes stacked so neatly that the lower one is hidden, an arm covering the cubes for a long time, a towel folded fine but given low progress, and five pick-and-place episodes that succeeded but scored slightly below the batch.
-- **Not checked yet, 9**: 8 without local video, 1 where the gripper blocks the camera.
+- **REJECT, all 6 are real problems**: 3 recordings shorter than one second; 2 where the arm never moves (one on video: 14 seconds of a motionless arm, then a human hand in the last frame; one from joint data, with the video model agreeing); 1 recording of a person resetting the cubes. Five of the six were checked on video.
+- **DOUBT, 33**:
+  - Real problems, 12: 9 whose video runs longer than the joint data, by 0.1 to 8.1 s (the two we watched show the towel being reset); 1 more where the arm never moves (joint data only); 1 that stops while the arm is still returning; 1 towel fold where the right gripper loses the corner and grasps again (RoboMIND calls this a regrasp).
+  - False positives, 12, confirmed on video: cubes stacked so neatly that the lower one is hidden, an arm covering the cubes for a long time, a towel folded fine but given low progress, and five pick-and-place episodes that succeeded but scored slightly below the batch.
+  - Not checked yet, 9: 8 without local video, 1 where the gripper blocks the camera.
 
 ### Exam A: defects injected into real successful episodes
 
-These failures are synthetic. The test set uses other tasks and other robots (SO-101, bimanual).
+These failures are synthetic. Exam A uses seven public datasets, four for dev and three for test; the test datasets have tasks not seen in dev, while the robot types (SO-100, SO-101, bimanual) appear in both.
 
 | Defect | Detected on test, at the right time | Clean episodes flagged |
 |---|---|---|
@@ -86,7 +88,7 @@ The incomplete check changed its scaling once to handle bimanual data, so that r
 
 ### Exam B: real anomalies in RoboVAD
 
-[RoboVAD](https://arxiv.org/abs/2609.17843) is a frame-level anomaly detection benchmark of robot manipulation videos. jianjin is zero-shot: it was never trained on RoboVAD.
+[RoboVAD](https://arxiv.org/abs/2609.17843) is a frame-level anomaly detection benchmark of robot manipulation videos. jianjin trains no model on RoboVAD: the video models are used zero-shot. Its scorers and thresholds were chosen on RoboVAD's validation and train splits; the test split only reports.
 
 | Setting | Frame-level micro/macro AUC | Rank among the paper's 9 methods | FIDeL, the paper's only joint-data method |
 |---|---|---|---|
@@ -101,7 +103,7 @@ The incomplete check changed its scaling once to handle bimanual data, so that r
 
 ### Exam C: real QA labels from Beijing Humanoid (RoboMIND)
 
-RoboMIND published 1,678 teleoperation episodes that its QA rejected, with the reason in 11 classes, but no successful episodes from the same batches. jianjin reads only the joint data; it compares each episode with episodes of the same task rejected for other reasons, so "other reasons flagged" is not a false-positive rate: those episodes failed too. Tasks were split into dev and test before we looked at any metric.
+RoboMIND published 1,678 teleoperation episodes that its QA rejected, with the reason in 11 classes, but no successful episodes from the same batches. 1,310 come from real robots (UR, Franka, dual-arm) and 368 from simulation (Franka, and Tiangong with dexterous hands). jianjin reads only the joint data; it compares each episode with episodes of the same task rejected for other reasons, so "other reasons flagged" is not a false-positive rate: those episodes failed too. Tasks were split into dev and test before we looked at any metric.
 
 | Reason | jianjin's rule | Detected | Same-task episodes with other reasons flagged |
 |---|---|---|---|
@@ -109,22 +111,24 @@ RoboMIND published 1,678 teleoperation episodes that its QA rejected, with the r
 | Unsmooth motion (557) | Takes over 1.7 times the task's median duration (test set, run once) | 26/187 = 14% (10% to 20%) | 18/458 = 4% (3% to 6%) |
 | Too fast (36) | No rule: peak and mean speed against the batch found none of the 17 on dev | | |
 
-- Smoothness metrics (counting stops, counting movement segments, jerk) all point the wrong way on RoboMIND (dev AUC 0.31 to 0.45): episodes labeled "unsmooth" have fewer stops and segments than episodes rejected for other reasons. Other open-source tools have warned about this (hflow does not use smoothness to reject; an audit of SAL and TED found they mostly measure episode length); we measured it on real QA labels. So the unsmooth-motion rule only looks at duration; it flags none of the 444 successful test episodes.
-- Not every episode is comparable: 162 of the 284 regrasp episodes (the Tiangong simulation uses dexterous hands with no gripper, and small tasks lack 5 reference episodes), 187 of the 237 unsmooth test episodes.
+- Not every episode is comparable: 162 of the 284 regrasp episodes (the Tiangong simulation uses dexterous hands with no gripper, and small tasks lack 5 reference episodes), 187 of the 237 unsmooth test episodes. Counted over all 284 regrasp episodes, 99 are flagged (35%).
+- Real robots only: regrasp 99/159 = 62% (55% to 69%) with 72/866 = 8% of others flagged; unsmooth motion on test 21/115 = 18% (12% to 26%) with 10/339 = 3%. By robot, regrasp is weakest on the dual-arm tasks: 43/52 detected, but 53/252 = 21% of other-cause episodes flagged too (UR: 49/98 and 17/562).
+- Smoothness metrics did not work. On dev, counting stops, counting movement segments and jerk all scored below chance (AUC 0.31 to 0.45): episodes labeled unsmooth have fewer stops and segments than episodes rejected for other reasons. On test they were near chance (0.45 to 0.56). Duration as a whole was no better on dev (AUC 0.41), but its tail was: taking over 1.7 times the task median flagged 15% of unsmooth episodes and 6% of the others on dev, 14% and 4% on test. Other open-source tools have warned about smoothness metrics (hflow does not use smoothness to reject; an audit of SAL and TED found they mostly measure episode length); we measured it on real QA labels. So the unsmooth-motion rule only looks at duration; it flags none of the 444 successful test episodes.
 
 ### What we can and cannot claim
 
-- We can say: on real data recorded on real robots, jianjin finds bad episodes, says why, and every number has a denominator.
+- We can say: on real data, mostly from real robots (exam C is 1,310 real and 368 simulated episodes), jianjin finds bad episodes, says why, and every number has a denominator.
 - We cannot say that policies trained on jianjin-filtered data perform better. For that we only cite published work (CUPID, CoRL 2025; DemInf, RSS 2025) until a pilot with a robot or a collection site.
 - False positives remain: neatly stacked cubes and long occlusions fool the video models. Of the 18 RoboVAD episodes both video models rejected, 8 have no anomaly label; we have not watched them, so we cannot tell whether the models or the labels are wrong.
-- Motion quality is only partly covered. In RoboMIND, the big classes are unsmooth motion, regrasp, unwanted contact and collision before grasp; the task itself was usually completed. jianjin has a rule aimed at 954 of the 1,678 rejections (57%), but measured detection is far apart: regrasp 61%, unsmooth motion 14%. 656 (39%) need vision, mostly contact and collision.
+- Motion quality is only partly covered. In RoboMIND, the big classes are unsmooth motion, regrasp, unwanted contact and collision before grasp; the task itself was usually completed. jianjin has a rule aimed at 954 of the 1,678 rejections (57%), but measured detection is far apart: regrasp 61%, unsmooth motion 14%. 656 (39%) it cannot check: 620 need vision (unwanted contact, collision before grasp, object displaced and two smaller classes), and 36 are "too fast", where no rule worked.
 
 ## Nebius and NVIDIA
 
 `jianjin check --summary` adds a batch summary at the top of the report, written by NVIDIA Nemotron 3.5 Lightning (`nvidia/Nemotron-3_5-Lightning`, open weights under OpenMDW-1.1) through the Nebius Token Factory OpenAI-compatible API.
 
 - The model only sees statistics jianjin computed: counts, problem names, episode ids. It never sees joint data or video.
-- It writes prose with placeholders such as `{n_doubt}`, and jianjin fills in the numbers. Any digit or number word the model writes on its own is rejected; jianjin retries once and then falls back to a template. The report says which one you are reading.
+- It writes prose with placeholders such as `{n_doubt}`, and jianjin fills in the numbers. A digit the model writes on its own is rejected, and so is a number word from two up ("one" and "一" pass: they are too common in ordinary prose to ban). jianjin retries once and then falls back to a template. The report says which one you are reading.
+- The check cannot tell whether a placeholder sits in the right sentence. To make that less likely, the model starts from the template's draft, which already has every placeholder in place; we have not measured how often it moves one.
 - Reasoning is turned off with `chat_template_kwargs: {"enable_thinking": false}`. With it on, the reasoning trace landed in the answer text and the answer was cut off at the token limit.
 - Answers are cached by their inputs, so re-rendering a report makes no new call.
 
@@ -210,5 +214,5 @@ No data ships with the repository: `data/`, `cache/` and `reports/` are not comm
 | `lerobot/svla_so100_pickplace`, `lerobot/svla_so100_stacking` | Exam A dev | Apache-2.0 |
 | `jun-seo/bimanual_tilt`, `armnet/armnetbench_v01_lerobot_bimanual_so101` (without its towel-folding task) | Exam A dev, bimanual, joint data only | Apache-2.0 |
 | `lerobot/svla_so100_sorting`, `lerobot/svla_so101_pickplace`, `CoRL2026-CSI/SO101-DualArm-teleop_fold_towel_100epi` | Exam A test | Apache-2.0 |
-| RoboVAD (Zenodo) | Exam B, evaluation only | Stated three ways (CC BY-NC-ND 4.0, CC BY 4.0, CC BY-SA 4.0); we follow the strictest, CC BY-NC-ND 4.0: no derivatives, no commercial use, no redistribution. Only aggregate results are in this repository |
-| RoboMIND (Hugging Face) | Exam C: 1,677 episodes of `failure_data/`, joint data only (253 MB locally) | Apache-2.0; downloading requires agreeing to share contact information |
+| RoboVAD (Zenodo) | Exam B; its train split also set the regrasp parameters and the progress-drop threshold | Stated three ways (CC BY-NC-ND 4.0, CC BY 4.0, CC BY-SA 4.0); we follow the strictest, CC BY-NC-ND 4.0: no derivatives, no commercial use, no redistribution. Only aggregate results are in this repository |
+| RoboMIND (Hugging Face) | Exam C: the 1,678 episodes of `failure_data/`, joint data only (253 MB locally; one file over the size cap is skipped, so 1,677 are read) | Apache-2.0; downloading requires agreeing to share contact information |

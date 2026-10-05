@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jianjin video cards</title>
+<style>
+  :root {
+    --bg: #F6F4EF;
+    --panel: #FDFCF9;
+    --line: #DDD6C9;
+    --ink: #17202B;
+    --muted: #4A5561;
+    --accent: #B34A17;
+    --blue: #285A87;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--ink);
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; overflow: hidden; }
+  .stage { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .card { flex: none; width: 1920px; height: 1080px; padding: 120px 140px; display: none; flex-direction: column;
+    justify-content: center; gap: 44px; transform-origin: center; background: var(--bg); }
+  .card.on { display: flex; }
+  .kicker { font-size: 30px; font-weight: 700; letter-spacing: 3px; color: var(--accent); text-transform: uppercase; }
+  h1 { font-size: 132px; line-height: 1.05; font-weight: 800; }
+  h2 { font-size: 72px; line-height: 1.15; font-weight: 800; }
+  .lead { font-size: 44px; line-height: 1.4; color: var(--muted); max-width: 1500px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+  .grid.two { grid-template-columns: repeat(2, 1fr); }
+  .box { background: var(--panel); border: 2px solid var(--line); border-radius: 20px; padding: 40px;
+    display: flex; flex-direction: column; gap: 16px; }
+  .big { font-size: 64px; font-weight: 800; color: var(--accent); line-height: 1.1; }
+  .box p { font-size: 32px; line-height: 1.4; }
+  .box .src { font-size: 24px; color: var(--muted); }
+  .note { font-size: 26px; color: var(--muted); }
+  .url { font-size: 48px; font-weight: 700; color: var(--blue); }
+  .hint { position: fixed; right: 16px; bottom: 12px; font-size: 13px; color: var(--muted); opacity: .7; }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <section class="card on" aria-label="Title">
+    <p class="kicker">Nebius × NVIDIA Global AI Hackathon · Physical AI</p>
+    <h1>jianjin</h1>
+    <p class="lead">Automatic QA for robot teleoperation data. Every episode gets PASS, DOUBT or REJECT, with the reason and the evidence.</p>
+  </section>
+
+  <section class="card" aria-label="Why">
+    <p class="kicker">Why</p>
+    <h2>Robot foundation models learn from teleoperation demonstrations</h2>
+    <div class="grid">
+      <div class="box"><p class="big">15+</p><p>large data-collection sites in China, typically with 100 or more robots each</p><p class="src">China Business Journal, cited by Jiazi Guangnian</p></div>
+      <div class="box"><p class="big">500 to 1,000</p><p>CNY per hour of data at Beijing Humanoid's site</p><p class="src">Jiazi Guangnian, 2026-06-26</p></div>
+      <div class="box"><p class="big">Manual</p><p>QA and labeling still rely largely on people; one site head estimates half of 100 hours ends up usable</p><p class="src">Same report; an estimate, not a statistic</p></div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Results">
+    <p class="kicker">Results</p>
+    <h2>Measured on public data and on a real QA team's labels</h2>
+    <div class="grid two">
+      <div class="box"><p class="big">6 of 6</p><p>rejections in five public LeRobot datasets (308 episodes, none marked as failed) are unusable recordings. Of 33 sent to a person: 12 real, 12 false positives, 9 not checked.</p></div>
+      <div class="box"><p class="big">99 of 162</p><p>comparable regrasps flagged in RoboMIND, 1,678 episodes rejected by Beijing Humanoid's QA. Rule chosen on another benchmark, not retuned.</p></div>
+      <div class="box"><p class="big">197 of 201</p><p>injected cut endings caught on held-out datasets, with 0 of 202 clean episodes flagged (second look at the test set, disclosed).</p></div>
+      <div class="box"><p class="big">What failed</p><p>Smoothness metrics did not separate "unsmooth" episodes on real labels. We kept a duration rule that catches 14%, and say so.</p></div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Nemotron">
+    <p class="kicker">NVIDIA Nemotron on Nebius Token Factory</p>
+    <h2>The model writes the batch summary. jianjin writes every number.</h2>
+    <div class="grid">
+      <div class="box"><p class="big">Statistics only</p><p>The model sees counts, problem names and episode ids, never joint data or video.</p></div>
+      <div class="box"><p class="big">Placeholders</p><p>It writes {n_doubt}, not 13. A digit it writes itself is rejected; one retry, then a template.</p></div>
+      <div class="box"><p class="big">Open weights</p><p>Nemotron 3.5 Lightning (OpenMDW-1.1): a site can later run it on its own machines.</p></div>
+    </div>
+  </section>
+
+  <section class="card" aria-label="Closing">
+    <h1>jianjin</h1>
+    <p class="lead">Screen every episode, explain what went wrong, and feed it back to the operators.</p>
+    <p class="url">github.com/hoongyu/jianjin</p>
+    <p class="note">Apache-2.0. Joint checks run on a laptop; the report is one offline HTML file.</p>
+  </section>
+
+</div>
+<p class="hint">← → to switch cards · F11 full screen</p>
+<script>
+  const cards = [...document.querySelectorAll('.card')];
+  let i = 0;
+  function fit() {
+    const s = Math.min(innerWidth / 1920, innerHeight / 1080);
+    cards.forEach(c => { c.style.transform = 'scale(' + s + ')'; });
+  }
+  function show(n) {
+    i = (n + cards.length) % cards.length;
+    cards.forEach((c, k) => c.classList.toggle('on', k === i));
+  }
+  addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') show(i + 1);
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') show(i - 1);
+  });
+  addEventListener('resize', fit);
+  fit();
+</script>
+</body>
+</html>
