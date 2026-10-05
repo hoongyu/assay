@@ -219,6 +219,11 @@ def template(facts: Facts, lang: str) -> str:
     return "".join(parts)
 
 
+def _tidy_zh(text: str) -> str:
+    """中文段的空格：汉字和英文之间补一个；右引号、右括号后面紧跟汉字时去掉（模型常在占位符后面多打一个空格）。"""
+    return re.sub(r"(?<=[」）】》])\s+(?=[一-鿿])", "", spaced(text))
+
+
 def _ask(facts: Facts, lang: str, chat: Chat, model: str) -> tuple[str | None, list[str], list[dict]]:
     """问模型，不合格带着问题重试一次。返回能收的文字（带占位符）或 None、遇到的问题、每次尝试的原文。"""
     keys = set(facts.meaning)
@@ -268,7 +273,7 @@ def summarize(facts: Facts, chat: Chat | None = None, model: str = DEFAULT_MODEL
                                                 "source": source[lang], "problems": problems[lang],
                                                 "attempts": attempts},
                                                ensure_ascii=False, indent=1), encoding="utf-8")
-        texts[lang] = spaced(fill(raw, facts, lang)) if lang == "zh" else fill(raw, facts, lang)
+        texts[lang] = _tidy_zh(fill(raw, facts, lang)) if lang == "zh" else fill(raw, facts, lang)
     used = model if "model" in source.values() or any(p for p in problems.values()) else None
     return Summary(texts, source, used, problems)
 

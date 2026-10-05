@@ -204,3 +204,10 @@ def test_token_factory_chat_turns_thinking_off_and_rejects_truncated_answers(mon
     assert sent[0].get_header("Authorization") == "Bearer k"
     with pytest.raises(summary.Truncated):
         chat([{"role": "user", "content": "hi"}], "nvidia/x")
+
+
+def test_summarize_drops_space_between_closing_bracket_and_chinese(tmp_path):
+    from jianjin.summary import summarize
+
+    s = summarize(facts5(), chat=fake_chat("「{cause_1}」 有 {cause_1_n} 条。"), cache_dir=tmp_path, langs=("zh",))
+    assert s.texts["zh"] == "「二次抓取」有 2 条。"
