@@ -11,7 +11,18 @@ from dataclasses import dataclass
 import numpy as np
 
 from jianjin.checks.config import CheckConfig, NotApplicable
-from jianjin.checks.signal import excursion, gripper_channels, joint_scale, level_changes, path_length
+from jianjin.checks.signal import (
+    arm_channels,
+    bursts,
+    excursion,
+    gripper_channels,
+    jerk,
+    joint_scale,
+    level_changes,
+    path_length,
+    speed,
+    stops,
+)
 from jianjin.types import Cause, Episode, Finding
 
 Found = dict[str, list[Finding]]
@@ -251,3 +262,100 @@ def regrasp(
                       f"{s.upper:.0f} 次，像是抓了不止一回；换档在 {shown} 秒"),
         )]
     return found, skipped
+
+
+# ---- 动作不流畅、速度过快 ----
+# 2026-10-05 加，见 docs/superpowers/specs/2026-10-05-motion-quality-design.md。motion_scores 一次算出全部候选，
+# 考卷 C 拿它比；规则只用选中的那个。
+
+# 候选名：(哪一类问题, 阈值怎么比)。ratio 是和参照那批中位数的比值，count 是次数减参照那批的常见上限。
+MOTION_CANDIDATES = {
+    "duration": ("jerky", "ratio"),  # 基线：示范比同任务长多少
+    "stops": ("jerky", "count"),
+    "bursts": ("jerky", "count"),
+    "jerk": ("jerky", "ratio"),
+    "duration_short": ("fast", "ratio"),  # 基线：示范比同任务短多少
+    "peak_speed": ("fast", "ratio"),
+    "mean_speed": ("fast", "ratio"),
+}
+
+
+@dataclass(frozen=True)
+class MotionScore:
+    """一条示范和参照那批比，在各候选上的分数（越大越像有问题），以及写证据用的细节。"""
+
+    n: int  # 参照那批有几条
+    scores: dict[str, float]
+    detail: dict
+
+
+def _ratio(a: float, b: float) -> float:
+    return a / b if b > 0 else float("nan")
+
+
+def motion_scores(
+    episodes: list[Episode], cfg: CheckConfig, reference: list[Episode] | None = None
+) -> tuple[dict[str, MotionScore], Skipped]:
+    """只看手臂关节（夹爪、灵巧手不算），按参照那批每个关节的幅度归一化；逐帧速度是动得最快的那个关节的。"""
+
+    def basics(e: Episode, arm: list[int], scale: np.ndarray):
+        s = e.state[:, arm]
+        v = speed(s, e.fps, scale)
+        j = jerk(s, e.fps, scale)
+        st = stops(v, cfg.still_rate, max(1, round(cfg.stop_s * e.fps)))
+        p95 = float(np.nanpercentile(v, 95)) if len(v) else 0.0
+        jm = float(np.nanmean(j)) if len(j) else 0.0
+        return v, st, p95, jm, path_length(s, scale) / e.duration
+
+    def segments(v: np.ndarray, peak: float, fps: float) -> list[int]:
+        return bursts(v, cfg.burst_low * peak, cfg.burst_high * peak, max(1, round(cfg.burst_dwell_s * fps)))
+
+    def summarize(group):
+        arm = arm_channels(group[0].state_names)
+        if not arm:
+            raise NotApplicable("认不出手臂关节")
+        scale = joint_scale(np.concatenate([e.state[:, arm] for e in group]))
+        if not np.isfinite(scale).any():
+            raise NotApplicable(f"同任务 {len(group)} 条示范的手臂基本没动，不查动作顺不顺、快不快")
+        b = [basics(e, arm, scale) for e in group]
+        peak = float(np.median([x[2] for x in b]))
+
+        def upper(xs):
+            return float(np.quantile(xs, cfg.motion_quantile, method="higher"))
+
+        return {
+            "arm": arm,
+            "scale": scale,
+            "peak": peak,
+            "duration": float(np.median([e.duration for e in group])),
+            "stop_upper": upper([len(x[1]) for x in b]),
+            "burst_upper": upper([len(segments(x[0], peak, e.fps)) for x, e in zip(b, group)]),
+            "jerk": float(np.median([x[3] for x in b])),
+            "mean_speed": float(np.median([x[4] for x in b])),
+        }
+
+    def judge(ep, ref, n):
+        v, st, p95, jm, mean_speed = basics(ep, ref["arm"], ref["scale"])
+        seg = segments(v, ref["peak"], ep.fps)
+        scores = {
+            "duration": _ratio(ep.duration, ref["duration"]),
+            "stops": len(st) - ref["stop_upper"],
+            "bursts": len(seg) - ref["burst_upper"],
+            "jerk": _ratio(jm, ref["jerk"]),
+            "duration_short": _ratio(ref["duration"], ep.duration),
+            "peak_speed": _ratio(p95, ref["peak"]),
+            "mean_speed": _ratio(mean_speed, ref["mean_speed"]),
+        }
+        detail = {
+            "duration": ep.duration,
+            "ref_duration": ref["duration"],
+            "n_stops": len(st),
+            "stop_upper": ref["stop_upper"],
+            "stop_times": [(s / ep.fps, e / ep.fps) for s, e in st],
+            "n_bursts": len(seg),
+            "burst_upper": ref["burst_upper"],
+        }
+        return MotionScore(n, scores, detail)
+
+    found, skipped = _compare(episodes, cfg, reference, summarize, judge)
+    return {k: v[0] for k, v in found.items()}, skipped

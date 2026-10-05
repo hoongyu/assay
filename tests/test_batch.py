@@ -210,3 +210,69 @@ def test_regrasp_ignores_a_brief_overshoot():
     eps = [grip_ep(2, f"ok{i}") for i in range(6)] + [odd]
     assert regrasp(eps, REG)[0] == {}
     assert set(regrasp(eps, replace(REG, grip_dwell_s=0.0))[0]) == {"blip"}
+
+
+# ---- 动作不流畅、速度过快：候选分数 ----
+
+MOT = CheckConfig(still_rate=0.02, stop_s=0.3, burst_low=0.2, burst_high=0.5, burst_dwell_s=0.1, motion_quantile=0.75)
+
+
+def minjerk(n, dist=1.0):
+    """最小 jerk 的一下：n 帧从 0 走到 dist。"""
+    t = np.linspace(0, 1, n)
+    return dist * (10 * t**3 - 15 * t**4 + 6 * t**5)
+
+
+def arm_ep(path, ep_id, pad=15):
+    """两个手臂关节加一个不动的夹爪；前后各停 pad 帧（摆姿势、收手）。"""
+    x = np.concatenate([np.zeros(pad), path, np.full(pad, path[-1])])
+    return make_episode(np.stack([x, 0.5 * x, np.zeros_like(x)], axis=1), names=["j0", "j1", "gripper"], ep_id=ep_id)
+
+
+def normals():
+    return [arm_ep(minjerk(90, a), f"ok{i}") for i, a in enumerate([1.0, 1.05, 0.95, 1.02, 0.98, 1.01])]
+
+
+def stop_and_go():
+    """同样走到 1，分四下走，中间停三回、每回 0.5 秒。"""
+    parts = []
+    for k in range(4):
+        parts.append(k * 0.25 + minjerk(30, 0.25))
+        if k < 3:
+            parts.append(np.full(15, (k + 1) * 0.25))
+    return arm_ep(np.concatenate(parts), "jerky")
+
+
+def test_motion_scores_stop_and_go_and_fast():
+    from jianjin.checks.batch import motion_scores
+
+    ref = normals()
+    eps = ref + [stop_and_go(), arm_ep(minjerk(45), "fast")]
+    scores, skipped = motion_scores(eps, MOT, reference=ref)
+    assert skipped == {}
+    jerky, fast = scores["jerky"], scores["fast"]
+    assert jerky.n == 6
+    assert jerky.scores["stops"] == 3 and jerky.detail["n_stops"] == 3
+    assert jerky.scores["bursts"] == 3 and jerky.detail["n_bursts"] == 4
+    assert jerky.scores["duration"] == pytest.approx(195 / 120, rel=0.02)
+    assert jerky.scores["jerk"] > 2
+    # 每一下快到头时速度已经低于门槛，停顿起点比停住的那一帧（1.5、3.0、4.5 秒）早一点
+    assert [a for a, _ in jerky.detail["stop_times"]] == pytest.approx([1.5, 3.0, 4.5], abs=0.15)
+    assert all(scores[e.id].scores["stops"] <= 0 and scores[e.id].scores["bursts"] <= 0 for e in ref)
+    assert fast.scores["peak_speed"] == pytest.approx(2.0, rel=0.1)
+    assert fast.scores["duration_short"] == pytest.approx(120 / 75, rel=0.02)
+    assert fast.scores["mean_speed"] == pytest.approx(120 / 75, rel=0.05)
+    assert all(0.9 < scores[e.id].scores["peak_speed"] < 1.1 for e in ref)
+
+
+def test_motion_scores_skips_when_not_comparable():
+    from jianjin.checks.batch import motion_scores
+
+    scores, skipped = motion_scores(normals()[:4], MOT)
+    assert scores == {} and all("没法比" in why for why in skipped.values())
+    grippers = [make_episode(np.zeros((60, 1)), names=["gripper"], ep_id=f"g{i}") for i in range(5)]
+    scores, skipped = motion_scores(grippers, MOT)
+    assert scores == {} and set(skipped.values()) == {"认不出手臂关节"}
+    still = [arm_ep(np.zeros(60), f"s{i}") for i in range(5)]
+    scores, skipped = motion_scores(still, MOT)
+    assert scores == {} and all("基本没动" in why for why in skipped.values())

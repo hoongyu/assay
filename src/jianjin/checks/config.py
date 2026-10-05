@@ -37,3 +37,10 @@ class CheckConfig:
     # 余量 0 和 1 打平，取大的。加最短停留之前（*_v1.json）选的也是这两个。
     regrasp_margin: int = 1  # 开合次数超过「常见上限 + 这么多」才报
     regrasp_source: str = "state"  # 夹爪读主臂（action）还是从臂（state）
+    # 「动作不流畅」「速度过快」2026-10-05 加，见 docs/superpowers/specs/2026-10-05-motion-quality-design.md。
+    # 下面五个先验定、不调：一下犹豫零点几秒（「停顿过长」是 3 秒）；0.1 秒滤掉单帧的速度毛刺。
+    stop_s: float = 0.3  # 中途速度低于 still_rate 连续这么久，算停了一回
+    burst_low: float = 0.2  # 动作段：速度从同任务常见最快速度（各条速度 95 分位的中位数）的这么多以下
+    burst_high: float = 0.5  # 升到这么多以上，算一段
+    burst_dwell_s: float = 0.1  # 动作段数时，在一档里待不到这么久又回去的一趟不算
+    motion_quantile: float = 0.75  # 停顿回数、动作段数取参照那批的这个分位当「常见上限」
