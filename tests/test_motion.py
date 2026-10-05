@@ -1,5 +1,5 @@
 import numpy as np
-from helpers import make_episode
+from helpers import assert_bilingual, make_episode
 from jianjin.checks.config import CheckConfig
 from jianjin.checks.motion import long_pause
 from jianjin.types import Cause
@@ -18,6 +18,7 @@ def test_pause_in_middle_found():
     f = fs[0]
     assert f.cause is Cause.LONG_PAUSE and not f.hard
     assert abs(f.t0 - 2.0) < 0.1 and abs(f.t1 - 7.0) < 0.1
+    assert_bilingual(f.evidence)
 
 
 def test_still_at_start_and_end_is_normal():

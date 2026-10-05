@@ -9,6 +9,11 @@ class NotApplicable(Exception):
     """缺了某种数据，这条规则查不了；记进 not_checked，不当成通过。"""
 
 
+def reason(exc: Exception) -> str:
+    """查不了的原因。用它而不用 str(exc)：原因是 types.Bi 时，str() 会把英文丢掉。"""
+    return exc.args[0] if exc.args and isinstance(exc.args[0], str) else str(exc)
+
+
 @dataclass(frozen=True)
 class CheckConfig:
     # 速度单位是「每秒走过本条示范里该关节活动幅度的几分之几」

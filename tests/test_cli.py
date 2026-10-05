@@ -131,3 +131,33 @@ def test_check_summary_without_key_uses_cached_model_text(tmp_path, monkeypatch,
     printed = capsys.readouterr().out
     assert "NEBIUS_API_KEY" not in printed and "模型写的" in printed
     assert "本批 1 条。" in (tmp_path / "b.html").read_text(encoding="utf-8")
+
+
+def test_check_in_english(tmp_path, monkeypatch, capsys):
+    """--lang en：报告和终端打印都是英文（录给 Nebius 评委看）；JSON 里证据带英文。"""
+    from helpers import HAN
+
+    monkeypatch.delenv("NEBIUS_API_KEY", raising=False)
+    ds = make_lerobot_v3(tmp_path / "d", [("pick", paused6())])
+    out, js = tmp_path / "r.html", tmp_path / "v.json"
+    assert main(["check", str(ds), "--out", str(out), "--json", str(js), "--lang", "en", "--summary",
+                 "--cache", str(tmp_path / "c")]) == 0
+    html = out.read_text(encoding="utf-8")
+    assert '<html lang="en">' in html and "jianjin QA report" in html
+    printed = capsys.readouterr().out
+    assert "DOUBT 1" in printed and "long pause: 1" in printed and "Report written to" in printed
+    assert "Batch summary (en): template" in printed and not HAN.search(printed), printed
+    row = json.loads(js.read_text(encoding="utf-8"))[0]
+    assert row["findings"][0]["evidence_en"].startswith("The joints barely moved")
+    assert row["reasons_en"][0].startswith("Only joints reported")
+
+
+def test_summary_stats_command(tmp_path, capsys):
+    from test_summary import write_cache_entry
+
+    write_cache_entry(tmp_path, "a", "zh", "model", 1)
+    write_cache_entry(tmp_path, "b", "en", "template", 2)
+    assert main(["summary-stats", "--cache", str(tmp_path)]) == 0
+    printed = capsys.readouterr().out
+    assert "zh：第一次就过 1，重试以后过 0，退回模板 0（共 1 条）" in printed
+    assert "en：第一次就过 0，重试以后过 0，退回模板 1（共 1 条）" in printed

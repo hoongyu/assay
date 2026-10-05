@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from jianjin.checks.batch import empty_recording, end_pose, extra_motion, jerky, regrasp
-from jianjin.checks.config import CheckConfig, NotApplicable
+from jianjin.checks.config import CheckConfig, NotApplicable, reason
 from jianjin.checks.integrity import missing_values, timestamp_gaps, too_short, video_length
 from jianjin.checks.motion import long_pause
 from jianjin.types import Episode, Finding
@@ -52,7 +52,7 @@ def run_checks(
             try:
                 r.findings.extend(fn(ep, cfg))
             except NotApplicable as exc:
-                r.not_checked[name] = str(exc)
+                r.not_checked[name] = reason(exc)
     for name, fn in BATCH_CHECKS.items():
         found, skipped = fn(episodes, cfg, reference=reference)
         for eid, fs in found.items():

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import av
@@ -249,3 +250,17 @@ def write_cached_curve(cache: Path, ep: Episode, camera: str, progress: list[flo
                                 "version": "test", "times": [float(t) for t in times],
                                 "progress": progress, "success": success}), encoding="utf-8")
     return path
+
+
+HAN = re.compile(r"[一-鿿]")
+NUMBER = re.compile(r"\d+(?:\.\d+)?")
+
+
+def assert_bilingual(text: str) -> None:
+    """中文旁边带了英文（jianjin.types.Bi）：英文不含汉字，两份里的数字按顺序一样。"""
+    from jianjin.types import en
+
+    english = en(text)
+    assert english != text, f"没有英文：{text}"
+    assert not HAN.search(english), f"英文里有汉字：{english}"
+    assert NUMBER.findall(english) == NUMBER.findall(text), f"数字对不上：{text} / {english}"

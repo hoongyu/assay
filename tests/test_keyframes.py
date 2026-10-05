@@ -20,6 +20,12 @@ def test_whole_episode_finding_takes_start_middle_end():
     assert keyframe_times(v_with((0.0, 10.0)), 10.0) == [0.0, 5.0, 9.95]
 
 
+def test_finding_with_moments_takes_those_moments():
+    """二次抓取这类整条的发现带了换档时刻：按时刻取，超过 4 个时均匀取、保留首尾（叠毛巾 ep2 的六次换档）。"""
+    f = Finding("regrasp", Cause.REGRASP, 0.0, 31.0, 2.0, "e", moments=(2.9, 11.1, 12.8, 13.5, 20.9, 22.0))
+    assert keyframe_times(Verdict("e", Label.DOUBT, ["r"], [f]), 31.0) == [2.9, 12.8, 13.5, 22.0]
+
+
 def test_times_clamped_merged_and_capped():
     assert keyframe_times(v_with((9.0, 12.0)), 10.0) == [9.0, 9.95]
     assert keyframe_times(v_with((1.0, 1.2)), 10.0) == [1.0]

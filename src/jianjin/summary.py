@@ -17,23 +17,36 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from jianjin.diagnose import Label, Verdict
-from jianjin.types import Cause, Episode, source_name, spaced
+from jianjin.i18n import check_name
+from jianjin.types import CAUSE_EN, Bi, Cause, Episode, en, spaced
 
-CAUSE_EN = {
-    Cause.INCOMPLETE: "incomplete", Cause.EMPTY: "empty recording", Cause.MISPLACED: "mispositioned",
-    Cause.GRASP_MISS: "missed grasp", Cause.REGRASP: "regrasp", Cause.DROP: "object dropped",
-    Cause.EXTRA_MOTION: "extra motion", Cause.LONG_PAUSE: "long pause", Cause.JERKY: "unsmooth motion",
-    Cause.WRONG_TASK: "wrong task", Cause.DATA_ERROR: "data error",
+# 给采集员的提醒：每类原因一句，中英各一句，由我们写。模型只能用 {advice_i} 占位符引用，不许自己编建议
+# （2026-10-05 第一次真调用，模型自己写了「确保 Robometer 的进度回落检查能跑」，对采集员没用）。
+ADVICE = {
+    Cause.INCOMPLETE: ("做完整个任务、手臂回到起始姿态以后再停止录制。",
+                       "Stop recording only after the task is done and the arm is back in its start pose."),
+    Cause.EMPTY: ("开录前确认手臂真的在动；没有动作的录制直接删掉，不要提交。",
+                  "Make sure the arm is actually moving before you record; delete recordings with no motion "
+                  "instead of submitting them."),
+    Cause.MISPLACED: ("放下物体前先对准目标位置，再松开夹爪。", "Line the object up with the target before opening the gripper."),
+    Cause.GRASP_MISS: ("夹爪合紧、确认夹住物体以后再提起。", "Close the gripper fully and make sure the object is held before lifting."),
+    Cause.REGRASP: ("抓取前先把夹爪对正物体，合上以后稍停再提起，避免松开重抓。",
+                    "Square the gripper to the object before closing it and pause briefly before lifting, so it does "
+                    "not have to let go and grasp again."),
+    Cause.DROP: ("搬运时放慢速度，确认夹稳以后再移动。", "Carry the object more slowly and make sure the grip is secure before moving."),
+    Cause.EXTRA_MOTION: ("按最直接的路线完成任务，少做来回调整。",
+                         "Take the most direct path through the task and avoid back-and-forth adjustments."),
+    Cause.LONG_PAUSE: ("中途卡住时停止录制、重新开始，不要在半空中长时间停住。",
+                       "If you get stuck mid-task, stop and restart the recording instead of holding still for a long time."),
+    Cause.JERKY: ("保持连贯的节奏完成动作，中途不要反复停顿和修正。",
+                  "Keep a steady rhythm through the motion, without repeated stops and corrections."),
+    Cause.WRONG_TASK: ("开录前核对任务描述和要做的动作是否一致。",
+                       "Before recording, check that the task description matches what you are about to do."),
+    Cause.DATA_ERROR: ("检查录制程序：视频和关节数据要同时开始、同时结束，时长过短的录制要删掉。",
+                       "Check the recording setup: video and joint data should start and stop together, and recordings "
+                       "that are too short should be deleted."),
 }
-CHECKS = {  # 规则名：（中文，英文）
-    "missing_values": ("读数缺失", "missing readings"), "too_short": ("示范过短", "too short"),
-    "timestamp_gaps": ("时间戳", "timestamp gaps"), "video_length": ("视频时长", "video length"),
-    "long_pause": ("停顿过长", "long pause"), "extra_motion": ("多余动作", "extra motion"),
-    "end_pose": ("没做完", "incomplete"), "empty_recording": ("空录", "empty recording"),
-    "regrasp": ("二次抓取", "regrasp"), "jerky": ("动作不流畅", "unsmooth motion"),
-    "wrong_task": ("指令不符", "wrong task"), "progress_drop": ("进度回落", "progress drop"),
-}
-SOURCE_EN = {"joints": "joint", "meta": "metadata", "robometer": "Robometer", "topreward": "TOPReward"}
+
 TOP_CAUSES = 5
 EXAMPLES = 3
 TOP_OPERATORS = 5
@@ -45,14 +58,6 @@ class Facts:
 
     meaning: dict[str, str]
     values: dict[str, dict[str, str]]
-
-
-def _check_name(key: str) -> tuple[str, str]:
-    src, _, name = key.rpartition(".")
-    zh, en = CHECKS.get(name, (name, name))
-    if src:
-        return f"{source_name(src)}的「{zh}」", f"{SOURCE_EN.get(src, src)} {en}"
-    return zh, en
 
 
 def _short(episode_id: str) -> str:
@@ -88,11 +93,12 @@ def batch_facts(verdicts: list[Verdict], episodes: list[Episode], title: str) ->
         put(f"cause_{i}_pct", f"share of the batch with problem #{i}", f"{round(100 * len(ids) / n)}%")
         eg = [_short(x) for x in ids[:EXAMPLES]]
         put(f"cause_{i}_eg", f"example episode ids with problem #{i}", "、".join(eg), ", ".join(eg))
+        put(f"advice_{i}", f"a fixed, pre-written tip for the operators about problem #{i}", *ADVICE[cause])
 
     unchecked = Counter(k for v in verdicts for k, why in v.not_checked.items() if "没启用" not in why)
     for i, (key, k) in enumerate(sorted(unchecked.items(), key=lambda kv: (-kv[1], kv[0]))[:3], 1):
-        z, e = _check_name(key)
-        put(f"unchecked_{i}", f"name of a check that could not run on some episodes (#{i})", z, e)
+        put(f"unchecked_{i}", f"name of a check that could not run on some episodes (#{i})", check_name(key),
+            check_name(key, "en"))
         put(f"unchecked_{i}_n", f"number of episodes where check #{i} could not run", k)
 
     ops = {ep.id: ep.operator_id for ep in episodes}
@@ -125,14 +131,16 @@ EN_NUMBER = re.compile(r"\b(?:two|three|four|five|six|seven|eight|nine|ten|eleve
 def check_text(text: str, keys: set[str]) -> list[str]:
     """模型写的文字能不能收：占位符都得是给过的；去掉占位符以后，不许有它自己写的数字。返回问题，空表示能收。
     「一」太常见（一下、同一处），英文的 one 也是，都放过。"""
-    problems = [f"用了没给过的占位符 {{{k}}}" for k in dict.fromkeys(PLACEHOLDER.findall(text)) if k not in keys]
+    problems = [Bi(f"用了没给过的占位符 {{{k}}}", f"used a placeholder that was not given: {{{k}}}")
+                for k in dict.fromkeys(PLACEHOLDER.findall(text)) if k not in keys]
     rest = PLACEHOLDER.sub("", text)
     if "{" in rest or "}" in rest:
-        problems.append("有写坏的占位符（花括号不成对）")
-    for name, pattern in (("阿拉伯数字", DIGIT), ("汉字数字", ZH_NUMBER), ("英文数字", EN_NUMBER)):
+        problems.append(Bi("有写坏的占位符（花括号不成对）", "has a broken placeholder (unmatched braces)"))
+    for name, name_en, pattern in (("阿拉伯数字", "digits", DIGIT), ("汉字数字", "Chinese number words", ZH_NUMBER),
+                                   ("英文数字", "English number words", EN_NUMBER)):
         found = list(dict.fromkeys(m.group(0) for m in pattern.finditer(rest)))
         if found:
-            problems.append(f"自己写了{name}：{'、'.join(found[:5])}")
+            problems.append(Bi(f"自己写了{name}：{'、'.join(found[:5])}", f"wrote {name_en} itself: {', '.join(found[:5])}"))
     return problems
 
 
@@ -148,16 +156,18 @@ DEFAULT_MODEL = "nvidia/Nemotron-3_5-Lightning"
 # 2026-10-05 第一版在真接口上两种语言都没过核对：照抄了提示里给的值（含批次名里的 100），还自造了 {placeholder}、
 # {x} 这样的占位符。第二版不给带数字的值，改成让它改写一份全是占位符的草稿，重试时逐个列出能用的占位符。
 # 第二版存下的原文显示，真正的原因是推理过程混进了正文、写到长度上限被截断（见 token_factory_chat）；
-# 第三版关掉推理。缓存按这个版本号分开，改了请求就要改它。
-PROMPT_VERSION = "3"
+# 第三版关掉推理。第四版（2026-10-05）给采集员的建议只许用 {advice_i}（见 ADVICE），重试时用英文说问题。
+# 缓存按这个版本号分开，改了请求就要改它。
+PROMPT_VERSION = "4"
 SYSTEM = (
     "You rewrite a plain draft into a short, useful feedback note for the QA lead and the teleoperators of a robot "
     "data-collection site. The draft and the placeholder list are the ONLY facts. Rules: (1) Keep every placeholder "
     "in curly braces exactly as written, e.g. {n_doubt}; the software replaces them with the real numbers and names "
     "afterwards. (2) Never write digits or number words yourself, and never spell out a value that is only given as "
     "a placeholder. (3) Use only the listed placeholders; do not make up new ones. (4) Do not invent problems or "
-    "facts. (5) You may reorder, merge or drop sentences, and add practical advice tied to the listed problems: what "
-    "the reviewers should look at first and what the operators should watch for next time. (6) Output only the note: "
+    "facts. (5) You may reorder, merge or drop sentences, and tell the reviewers which episodes to look at first. "
+    "Advice for the operators may only come from the {advice_N} placeholders: use the ones that fit and do not write "
+    "tips of your own. (6) Output only the note: "
     "plain prose, no reasoning, no headings, no lists, no markdown."
 )
 LANG_SPEC = {
@@ -205,6 +215,8 @@ def template(facts: Facts, lang: str) -> str:
     if "cause_1" in v:
         parts.append("报得最多的是「{cause_1}」，{cause_1_n} 条（{cause_1_pct}），比如 {cause_1_eg}。" if zh else
                      " The most frequent problem is {cause_1}: {cause_1_n} episodes ({cause_1_pct}), e.g. {cause_1_eg}.")
+    if "advice_1" in v:
+        parts.append("给采集员的提醒：{advice_1}" if zh else " Tip for operators: {advice_1}")
     if "cause_2" in v:
         parts.append("其次是「{cause_2}」，{cause_2_n} 条。" if zh else " Next is {cause_2}: {cause_2_n} episodes.")
     if v["n_reject"] != "0":
@@ -238,9 +250,9 @@ def _ask(facts: Facts, lang: str, chat: Chat, model: str) -> tuple[str | None, l
         attempts.append({"raw": raw, "problems": found})
         if not found:
             return text, problems, attempts
-        problems += [f"第 {attempt + 1} 次：{p}" for p in found]
+        problems += [Bi(f"第 {attempt + 1} 次：{p}", f"attempt {attempt + 1}: {en(p)}") for p in found]
         messages = messages + [{"role": "assistant", "content": text},
-                               {"role": "user", "content": "This note cannot be used: " + "; ".join(found)
+                               {"role": "user", "content": "This note cannot be used: " + "; ".join(en(p) for p in found)
                                 + f". Rewrite it from the plain draft. Allowed placeholders: {allowed}. "
                                 "Do not write any digits or number words; output only the note."}]
     return None, problems, attempts
@@ -264,7 +276,8 @@ def summarize(facts: Facts, chat: Chat | None = None, model: str = DEFAULT_MODEL
             try:
                 got, problems[lang], attempts = _ask(facts, lang, chat, model)
             except Exception as exc:  # 网络、额度、限流：这次用模板，不缓存，下次再试
-                raw, source[lang], problems[lang] = template(facts, lang), "template", [f"调用失败：{exc}"]
+                raw, source[lang], problems[lang] = template(facts, lang), "template", [Bi(f"调用失败：{exc}",
+                                                                                           f"the call failed: {exc}")]
             else:
                 raw, source[lang] = (got, "model") if got is not None else (template(facts, lang), "template")
                 if path is not None:
@@ -302,3 +315,18 @@ def token_factory_chat(api_key: str, base_url: str = BASE_URL, timeout: float = 
         return choice["message"].get("content") or ""
 
     return chat
+
+
+def cache_stats(cache_dir: str | Path) -> dict[str, dict[str, int]]:
+    """缓存里当前提示版本的小结，按语言数三种结果：第一次就过、重试以后过、退回模板。调用失败的不缓存，不在里面。"""
+    out: dict[str, dict[str, int]] = {}
+    for path in sorted((Path(cache_dir) / "summary").glob("*.json")):
+        hit = json.loads(path.read_text(encoding="utf-8"))
+        if hit.get("prompt") != PROMPT_VERSION:
+            continue
+        row = out.setdefault(hit["lang"], {"first_try": 0, "after_retry": 0, "template": 0})
+        if hit["source"] != "model":
+            row["template"] += 1
+        else:
+            row["first_try" if len(hit.get("attempts", [])) <= 1 else "after_retry"] += 1
+    return out

@@ -1,6 +1,7 @@
+from helpers import assert_bilingual
 from jianjin.diagnose import Label, diagnose, label_of, overlaps
 from jianjin.judges.base import Curve
-from jianjin.types import Cause, Finding
+from jianjin.types import Bi, Cause, Finding, en
 
 DUR = 10.0
 
@@ -20,11 +21,16 @@ def test_nothing_found_is_pass():
 def test_hard_rule_rejects_alone():
     label, reasons = label_of([f(Cause.DATA_ERROR, 0, 0.5, hard=True)], DUR)
     assert label == Label.REJECT and reasons[0].startswith("客观硬规则")
+    short = Finding("too_short", Cause.DATA_ERROR, 0, 0.5, 0.5, Bi("整条只有 0.50 秒", "Only 0.50 s long"), hard=True)
+    (r,) = label_of([short], DUR)[1]
+    assert_bilingual(r)
+    assert en(r) == "Objective hard rule: Only 0.50 s long"
 
 
 def test_one_soft_signal_is_doubt():
     label, reasons = label_of([f(Cause.LONG_PAUSE, 2, 6)], DUR)
     assert label == Label.DOUBT and "只有关节" in reasons[0]
+    assert_bilingual(reasons[0])
 
 
 def test_same_source_twice_is_still_doubt():
@@ -34,17 +40,21 @@ def test_same_source_twice_is_still_doubt():
 def test_two_sources_localized_and_overlapping_reject():
     label, reasons = label_of([f(Cause.LONG_PAUSE, 2, 6), f(Cause.DROP, 5, 7, source="robometer")], DUR)
     assert label == Label.REJECT and "Robometer" in reasons[0] and "第 5.0 到 6.0 秒" in reasons[0]
+    assert_bilingual(reasons[0])
 
 
 def test_two_sources_disjoint_is_doubt():
     label, reasons = label_of([f(Cause.LONG_PAUSE, 2, 4), f(Cause.DROP, 6, 7, source="robometer")], DUR)
     assert label == Label.DOUBT and "对不上" in reasons[0]
+    assert_bilingual(reasons[0])
 
 
 def test_whole_episode_finding_needs_same_cause():
     whole = f(Cause.WRONG_TASK, 0, DUR, source="robometer")
     assert label_of([whole, f(Cause.LONG_PAUSE, 2, 6)], DUR)[0] == Label.DOUBT
-    assert label_of([whole, f(Cause.WRONG_TASK, 0, DUR, source="topreward")], DUR)[0] == Label.REJECT
+    label, reasons = label_of([whole, f(Cause.WRONG_TASK, 0, DUR, source="topreward")], DUR)
+    assert label == Label.REJECT
+    assert_bilingual(reasons[0])
 
 
 def test_diagnose_sorts_causes_and_keeps_extras():
@@ -73,7 +83,8 @@ def rising(top):
 def test_batch_without_video_says_so():
     vs = diagnose_batch(smooth_batch())
     assert [v.label for v in vs] == [Label.PASS] * 6
-    assert all("没跑视频评判" in v.not_checked["视频评判"] for v in vs)
+    assert all("没跑视频评判" in v.not_checked["video_judges"] for v in vs)
+    assert_bilingual(vs[0].not_checked["video_judges"])
 
 
 def test_batch_with_video_rules_and_progress():
@@ -84,7 +95,7 @@ def test_batch_with_video_rules_and_progress():
     v0 = vs[0]
     assert v0.label == Label.DOUBT and [f.cause for f in v0.causes] == [Cause.WRONG_TASK]
     assert v0.progress is curves["e0"]
-    assert vs[1].label == Label.PASS and "视频评判" not in vs[1].not_checked
+    assert vs[1].label == Label.PASS and "video_judges" not in vs[1].not_checked
     assert "缓存里没有 TOPReward" in vs[1].not_checked["topreward.wrong_task"]
 
 
@@ -119,6 +130,8 @@ def test_empty_recording_and_wrong_task_agree():
     label, reasons = label_of([empty, wrong], DUR)
     assert label == Label.REJECT
     assert reasons == ["关节报「空录」、Robometer 报「指令不符」，说的都是整条没做指令里的任务"]
+    assert en(reasons[0]) == ("joints (empty recording) and Robometer (wrong task): "
+                              "both say the episode never does the task in the instruction")
 
 
 def test_empty_recording_needs_the_right_partner():

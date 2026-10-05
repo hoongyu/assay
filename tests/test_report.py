@@ -3,23 +3,25 @@ from pathlib import Path
 
 import numpy as np
 
-from helpers import make_episode
+from helpers import HAN, make_episode
 from jianjin.diagnose import diagnose
 from jianjin.judges.base import Curve
 from jianjin.report import render
-from jianjin.types import Cause, Finding
+from jianjin.types import Bi, Cause, Finding
 
 SNAP = Path(__file__).parent / "snapshots" / "report_small.html"
 
 
 def small():
     eps = [make_episode(np.zeros(90), ep_id=f"ds/ep{i}", task="pick <the> cube") for i in range(3)]
-    pause = Finding("long_pause", Cause.LONG_PAUSE, 1.0, 2.0, 1.0, "关节几乎不动，停了 1.0 秒")
-    drop = Finding("progress_drop", Cause.DROP, 1.5, 2.5, 0.4, "进度从 80% 掉到 40%", source="robometer")
+    pause = Finding("long_pause", Cause.LONG_PAUSE, 1.0, 2.0, 1.0,
+                    Bi("关节几乎不动，停了 1.0 秒", "The joints barely moved for 1.0 s"))
+    drop = Finding("progress_drop", Cause.DROP, 1.5, 2.5, 0.4, Bi("进度从 80% 掉到 40%", "Progress fell from 80% to 40%"),
+                   source="robometer")
     curve = Curve("robometer", "v", [0.0, 1.0, 2.0, 3.0], [0.1, 0.8, 0.4, 0.9])
     vs = [
         diagnose("ds/ep0", 3.0, [pause, drop], {}, curve),
-        diagnose("ds/ep1", 3.0, [pause], {"robometer.wrong_task": "同任务只有 3 条"}, curve),
+        diagnose("ds/ep1", 3.0, [pause], {"robometer.wrong_task": Bi("同任务只有 3 条", "Only 3 episodes")}, curve),
         diagnose("ds/ep2", 3.0, [], {}, None),
     ]
     return vs, eps
@@ -39,7 +41,7 @@ def test_counts_order_and_escaping():
     html = render(vs, eps, title="ds <1>", judges=["robometer"])
     assert "pick &lt;the&gt; cube" in html and "<the>" not in html and "ds &lt;1&gt;" in html
     assert html.count('<article class="card ') == 3
-    assert html.index('data-label="作废"') < html.index('data-label="存疑"') < html.index('data-label="合格"')
+    assert html.index('data-label="reject"') < html.index('data-label="doubt"') < html.index('data-label="pass"')
     assert "人工只需要看存疑的 1 条" in html
 
 
@@ -124,3 +126,40 @@ def test_summary_section_only_when_given():
     assert "nvidia/Nemotron-3_5-Lightning" in html and "数字由拣金按统计填" in html
     assert "Template text" in html and html.index("本批小结") < html.index("每条示范")
     assert "本批小结" not in render(vs, eps, title="ds")
+
+
+def test_not_checked_uses_rule_names():
+    vs, eps = small()
+    assert "Robometer 的「指令不符」：同任务只有 3 条" in render(vs, eps, title="ds")
+
+
+def test_footer_calls_conservative_verdicts_a_tradeoff():
+    vs, eps = small()
+    html = render(vs, eps, title="ds")
+    assert "错杀一条好数据比漏掉一条坏数据贵" not in html and "判得偏保守是取舍" in html
+
+
+def test_english_report_has_no_chinese():
+    vs, eps = small()
+    short = Finding("too_short", Cause.DATA_ERROR, 0.0, 3.0, 0.5, Bi("整条只有 0.50 秒", "Only 0.50 s long"), hard=True)
+    vs[2] = diagnose("ds/ep2", 3.0, [short], {}, None)
+    shots = {"ds/ep0": [(1.0, "data:image/jpeg;base64,AAAA"), (3.5, "data:image/jpeg;base64,BBBB")]}
+    for judges in (["robometer"], []):
+        html = render(vs, eps, title="ds", judges=judges, generated="2026-10-03 12:00", shots=shots, lang="en",
+                      failures=[("a.hdf5", Bi("坏了", "broken"))])
+        assert not HAN.search(html), HAN.search(html)
+        assert '<html lang="en">' in html and "jianjin QA report" in html
+    assert all(w in html for w in ("PASS", "DOUBT", "REJECT", "long pause", "object dropped", "whole episode",
+                                   "1.0 to 2.0 s", "Robometer wrong task: Only 3 episodes", "at 3.5 s (after the joint data)",
+                                   "Objective hard rule: Only 0.50 s long", "rarely thrown away"))
+    assert "Only joints reported a problem" in html
+
+
+def test_english_report_puts_the_english_summary_first():
+    from jianjin.summary import Summary
+
+    vs, eps = small()
+    s = Summary(texts={"zh": "本批 3 条。", "en": "Batch ds: 3 episodes."}, source={"zh": "model", "en": "model"},
+                model="nvidia/Nemotron-3_5-Lightning", problems={})
+    html = render(vs, eps, title="ds", summary=s, lang="en")
+    assert "Batch summary" in html and html.index("Batch ds: 3 episodes.") < html.index("本批 3 条。")
