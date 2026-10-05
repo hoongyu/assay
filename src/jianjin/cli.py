@@ -65,11 +65,11 @@ def _cmd_check(args: argparse.Namespace) -> int:
             from jianjin.summary import batch_facts, summarize, token_factory_chat
 
             key = os.environ.get("NEBIUS_API_KEY")
-            if not key:
-                print("  本批小结：没设 NEBIUS_API_KEY，用模板文字")
             summary = summarize(batch_facts(verdicts, res.episodes, Path(args.path).name),
                                 chat=token_factory_chat(key) if key else None, model=args.summary_model,
                                 cache_dir=args.cache)
+            if not key and "template" in summary.source.values():
+                print("  本批小结：没设 NEBIUS_API_KEY，缓存里也没有这批的，用模板文字")
             for lang, src in summary.source.items():
                 print(f"  本批小结（{lang}）：{'模型写的' if src == 'model' else '模板'}"
                       + (f"；{'；'.join(summary.problems[lang])}" if summary.problems.get(lang) else ""))

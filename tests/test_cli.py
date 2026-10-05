@@ -113,3 +113,21 @@ def test_check_summary_without_key_uses_template(tmp_path, monkeypatch, capsys):
     html = out.read_text(encoding="utf-8")
     assert "本批小结" in html and "1 条示范" in html and "模板" in html
     assert "NEBIUS_API_KEY" in capsys.readouterr().out
+
+
+def test_check_summary_without_key_uses_cached_model_text(tmp_path, monkeypatch, capsys):
+    """没设密钥，但这批的小结已经缓存过：用缓存里模型写的，不说「用模板」。"""
+    from jianjin import summary as sm
+
+    monkeypatch.delenv("NEBIUS_API_KEY", raising=False)
+    ds = make_lerobot_v3(tmp_path / "d", [("pick", paused6())])
+    cache = tmp_path / "c"
+    monkeypatch.setenv("NEBIUS_API_KEY", "k")
+    monkeypatch.setattr(sm, "token_factory_chat", lambda key: (lambda messages, model: "本批 {n_total} 条。"))
+    assert main(["check", str(ds), "--out", str(tmp_path / "a.html"), "--no-frames", "--summary", "--cache", str(cache)]) == 0
+    monkeypatch.delenv("NEBIUS_API_KEY")
+    capsys.readouterr()
+    assert main(["check", str(ds), "--out", str(tmp_path / "b.html"), "--no-frames", "--summary", "--cache", str(cache)]) == 0
+    printed = capsys.readouterr().out
+    assert "NEBIUS_API_KEY" not in printed and "模型写的" in printed
+    assert "本批 1 条。" in (tmp_path / "b.html").read_text(encoding="utf-8")
