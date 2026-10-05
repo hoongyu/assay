@@ -147,7 +147,9 @@ BASE_URL = "https://api.tokenfactory.nebius.com/v1/"
 DEFAULT_MODEL = "nvidia/Nemotron-3_5-Lightning"
 # 2026-10-05 第一版在真接口上两种语言都没过核对：照抄了提示里给的值（含批次名里的 100），还自造了 {placeholder}、
 # {x} 这样的占位符。第二版不给带数字的值，改成让它改写一份全是占位符的草稿，重试时逐个列出能用的占位符。
-PROMPT_VERSION = "2"
+# 第二版存下的原文显示，真正的原因是推理过程混进了正文、写到长度上限被截断（见 token_factory_chat）；
+# 第三版关掉推理。缓存按这个版本号分开，改了请求就要改它。
+PROMPT_VERSION = "3"
 SYSTEM = (
     "You rewrite a plain draft into a short, useful feedback note for the QA lead and the teleoperators of a robot "
     "data-collection site. The draft and the placeholder list are the ONLY facts. Rules: (1) Keep every placeholder "
@@ -271,15 +273,27 @@ def summarize(facts: Facts, chat: Chat | None = None, model: str = DEFAULT_MODEL
     return Summary(texts, source, used, problems)
 
 
-def token_factory_chat(api_key: str, base_url: str = BASE_URL, timeout: float = 120.0) -> Chat:
-    """Nebius Token Factory 的 OpenAI 兼容接口，用标准库发请求。"""
+class Truncated(Exception):
+    """回答写到长度上限被截断了，不拿去核对。"""
+
+
+def token_factory_chat(api_key: str, base_url: str = BASE_URL, timeout: float = 120.0, thinking: bool = False) -> Chat:
+    """Nebius Token Factory 的 OpenAI 兼容接口，用标准库发请求。
+
+    推理默认关掉：Nemotron 3.5 Lightning 默认开推理（模型卡：chat_template_kwargs 的 enable_thinking），
+    2026-10-05 在 Token Factory 上实测，推理过程以「Here's a thinking process」开头直接写进正文、没有 <think> 标签，
+    每次六七千字符，写到 2,048 个词元的上限还没写出那段话。"""
 
     def chat(messages: list[dict], model: str) -> str:
-        body = json.dumps({"model": model, "messages": messages, "temperature": 0.2, "max_tokens": 2048}).encode("utf-8")
+        body = json.dumps({"model": model, "messages": messages, "temperature": 0.2, "max_tokens": 1024,
+                           "chat_template_kwargs": {"enable_thinking": thinking}}).encode("utf-8")
         req = urllib.request.Request(base_url.rstrip("/") + "/chat/completions", data=body,
                                      headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=timeout) as r:
             data = json.loads(r.read().decode("utf-8"))
-        return data["choices"][0]["message"].get("content") or ""
+        choice = data["choices"][0]
+        if choice.get("finish_reason") == "length":
+            raise Truncated("回答写到长度上限被截断了")
+        return choice["message"].get("content") or ""
 
     return chat

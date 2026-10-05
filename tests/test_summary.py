@@ -164,3 +164,43 @@ def test_summarize_spaces_latin_words_in_chinese(tmp_path):
 
     s = summarize(facts5(), chat=fake_chat("{cause_1}和Robometer都要看。"), cache_dir=tmp_path, langs=("zh",))
     assert s.texts["zh"] == "二次抓取和 Robometer 都要看。"
+
+
+class FakeResponse:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def read(self):
+        import json
+
+        return json.dumps(self.payload).encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def test_token_factory_chat_turns_thinking_off_and_rejects_truncated_answers(monkeypatch):
+    import json
+
+    import pytest
+
+    from jianjin import summary
+
+    sent = []
+
+    def fake_urlopen(req, timeout):
+        sent.append(req)
+        return FakeResponse({"choices": [{"message": {"content": "好"}, "finish_reason": reply.pop(0)}]})
+
+    reply = ["stop", "length"]
+    monkeypatch.setattr(summary.urllib.request, "urlopen", fake_urlopen)
+    chat = summary.token_factory_chat("k")
+    assert chat([{"role": "user", "content": "hi"}], "nvidia/x") == "好"
+    body = json.loads(sent[0].data.decode("utf-8"))
+    assert body["chat_template_kwargs"] == {"enable_thinking": False}  # Nemotron 3.5 默认开推理，推理过程会混进正文
+    assert sent[0].get_header("Authorization") == "Bearer k"
+    with pytest.raises(summary.Truncated):
+        chat([{"role": "user", "content": "hi"}], "nvidia/x")
