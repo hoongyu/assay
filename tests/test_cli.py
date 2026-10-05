@@ -96,3 +96,10 @@ def test_check_report_has_keyframes_when_video_is_local(tmp_path, capsys):
     assert "1 条存疑或作废的示范配了关键帧" in capsys.readouterr().out
     assert main(["check", str(ds), "--out", str(out), "--no-frames"]) == 0
     assert '<div class="shots">' not in out.read_text(encoding="utf-8")
+
+
+def test_fetch_robomind_parses():
+    from jianjin.cli import build_parser
+
+    args = build_parser().parse_args(["fetch", "robomind", "--workers", "2"])
+    assert args.what == "robomind" and args.workers == 2

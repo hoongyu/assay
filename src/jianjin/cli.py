@@ -128,6 +128,12 @@ def _cmd_eval(args: argparse.Namespace) -> int:
 
 
 def _cmd_fetch(args: argparse.Namespace) -> int:
+    if args.what == "robomind":
+        from jianjin.eval.robomind_fetch import fetch_robomind_failure
+
+        stat = fetch_robomind_failure(args.data_root, workers=args.workers)
+        print("、".join(f"{k} {v} 条" for k, v in stat.items()))
+        return 0
     if args.what == "robovad":
         from jianjin.eval.robovad_fetch import fetch_robovad
 
@@ -207,10 +213,12 @@ def build_parser() -> argparse.ArgumentParser:
     e.set_defaults(func=_cmd_eval)
 
     f = sub.add_parser("fetch", help="下载考卷数据")
-    f.add_argument("what", nargs="?", choices=["exam_a", "robovad"], default="exam_a")
+    f.add_argument("what", nargs="?", choices=["exam_a", "robovad", "robomind"], default="exam_a",
+                   help="robomind：RoboMIND 公开的失败示范，只读关节（约 2 GB 流量，存下 200 多 MB）")
     f.add_argument("--config", default="configs/exam_a.toml")
     f.add_argument("--data-root", default="data")
     f.add_argument("--videos", action="store_true", help="连视频一起下")
+    f.add_argument("--workers", type=int, default=4, help="robomind 同时下几条")
     f.set_defaults(func=_cmd_fetch)
 
     j = sub.add_parser("judge", help="在有 GPU 的机器上跑视频评判，结果写进缓存")
