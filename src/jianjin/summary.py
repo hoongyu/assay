@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 
@@ -105,3 +106,31 @@ def batch_facts(verdicts: list[Verdict], episodes: list[Episode], title: str) ->
                 put(f"op_{j}_cause", f"most frequent problem of operator #{j}", c.value, CAUSE_EN[c])
                 put(f"op_{j}_cause_n", f"episodes of operator #{j} with that problem", k)
     return Facts(meaning, {"zh": zh, "en": en})
+
+
+PLACEHOLDER = re.compile(r"\{([A-Za-z0-9_]+)\}")
+DIGIT = re.compile(r"[0-9０-９]")
+ZH_NUMBER = re.compile(r"[二两三四五六七八九十百千万][零〇一二两三四五六七八九十百千万]*\s*"
+                       r"(?:条|个|次|秒|成|项|位|名|批|段|处|种|类|回|分钟|小时|倍)")
+EN_NUMBER = re.compile(r"\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|"
+                       r"fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|hundreds?|"
+                       r"thousands?|dozens?|half)\b", re.IGNORECASE)
+
+
+def check_text(text: str, keys: set[str]) -> list[str]:
+    """模型写的文字能不能收：占位符都得是给过的；去掉占位符以后，不许有它自己写的数字。返回问题，空表示能收。
+    「一」太常见（一下、同一处），英文的 one 也是，都放过。"""
+    problems = [f"用了没给过的占位符 {{{k}}}" for k in dict.fromkeys(PLACEHOLDER.findall(text)) if k not in keys]
+    rest = PLACEHOLDER.sub("", text)
+    if "{" in rest or "}" in rest:
+        problems.append("有写坏的占位符（花括号不成对）")
+    for name, pattern in (("阿拉伯数字", DIGIT), ("汉字数字", ZH_NUMBER), ("英文数字", EN_NUMBER)):
+        found = list(dict.fromkeys(m.group(0) for m in pattern.finditer(rest)))
+        if found:
+            problems.append(f"自己写了{name}：{'、'.join(found[:5])}")
+    return problems
+
+
+def fill(text: str, facts: Facts, lang: str) -> str:
+    values = facts.values[lang]
+    return PLACEHOLDER.sub(lambda m: values[m.group(1)], text)

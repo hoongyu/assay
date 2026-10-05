@@ -50,3 +50,25 @@ def test_batch_facts_by_operator():
     zh = batch_facts(vs, eps, title="ds").values["zh"]
     assert (zh["op_1"], zh["op_1_n"], zh["op_1_flagged"], zh["op_1_cause"], zh["op_1_cause_n"]) == ("A", "3", "2", "二次抓取", "2")
     assert (zh["op_2"], zh["op_2_n"], zh["op_2_flagged"], zh["op_2_cause"], zh["op_2_cause_n"]) == ("B", "2", "1", "数据异常", "1")
+
+
+def test_check_text_rejects_numbers_the_model_wrote_itself():
+    from jianjin.summary import check_text
+
+    keys = {"n_doubt", "cause_1", "cause_1_n"}
+    assert check_text("本批有 {n_doubt} 条存疑，最多的是「{cause_1}」（{cause_1_n} 条），先看一下同一处问题。", keys) == []
+    assert check_text("Check one example first; {n_doubt} episodes need review.", keys) == []  # one 太常见，放过
+    assert check_text("有 7 条存疑", keys)
+    assert check_text("有７条存疑", keys)  # 全角数字
+    assert check_text("七条存疑，两回重抓", keys)
+    assert check_text("seven episodes, a dozen more", keys)
+    assert check_text("{n_reject} 条作废", keys)  # 没给过的占位符
+    assert check_text("坏了的 {n_doubt", keys)  # 占位符写坏了
+
+
+def test_fill_uses_values_of_the_language():
+    from jianjin.summary import Facts, fill
+
+    facts = Facts({"n": "条数", "c": "原因"}, {"zh": {"n": "3", "c": "二次抓取"}, "en": {"n": "3", "c": "regrasp"}})
+    assert fill("{n} 条「{c}」", facts, "zh") == "3 条「二次抓取」"
+    assert fill("{n} {c} episodes", facts, "en") == "3 regrasp episodes"
