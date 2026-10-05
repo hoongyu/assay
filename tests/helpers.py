@@ -144,6 +144,34 @@ def make_robomind_h5(path: Path, state: np.ndarray | None = None, left_right: np
     return path
 
 
+def make_robomind_failure_h5(path: Path, arm: np.ndarray, hand: np.ndarray) -> Path:
+    """RoboMIND 公开失败示范的真机布局：puppet/arm_joint_position 加 puppet/hand_joint_position，master 同构。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with h5py.File(path, "w") as h:
+        for g in ("puppet", "master"):
+            h[f"{g}/arm_joint_position"] = arm
+            h[f"{g}/hand_joint_position"] = hand
+        h["observations/rgb_images/camera_top"] = np.zeros(0, dtype=np.uint8)
+        h["language_instruction"] = b"do it"
+    return path
+
+
+def make_tiangong_h5(path: Path, arms: tuple[np.ndarray, np.ndarray], hands: tuple[np.ndarray, np.ndarray] | None,
+                     sim_time: np.ndarray | None = None) -> Path:
+    """RoboMIND 公开失败示范里天工仿真的布局：tiangong/{left,right}_{arm,hand}_joint_pos_seq，没有主臂。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with h5py.File(path, "w") as h:
+        h.attrs["sim"] = True
+        for side, a in zip(("left", "right"), arms):
+            h[f"tiangong/{side}_arm_joint_pos_seq"] = a
+        for side, a in zip(("left", "right"), hands or ()):
+            h[f"tiangong/{side}_hand_joint_pos_seq"] = a
+        if sim_time is not None:
+            h["sim_time_seq"] = sim_time
+        h["observations/rgb_images/camera_head"] = np.zeros(0, dtype=np.uint8)
+    return path
+
+
 # ---- RoboVAD ----
 
 
