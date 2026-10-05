@@ -123,7 +123,7 @@ def test_summarize_retries_once_then_falls_back_to_template(tmp_path):
     chat = fake_chat("有 7 条存疑。", "本批 {n_total} 条。")
     s = summarize(facts5(), chat=chat, cache_dir=tmp_path, langs=("zh",))
     assert s.texts["zh"] == "本批 5 条。" and s.source["zh"] == "model" and len(chat.calls) == 2
-    assert "阿拉伯数字" in chat.calls[1][-1]["content"]  # 重试时把问题告诉模型
+    assert "wrote digits itself" in chat.calls[1][-1]["content"]  # 重试时用英文把问题告诉模型
     assert "{n_total}" in chat.calls[1][-1]["content"]  # 并且把能用的占位符逐个列出来
     import json
 
@@ -211,3 +211,56 @@ def test_summarize_drops_space_between_closing_bracket_and_chinese(tmp_path):
 
     s = summarize(facts5(), chat=fake_chat("「{cause_1}」 有 {cause_1_n} 条。"), cache_dir=tmp_path, langs=("zh",))
     assert s.texts["zh"] == "「二次抓取」有 2 条。"
+
+
+def test_every_cause_has_advice_without_numbers():
+    from jianjin.summary import ADVICE, check_text
+
+    assert set(ADVICE) == set(Cause)
+    for zh, en in ADVICE.values():
+        assert zh.endswith("。") and en.endswith(".")
+        assert check_text(zh, set()) == [] and check_text(en, set()) == []
+
+
+def test_advice_comes_from_placeholders():
+    """给采集员的建议只能用我们写的句子（{advice_i}），模型不许自己编（2026-10-05 第一次真调用编出了没用的建议）。"""
+    from jianjin.summary import ADVICE, PROMPT_VERSION, SYSTEM, batch_facts, template
+
+    vs, eps = batch()
+    facts = batch_facts(vs, eps, title="ds")
+    assert facts.values["zh"]["advice_1"] == ADVICE[Cause.REGRASP][0]
+    assert facts.values["en"]["advice_1"] == ADVICE[Cause.REGRASP][1]
+    assert "advice_3" in facts.meaning and "advice_4" not in facts.meaning
+    assert "{advice_1}" in template(facts, "zh") and "{advice_1}" in template(facts, "en")
+    assert PROMPT_VERSION == "4" and "{advice_" in SYSTEM and "tips of your own" in SYSTEM
+
+
+def test_check_text_problems_are_bilingual():
+    from helpers import assert_bilingual
+    from jianjin.summary import check_text
+
+    for text in ("有 7 条存疑", "{n_reject} 条作废", "坏了的 {n_doubt"):
+        assert_bilingual(check_text(text, {"n_doubt"})[0])
+
+
+def write_cache_entry(cache, name, lang, source, tries, prompt=None):
+    import json
+
+    from jianjin.summary import PROMPT_VERSION
+
+    d = cache / "summary"
+    d.mkdir(parents=True, exist_ok=True)
+    attempts = [{"raw": "x", "problems": ["p"]}] * (tries - 1) + [{"raw": "y", "problems": [] if source == "model" else ["p"]}]
+    (d / f"{name}.json").write_text(json.dumps({"model": "m", "prompt": prompt or PROMPT_VERSION, "lang": lang, "text": "t",
+                                                "source": source, "problems": [], "attempts": attempts}), encoding="utf-8")
+
+
+def test_cache_stats_counts_the_current_prompt_version_only(tmp_path):
+    from jianjin.summary import cache_stats
+
+    write_cache_entry(tmp_path, "a", "zh", "model", 1)
+    write_cache_entry(tmp_path, "b", "en", "model", 2)
+    write_cache_entry(tmp_path, "c", "zh", "template", 2)
+    write_cache_entry(tmp_path, "d", "zh", "model", 1, prompt="3")
+    assert cache_stats(tmp_path) == {"zh": {"first_try": 1, "after_retry": 0, "template": 1},
+                                     "en": {"first_try": 0, "after_retry": 1, "template": 0}}

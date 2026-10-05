@@ -3,10 +3,10 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from helpers import make_episode
+from helpers import assert_bilingual, make_episode
 from jianjin.checks.batch import end_pose, extra_motion, regrasp, regrasp_scores
 from jianjin.checks.config import CheckConfig
-from jianjin.types import Cause
+from jianjin.types import Cause, en
 
 CFG = CheckConfig()
 # 收尾规则的测试把参数写死，只验机制；默认值在开发集上重选
@@ -27,6 +27,7 @@ def test_back_and_forth_flagged():
     f = found["bad"][0]
     assert f.cause is Cause.EXTRA_MOTION and not f.hard
     assert f.score > 4
+    assert_bilingual(f.evidence)
 
 
 def test_small_task_not_checked():
@@ -36,6 +37,7 @@ def test_small_task_not_checked():
         assert found == {}
         assert set(skipped) == {"e0", "e1", "e2"}
         assert "3" in skipped["e0"]
+        assert_bilingual(skipped["e0"])
 
 
 def test_tasks_compared_separately():
@@ -55,6 +57,7 @@ def test_end_pose_flags_stopping_halfway():
     assert f.cause is Cause.INCOMPLETE and not f.hard
     assert np.isclose(f.t1, 1.0) and np.isclose(f.t0, 0.0)
     assert f.score > 0.4
+    assert_bilingual(f.evidence)
 
 
 def test_reference_used_instead_of_batch():
@@ -78,6 +81,7 @@ def test_arm_that_never_moved_is_empty_recording():
     (f,) = found["still"]
     assert f.cause is Cause.EMPTY and not f.hard and (f.t0, f.t1) == (0.0, eps[-1].duration)
     assert "手臂几乎没动" in f.evidence and f.score < 0.01
+    assert_bilingual(f.evidence)
 
 
 def test_partial_motion_is_not_empty():
@@ -115,6 +119,7 @@ def test_batch_without_a_common_end_pose_is_not_checked():
     found, skipped = end_pose(eps, END)
     assert found == {} and len(skipped) == 8
     assert "停下来的姿态本来就不固定" in skipped["r0"]
+    assert_bilingual(skipped["r0"])
 
 
 REG = CheckConfig(grip_band=0.15, grip_dwell_s=0.2, regrasp_quantile=0.75, regrasp_margin=0, regrasp_source="action")
@@ -143,6 +148,8 @@ def test_regrasp_flags_extra_cycles():
     f = found["again"][0]
     assert f.cause is Cause.REGRASP and not f.hard and (f.t0, f.t1) == (0.0, eps[-1].duration)
     assert f.score == 4 and "开合了 8 次" in f.evidence and "常见不超过 4 次" in f.evidence
+    assert len(f.moments) == 8 and list(f.moments) == sorted(f.moments) and f.moments[0] > 0
+    assert_bilingual(f.evidence)
 
 
 def test_regrasp_upper_follows_the_batch():
@@ -171,9 +178,11 @@ def test_regrasp_not_checked_without_gripper_or_when_unused():
     plain = [make_episode(there(), ep_id=f"p{i}") for i in range(5)]
     found, skipped = regrasp(plain, REG)
     assert found == {} and len(skipped) == 5 and all("认不出夹爪" in w for w in skipped.values())
+    assert_bilingual(skipped["p0"])
     still = [grip_ep(0, f"s{i}") for i in range(5)]
     found, skipped = regrasp(still, REG)
     assert found == {} and len(skipped) == 5 and all("基本不开合" in w for w in skipped.values())
+    assert_bilingual(skipped["s0"])
 
 
 def test_regrasp_two_hands_counted_separately():
@@ -184,6 +193,7 @@ def test_regrasp_two_hands_counted_separately():
     eps = [two(2, 1, f"ok{i}") for i in range(6)] + [two(2, 3, "again")]
     found, _ = regrasp(eps, REG)
     assert set(found) == {"again"} and "右手夹爪开合了 6 次" in found["again"][0].evidence
+    assert "right gripper" in en(found["again"][0].evidence)
 
 
 def test_regrasp_reference_from_clean_batch():
@@ -270,12 +280,15 @@ def test_motion_scores_skips_when_not_comparable():
 
     scores, skipped = motion_scores(normals()[:4], MOT)
     assert scores == {} and all("没法比" in why for why in skipped.values())
+    assert_bilingual(next(iter(skipped.values())))
     grippers = [make_episode(np.zeros((60, 1)), names=["gripper"], ep_id=f"g{i}") for i in range(5)]
     scores, skipped = motion_scores(grippers, MOT)
     assert scores == {} and set(skipped.values()) == {"认不出手臂关节"}
+    assert_bilingual(next(iter(skipped.values())))
     still = [arm_ep(np.zeros(60), f"s{i}") for i in range(5)]
     scores, skipped = motion_scores(still, MOT)
     assert scores == {} and all("基本没动" in why for why in skipped.values())
+    assert_bilingual(next(iter(skipped.values())))
 
 
 def test_jerky_rule_uses_chosen_candidate():
@@ -290,8 +303,13 @@ def test_jerky_rule_uses_chosen_candidate():
     assert f.check == "jerky" and f.cause is Cause.JERKY and not f.hard
     assert f.t0 == 0 and f.t1 == pytest.approx(eps[-2].duration) and f.score == 3
     assert "中途停下又走了 3 回" in f.evidence and "同任务 6 条示范常见不超过 0 回" in f.evidence
+    assert_bilingual(f.evidence)
     found, _ = jerky(eps, replace(MOT, jerky_candidate="duration", jerky_threshold=1.3), reference=ref)
     assert set(found) == {"jerky"} and "是同任务 6 条示范中位数的 1.6 倍" in found["jerky"][0].evidence
+    assert_bilingual(found["jerky"][0].evidence)
+    for cand in ("bursts", "jerk"):
+        found, _ = jerky(eps, replace(MOT, jerky_candidate=cand, jerky_threshold=0), reference=ref)
+        assert_bilingual(found["jerky"][0].evidence)
 
 
 def test_jerky_rule_rejects_candidate_of_other_class():

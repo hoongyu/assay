@@ -13,7 +13,7 @@ import numpy as np
 
 from jianjin.checks.config import CheckConfig, NotApplicable
 from jianjin.judges.base import Curve
-from jianjin.types import Cause, Episode, Finding, source_name, spaced
+from jianjin.types import Bi, Cause, Episode, Finding, source_name, spaced
 
 Found = dict[str, list[Finding]]
 Skipped = dict[str, str]
@@ -28,7 +28,7 @@ def _tail(x: list[float], k: int = 3) -> float:
 
 def _success_end(c: Curve) -> float:
     if c.success is None:
-        raise NotApplicable(f"{c.model} 不给成功概率")
+        raise NotApplicable(Bi(f"{c.model} 不给成功概率", f"{c.model} gives no success probability"))
     return 1.0 - _tail(c.success)
 
 
@@ -40,6 +40,8 @@ BASE_SCORES: dict[str, Callable[[Curve], float]] = {
     "success": _success_end,                         # 结尾成功概率低
 }
 SCORE_LABELS = {"end": "结尾进度", "peak": "全程最高进度", "mean": "平均进度", "success": "结尾的完成概率"}
+SCORE_LABELS_EN = {"end": "Final progress", "peak": "Peak progress", "mean": "Mean progress",
+                   "success": "Final completion probability"}
 
 # 指令不符：模型 -> (分数, 阈值)。和同任务那批比，差出阈值个四分位距以上就报。
 WRONG_TASK: dict[str, tuple[str, float]] = {
@@ -63,7 +65,10 @@ PROGRESS_DROP_OFF: dict[str, str] = {
     # test 跑过一次，检出 71/387、正常报出 12/242（results/exam_b_episode_{train,test}_topreward.json）。
     # 但考卷 A 两个开发集的成功示范上，放方块 50 条报了 40 条、叠方块 56 条报了 14 条，都是开头的假回落：
     # 只看 2 帧时「True」常有四成左右，多看几帧、还没做什么时掉到几个百分点，做完才升上去。
-    "topreward": "TOPReward 看最开头几帧时打分不稳（常先给四成再掉到几个百分点），在成功示范上会报出大量假的「进度回落」，这条没启用",
+    "topreward": Bi("TOPReward 看最开头几帧时打分不稳（常先给四成再掉到几个百分点），在成功示范上会报出大量假的「进度回落」，"
+                    "这条没启用",
+                    "TOPReward scores the first few frames unreliably (high at first, then near zero before anything "
+                    "happens), so this rule would flag many successful episodes and is switched off"),
 }
 
 
@@ -82,9 +87,10 @@ def _all_skipped(episodes: list[Episode], why: str) -> tuple[Found, Skipped]:
 def wrong_task(episodes: list[Episode], curves: Curves, judge: str, cfg: CheckConfig,
                reference: list[Episode] | None = None) -> tuple[Found, Skipped]:
     """进度比同一任务描述下那批示范差得多：做的可能不是这个任务。参照默认是这一批自己。"""
-    name = source_name(judge)
+    name, name_en = source_name(judge), source_name(judge, "en")
     if judge not in WRONG_TASK:
-        return _all_skipped(episodes, f"还没在开发数据上给 {name} 定「指令不符」的阈值")
+        return _all_skipped(episodes, Bi(f"还没在开发数据上给 {name} 定「指令不符」的阈值",
+                                         f"No wrong-task threshold has been set for {name_en} on development data"))
     score_name, thr = WRONG_TASK[judge]
     fn = BASE_SCORES[score_name]
     groups: dict[str, list[float]] = defaultdict(list)
@@ -96,11 +102,13 @@ def wrong_task(episodes: list[Episode], curves: Curves, judge: str, cfg: CheckCo
     for ep in episodes:
         c = curves.get(ep.id)
         if c is None:
-            skipped[ep.id] = f"缓存里没有 {name} 对这条示范的结果"
+            skipped[ep.id] = Bi(f"缓存里没有 {name} 对这条示范的结果", f"No {name_en} result for this episode in the cache")
             continue
         ref = groups.get(ep.task, [])
         if len(ref) < cfg.min_task_episodes:
-            skipped[ep.id] = f"同任务有 {name} 结果的只有 {len(ref)} 条，少于 {cfg.min_task_episodes} 条，没法比"
+            skipped[ep.id] = Bi(f"同任务有 {name} 结果的只有 {len(ref)} 条，少于 {cfg.min_task_episodes} 条，没法比",
+                                f"Only {len(ref)} episodes of this task have {name_en} results, fewer than "
+                                f"{cfg.min_task_episodes}, so there is nothing to compare with")
             continue
         z = float(relative([fn(clip(c, ep.duration))], ref)[0])
         if z <= thr:
@@ -108,8 +116,10 @@ def wrong_task(episodes: list[Episode], curves: Curves, judge: str, cfg: CheckCo
         value, med = 1.0 - fn(clip(c, ep.duration)), 1.0 - float(np.median(ref))
         found[ep.id] = [Finding(
             check="wrong_task", cause=Cause.WRONG_TASK, t0=0.0, t1=ep.duration, score=z,
-            evidence=spaced(f"{SCORE_LABELS[score_name]} {value:.0%}，同任务 {len(ref)} 条示范的中位数是 "
-                            f"{med:.0%}；做的可能不是「{ep.task}」"),
+            evidence=Bi(spaced(f"{SCORE_LABELS[score_name]} {value:.0%}，同任务 {len(ref)} 条示范的中位数是 "
+                               f"{med:.0%}；做的可能不是「{ep.task}」"),
+                        f"{SCORE_LABELS_EN[score_name]} {value:.0%}; the task's {len(ref)} episodes have a median of "
+                        f"{med:.0%}. It may not be doing \"{ep.task}\""),
             source=judge,
         )]
     return found, skipped
@@ -165,24 +175,27 @@ def progress_drop(episodes: list[Episode], curves: Curves, judge: str, cfg: Chec
                   reference: list[Episode] | None = None, threshold: float | None = None) -> tuple[Found, Skipped]:
     """进度突然往回掉：东西掉了，或者退回去重做。只看关节数据有的时间里、手臂开始回原位以前（见 RETURN_FROM）。
     不和同任务比，cfg、reference 只为和别的规则同一个签名。"""
-    name = source_name(judge)
+    name, name_en = source_name(judge), source_name(judge, "en")
     if threshold is None and judge in PROGRESS_DROP_OFF:
         return _all_skipped(episodes, PROGRESS_DROP_OFF[judge])
     thr = threshold if threshold is not None else PROGRESS_DROP.get(judge)
     if thr is None:
-        return _all_skipped(episodes, f"还没在开发数据上给 {name} 定「进度回落」的阈值")
+        return _all_skipped(episodes, Bi(f"还没在开发数据上给 {name} 定「进度回落」的阈值",
+                                         f"No progress-drop threshold has been set for {name_en} on development data"))
     found: Found = {}
     skipped: Skipped = {}
     for ep in episodes:
         c = curves.get(ep.id)
         if c is None:
-            skipped[ep.id] = f"缓存里没有 {name} 对这条示范的结果"
+            skipped[ep.id] = Bi(f"缓存里没有 {name} 对这条示范的结果", f"No {name_en} result for this episode in the cache")
             continue
         d, t0, t1, hi, lo = rule_drawdown(ep, c)
         if d > thr:
             found[ep.id] = [Finding(
                 check="progress_drop", cause=Cause.DROP, t0=t0, t1=t1, score=d,
-                evidence=f"进度从 {hi:.0%} 掉到 {lo:.0%}，可能东西掉了或者退回去重做",
+                evidence=Bi(f"进度从 {hi:.0%} 掉到 {lo:.0%}，可能东西掉了或者退回去重做",
+                            f"Progress fell from {hi:.0%} to {lo:.0%}; the object may have dropped, or the operator "
+                            "went back to redo a step"),
                 source=judge,
             )]
     return found, skipped

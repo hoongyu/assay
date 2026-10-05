@@ -15,25 +15,33 @@ from jianjin.ingest import load
 def _cmd_check(args: argparse.Namespace) -> int:
     from datetime import datetime
 
-    from jianjin.diagnose import Label, diagnose_batch
+    from jianjin.diagnose import LABEL_EN, Label, diagnose_batch
     from jianjin.judges.cache import load_curves
     from jianjin.report import render
-    from jianjin.types import source_name
+    from jianjin.types import CAUSE_EN, en, source_name
+
+    english = args.lang == "en"
+
+    def say(zh: str, english_text: str) -> None:
+        print(english_text if english else zh)
 
     res = load(args.path)
     judges = [j for j in (args.judges or "").split(",") if j]
     curves = {j: load_curves(res.episodes, Path(args.cache), j, args.camera) for j in judges}
     verdicts = diagnose_batch(res.episodes, curves)
     labels = Counter(v.label for v in verdicts)
-    print(f"{len(res.episodes)} 条示范：合格 {labels[Label.PASS]}，存疑 {labels[Label.DOUBT]}，"
-          f"作废 {labels[Label.REJECT]}；读取失败 {len(res.failures)} 个文件")
-    causes = Counter(f.cause.value for v in verdicts for f in v.causes)
-    for cause, n in causes.most_common():
-        print(f"  {cause}：{n}")
+    n, p, d, r, k = (len(res.episodes), labels[Label.PASS], labels[Label.DOUBT], labels[Label.REJECT],
+                     len(res.failures))
+    say(f"{n} 条示范：合格 {p}，存疑 {d}，作废 {r}；读取失败 {k} 个文件",
+        f"{n} episodes: {LABEL_EN[Label.PASS]} {p}, {LABEL_EN[Label.DOUBT]} {d}, {LABEL_EN[Label.REJECT]} {r}; "
+        f"{k} files could not be read")
+    causes = Counter(f.cause for v in verdicts for f in v.causes)
+    for cause, c in causes.most_common():
+        say(f"  {cause.value}：{c}", f"  {CAUSE_EN[cause]}: {c}")
     for j in judges:
-        print(f"  {source_name(j)}：{len(curves[j])}/{len(res.episodes)} 条有缓存")
+        say(f"  {source_name(j)}：{len(curves[j])}/{n} 条有缓存", f"  {source_name(j, 'en')}: {len(curves[j])}/{n} cached")
     for name, why in res.failures:
-        print(f"  读取失败 {name}：{why}")
+        say(f"  读取失败 {name}：{why}", f"  Could not read {name}: {en(why)}")
     if args.json:
         tasks = {ep.id: ep.task for ep in res.episodes}
         rows = [
@@ -42,22 +50,25 @@ def _cmd_check(args: argparse.Namespace) -> int:
                 "task": tasks[v.episode_id],
                 "label": v.label.value,
                 "reasons": v.reasons,
-                "findings": [{**asdict(f), "cause": f.cause.value} for f in v.causes],
+                "reasons_en": [en(x) for x in v.reasons],
+                "findings": [{**asdict(f), "cause": f.cause.value, "evidence_en": en(f.evidence)} for f in v.causes],
                 "not_checked": v.not_checked,
+                "not_checked_en": {key: en(why) for key, why in v.not_checked.items()},
             }
             for v in verdicts
         ]
         Path(args.json).parent.mkdir(parents=True, exist_ok=True)
         Path(args.json).write_text(json.dumps(rows, ensure_ascii=False, indent=2), encoding="utf-8")
-        print(f"明细写到 {args.json}")
+        say(f"明细写到 {args.json}", f"Details written to {args.json}")
     if args.out:
         shots = None
         if not args.no_frames:
             from jianjin.keyframes import shots_for
 
             shots, missing = shots_for(verdicts, res.episodes, args.camera)
-            print(f"  画面：{len(shots)} 条存疑或作废的示范配了关键帧"
-                  + (f"，{missing} 条没有本地视频或读不出画面" if missing else ""))
+            say(f"  画面：{len(shots)} 条存疑或作废的示范配了关键帧" + (f"，{missing} 条没有本地视频或读不出画面" if missing else ""),
+                f"  Frames: keyframes for {len(shots)} DOUBT or REJECT episodes"
+                + (f"; {missing} have no local video or no readable frames" if missing else ""))
         summary = None
         if args.summary:
             import os
@@ -69,16 +80,32 @@ def _cmd_check(args: argparse.Namespace) -> int:
                                 chat=token_factory_chat(key) if key else None, model=args.summary_model,
                                 cache_dir=args.cache)
             if not key and "template" in summary.source.values():
-                print("  本批小结：没设 NEBIUS_API_KEY，缓存里也没有这批的，用模板文字")
+                say("  本批小结：没设 NEBIUS_API_KEY，缓存里也没有这批的，用模板文字",
+                    "  Batch summary: NEBIUS_API_KEY is not set and this batch is not cached, so the template is used")
             for lang, src in summary.source.items():
-                print(f"  本批小结（{lang}）：{'模型写的' if src == 'model' else '模板'}"
-                      + (f"；{'；'.join(summary.problems[lang])}" if summary.problems.get(lang) else ""))
+                problems = summary.problems.get(lang) or []
+                say(f"  本批小结（{lang}）：{'模型写的' if src == 'model' else '模板'}"
+                    + (f"；{'；'.join(problems)}" if problems else ""),
+                    f"  Batch summary ({lang}): {'written by the model' if src == 'model' else 'template'}"
+                    + (f"; {'; '.join(en(x) for x in problems)}" if problems else ""))
         html = render(verdicts, res.episodes, title=Path(args.path).name, judges=judges,
                       failures=res.failures, generated=datetime.now().strftime("%Y-%m-%d %H:%M"), shots=shots,
-                      summary=summary)
+                      summary=summary, lang=args.lang)
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         Path(args.out).write_text(html, encoding="utf-8")
-        print(f"报告写到 {args.out}")
+        say(f"报告写到 {args.out}", f"Report written to {args.out}")
+    return 0
+
+
+def _cmd_summary_stats(args: argparse.Namespace) -> int:
+    from jianjin.summary import PROMPT_VERSION, cache_stats
+
+    stats = cache_stats(args.cache)
+    if not stats:
+        print(f"{args.cache} 里没有第 {PROMPT_VERSION} 版提示的小结")
+    for lang, s in stats.items():
+        print(f"{lang}：第一次就过 {s['first_try']}，重试以后过 {s['after_retry']}，退回模板 {s['template']}"
+              f"（共 {sum(s.values())} 条）")
     return 0
 
 
@@ -233,7 +260,12 @@ def build_parser() -> argparse.ArgumentParser:
                    help="报告顶部加本批小结：Nemotron（Nebius Token Factory）写文字，数字由拣金填；密钥读环境变量 "
                         "NEBIUS_API_KEY，没设就用模板")
     c.add_argument("--summary-model", default="nvidia/Nemotron-3_5-Lightning", help="本批小结用哪个模型")
+    c.add_argument("--lang", choices=["zh", "en"], default="zh", help="报告和终端打印用中文还是英文")
     c.set_defaults(func=_cmd_check)
+
+    st = sub.add_parser("summary-stats", help="数缓存里的本批小结：第一次就过、重试以后过、退回模板各几条")
+    st.add_argument("--cache", default="cache")
+    st.set_defaults(func=_cmd_summary_stats)
 
     e = sub.add_parser("eval", help="跑考卷")
     e.add_argument("exam", choices=["a", "a-swap", "b", "b-episode", "b-regrasp", "c", "c-regrasp"])

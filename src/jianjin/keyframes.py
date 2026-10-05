@@ -23,11 +23,14 @@ Shots = dict[str, list[tuple[float, str]]]  # 示范 id -> [(秒, data URI)]
 
 
 def keyframe_times(v: Verdict, duration: float, k: int = 4, gap: float = 0.5) -> list[float]:
-    """每条发现取起止两个时刻；整条的发现取开头、中间、结尾。相隔不到 gap 秒的并成一个，最多 k 个。"""
+    """每条发现取起止两个时刻；带 moments 的（比如二次抓取的换档时刻）取那几个时刻；整条的发现取开头、中间、结尾。
+    相隔不到 gap 秒的并成一个，最多 k 个（均匀取，保留首尾）。"""
     end = max(duration - 0.05, 0.0)  # 最后一帧在示范结束前一点
     ts = []
     for f in v.causes:
-        if f.t0 <= 0.0 and f.t1 >= duration - 1e-9:
+        if f.moments:
+            ts += list(f.moments)
+        elif f.t0 <= 0.0 and f.t1 >= duration - 1e-9:
             ts += [0.0, duration / 2, end]
         else:
             ts += [f.t0, f.t1]

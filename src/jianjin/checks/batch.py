@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from jianjin.checks.config import CheckConfig, NotApplicable
+from jianjin.checks.config import CheckConfig, NotApplicable, reason
 from jianjin.checks.signal import (
     arm_channels,
     bursts,
@@ -23,7 +23,7 @@ from jianjin.checks.signal import (
     speed,
     stops,
 )
-from jianjin.types import Cause, Episode, Finding
+from jianjin.types import Bi, Cause, Episode, Finding
 
 Found = dict[str, list[Finding]]
 Skipped = dict[str, str]
@@ -49,7 +49,9 @@ def _compare(episodes, cfg, reference, summarize, judge) -> tuple[Found, Skipped
     for ep in episodes:
         group = ref.get(_key(ep), [])
         if len(group) < cfg.min_task_episodes:
-            skipped[ep.id] = f"同任务只有 {len(group)} 条，少于 {cfg.min_task_episodes} 条，没法比"
+            skipped[ep.id] = Bi(f"同任务只有 {len(group)} 条，少于 {cfg.min_task_episodes} 条，没法比",
+                                f"Only {len(group)} episodes of this task, fewer than {cfg.min_task_episodes}, "
+                                "so there is nothing to compare with")
             continue
         if _key(ep) not in stats:
             try:
@@ -58,7 +60,7 @@ def _compare(episodes, cfg, reference, summarize, judge) -> tuple[Found, Skipped
                 stats[_key(ep)] = exc
         stat = stats[_key(ep)]
         if isinstance(stat, NotApplicable):
-            skipped[ep.id] = str(stat)
+            skipped[ep.id] = reason(stat)
             continue
         finding = judge(ep, stat, len(group))
         if finding is not None:
@@ -88,7 +90,8 @@ def extra_motion(
             t0=0.0,
             t1=ep.duration,
             score=float(ratio),
-            evidence=f"关节走过的路程是同任务 {n} 条示范中位数的 {ratio:.1f} 倍",
+            evidence=Bi(f"关节走过的路程是同任务 {n} 条示范中位数的 {ratio:.1f} 倍",
+                        f"Compared with the task's {n} episodes, the joints traveled {ratio:.1f} times the median path"),
         )
 
     return _compare(episodes, cfg, reference, summarize, judge)
@@ -112,10 +115,11 @@ def end_pose(
         moving = np.isfinite(scale)
         spread = float(np.median(iqr[moving] / scale[moving])) if moving.any() else 0.0
         if spread > cfg.end_spread_max:
-            raise NotApplicable(
+            raise NotApplicable(Bi(
                 f"同任务 {len(group)} 条示范停下来的姿态本来就不固定（各关节收尾位置一般差开活动幅度的 {spread:.0%}），"
-                "没法拿收尾姿态判没做完"
-            )
+                "没法拿收尾姿态判没做完",
+                f"The task's {len(group)} episodes do not end in a common pose (final joint positions typically "
+                f"spread over {spread:.0%} of their range), so the end pose cannot show an unfinished episode"))
         return np.nanmedian(finals, axis=0), np.maximum(iqr, cfg.end_pose_floor * scale)
 
     def judge(ep, stat, n):
@@ -131,9 +135,11 @@ def end_pose(
             t0=max(0.0, t1 - 1.0),
             t1=t1,
             score=float(off[j]),
-            evidence=(
+            evidence=Bi(
                 f"最后停的姿态和同任务 {n} 条示范的常见收尾姿态差得远：{ep.state_names[j]} 差出的距离"
-                f"是示范之间常见出入的 {off[j]:.1f} 倍，像是没做完就停了"
+                f"是示范之间常见出入的 {off[j]:.1f} 倍，像是没做完就停了",
+                f"The final pose is far from the usual end pose of the task's {n} episodes: {ep.state_names[j]} "
+                f"is off by {off[j]:.1f} times the usual spread, as if it stopped before finishing",
             ),
         )
 
@@ -166,7 +172,9 @@ def empty_recording(
             t0=0.0,
             t1=ep.duration,
             score=float(ratio),
-            evidence=f"手臂几乎没动：离开头姿态最远只到同任务 {n} 条示范中位数的 {ratio:.0%}",
+            evidence=Bi(f"手臂几乎没动：离开头姿态最远只到同任务 {n} 条示范中位数的 {ratio:.0%}",
+                        f"The arm barely moved: against the task's {n} episodes, it got only {ratio:.0%} as far "
+                        "from its start pose as the median"),
         )
 
     return _compare(episodes, cfg, reference, summarize, judge)
@@ -191,9 +199,11 @@ def _grip(ep: Episode, source: str) -> np.ndarray:
     return ep.state
 
 
-def _hand(name: str) -> str:
+def _hand(name: str) -> tuple[str, str]:
     low = name.lower()
-    return "左手夹爪" if "left" in low else ("右手夹爪" if "right" in low else "夹爪")
+    if "left" in low:
+        return "左手夹爪", "left gripper"
+    return ("右手夹爪", "right gripper") if "right" in low else ("夹爪", "gripper")
 
 
 def _changes(ep: Episode, c: int, lo: float, hi: float, cfg: CheckConfig) -> list[int]:
@@ -210,7 +220,7 @@ def regrasp_scores(
     def summarize(group):
         chans = gripper_channels(group[0].state_names, group[0].gripper_index)
         if not chans:
-            raise NotApplicable("认不出夹爪通道")
+            raise NotApplicable(Bi("认不出夹爪通道", "No gripper channel found"))
         stats = {}
         for c in chans:
             lo, hi = np.nanpercentile(np.concatenate([_grip(e, cfg.regrasp_source)[:, c] for e in group]), [5, 95])
@@ -219,7 +229,9 @@ def regrasp_scores(
                 continue
             stats[c] = (float(lo), float(hi), float(np.quantile(counts, cfg.regrasp_quantile, method="higher")))
         if not stats:
-            raise NotApplicable(f"同任务 {len(group)} 条示范的夹爪基本不开合，不查二次抓取")
+            raise NotApplicable(Bi(f"同任务 {len(group)} 条示范的夹爪基本不开合，不查二次抓取",
+                                   f"The grippers in the task's {len(group)} episodes barely open or close, "
+                                   "so regrasps are not checked"))
         return stats
 
     def judge(ep, stats, n):
@@ -251,15 +263,21 @@ def regrasp(
         s = scores.get(ep.id)
         if s is None or s.excess <= cfg.regrasp_margin:
             continue
-        shown = "、".join(f"{t:.1f}" for t in s.times[:12]) + ("......" if len(s.times) > 12 else "")
+        shown = [f"{t:.1f}" for t in s.times[:12]]
+        more = len(s.times) > 12
+        hand, hand_en = _hand(s.channel)
         found[ep.id] = [Finding(
             check="regrasp",
             cause=Cause.REGRASP,
             t0=0.0,
             t1=ep.duration,
             score=float(s.excess),
-            evidence=(f"{_hand(s.channel)}开合了 {s.count} 次（张开、合上各算一次），同任务 {s.n} 条示范常见不超过 "
-                      f"{s.upper:.0f} 次，像是抓了不止一回；换档在 {shown} 秒"),
+            moments=s.times,
+            evidence=Bi(f"{hand}开合了 {s.count} 次（张开、合上各算一次），同任务 {s.n} 条示范常见不超过 "
+                        f"{s.upper:.0f} 次，像是抓了不止一回；换档在 {'、'.join(shown)}{'......' if more else ''} 秒",
+                        f"The {hand_en} switched between open and closed {s.count} times (each open or close counts "
+                        f"once); the task's {s.n} episodes usually switch at most {s.upper:.0f} times, so it looks like "
+                        f"more than one grasp. Switches at {', '.join(shown)}{' ...' if more else ''} s"),
         )]
     return found, skipped
 
@@ -313,10 +331,12 @@ def motion_scores(
     def summarize(group):
         arm = arm_channels(group[0].state_names)
         if not arm:
-            raise NotApplicable("认不出手臂关节")
+            raise NotApplicable(Bi("认不出手臂关节", "No arm joints found"))
         scale = joint_scale(np.concatenate([e.state[:, arm] for e in group]))
         if not np.isfinite(scale).any():
-            raise NotApplicable(f"同任务 {len(group)} 条示范的手臂基本没动，不查动作顺不顺、快不快")
+            raise NotApplicable(Bi(f"同任务 {len(group)} 条示范的手臂基本没动，不查动作顺不顺、快不快",
+                                   f"The arms in the task's {len(group)} episodes barely move, so smoothness and "
+                                   "speed are not checked"))
         b = [basics(e, arm, scale) for e in group]
         peak = float(np.median([x[2] for x in b]))
 
@@ -363,16 +383,26 @@ def motion_scores(
 
 def _motion_evidence(cand: str, s: MotionScore, cfg: CheckConfig) -> str:
     d = s.detail
+    x = s.scores[cand]
     if cand == "duration":
-        return f"用了 {d['duration']:.1f} 秒，是同任务 {s.n} 条示范中位数的 {s.scores[cand]:.1f} 倍，像是中途犹豫、磕磕绊绊"
+        return Bi(f"用了 {d['duration']:.1f} 秒，是同任务 {s.n} 条示范中位数的 {x:.1f} 倍，像是中途犹豫、磕磕绊绊",
+                  f"Took {d['duration']:.1f} s; against the task's {s.n} episodes that is {x:.1f} times the median, "
+                  "as if the operator hesitated or fumbled")
     if cand == "stops":
-        shown = "、".join(f"{a:.1f}" for a, _ in d["stop_times"][:12]) + ("......" if len(d["stop_times"]) > 12 else "")
-        return (f"中途停下又走了 {d['n_stops']} 回（每回停 {cfg.stop_s:g} 秒以上），同任务 {s.n} 条示范常见不超过 "
-                f"{d['stop_upper']:.0f} 回，像是一顿一顿的；停在 {shown} 秒")
+        shown = [f"{a:.1f}" for a, _ in d["stop_times"][:12]]
+        more = len(d["stop_times"]) > 12
+        return Bi(f"中途停下又走了 {d['n_stops']} 回（每回停 {cfg.stop_s:g} 秒以上），同任务 {s.n} 条示范常见不超过 "
+                  f"{d['stop_upper']:.0f} 回，像是一顿一顿的；停在 {'、'.join(shown)}{'......' if more else ''} 秒",
+                  f"Stopped and went on {d['n_stops']} times (each stop over {cfg.stop_s:g} s); the task's {s.n} "
+                  f"episodes usually stop at most {d['stop_upper']:.0f} times, so the motion looks halting. "
+                  f"Stops at {', '.join(shown)}{' ...' if more else ''} s")
     if cand == "bursts":
-        return (f"动作断成 {d['n_bursts']} 段（快慢起落了 {d['n_bursts']} 回），同任务 {s.n} 条示范常见不超过 "
-                f"{d['burst_upper']:.0f} 段，像是一顿一顿的")
-    return f"动作的急促程度（jerk）是同任务 {s.n} 条示范中位数的 {s.scores[cand]:.1f} 倍，像是动作发抖、不顺"
+        return Bi(f"动作断成 {d['n_bursts']} 段（快慢起落了 {d['n_bursts']} 回），同任务 {s.n} 条示范常见不超过 "
+                  f"{d['burst_upper']:.0f} 段，像是一顿一顿的",
+                  f"The motion broke into {d['n_bursts']} segments ({d['n_bursts']} speed-ups and slow-downs); "
+                  f"the task's {s.n} episodes usually have at most {d['burst_upper']:.0f}, so it looks halting")
+    return Bi(f"动作的急促程度（jerk）是同任务 {s.n} 条示范中位数的 {x:.1f} 倍，像是动作发抖、不顺",
+              f"Against the task's {s.n} episodes, the jerk is {x:.1f} times the median, as if the motion shook")
 
 
 def jerky(episodes: list[Episode], cfg: CheckConfig, reference: list[Episode] | None = None) -> tuple[Found, Skipped]:

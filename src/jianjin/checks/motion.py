@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from jianjin.checks.config import CheckConfig
 from jianjin.checks.signal import runs, speed
-from jianjin.types import Cause, Episode, Finding
+from jianjin.types import Bi, Cause, Episode, Finding
 
 
 def long_pause(ep: Episode, cfg: CheckConfig) -> list[Finding]:
@@ -24,7 +24,7 @@ def long_pause(ep: Episode, cfg: CheckConfig) -> list[Finding]:
                 t0=t0,
                 t1=t1,
                 score=dur,
-                evidence=f"关节几乎不动，停了 {dur:.1f} 秒",
+                evidence=Bi(f"关节几乎不动，停了 {dur:.1f} 秒", f"The joints barely moved for {dur:.1f} s"),
             )
         )
     return out

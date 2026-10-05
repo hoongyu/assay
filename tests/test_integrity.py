@@ -1,6 +1,6 @@
 import numpy as np
 
-from helpers import make_episode
+from helpers import assert_bilingual, make_episode
 from jianjin.checks.config import CheckConfig
 from jianjin.checks.integrity import missing_values, timestamp_gaps, too_short
 from jianjin.types import Cause
@@ -20,12 +20,14 @@ def test_missing_values_found_and_hard():
     f = fs[0]
     assert f.cause is Cause.DATA_ERROR and f.hard
     assert np.isclose(f.t0, 1.0) and np.isclose(f.t1, 1.1)
+    assert_bilingual(f.evidence)
 
 
 def test_missing_values_checks_action_too():
     a = ramp()
     a[0, 0] = np.inf
-    assert len(missing_values(make_episode(ramp(), action=a), CFG)) == 1
+    (f,) = missing_values(make_episode(ramp(), action=a), CFG)
+    assert_bilingual(f.evidence)
 
 
 def test_clean_episode_has_no_integrity_findings():
@@ -38,6 +40,7 @@ def test_clean_episode_has_no_integrity_findings():
 def test_too_short():
     fs = too_short(make_episode(ramp(n=20)), CFG)
     assert len(fs) == 1 and fs[0].hard
+    assert_bilingual(fs[0].evidence)
 
 
 def test_timestamp_gap():
@@ -50,6 +53,7 @@ def test_timestamp_gap():
     assert fs[0].hard and fs[0].cause is Cause.DATA_ERROR
     assert np.isclose(fs[0].t0, 44 / 30)
     assert "15" in fs[0].evidence
+    assert_bilingual(fs[0].evidence)
 
 
 def test_timestamp_going_backwards_is_a_gap():
@@ -57,7 +61,9 @@ def test_timestamp_going_backwards_is_a_gap():
     ts = ep.timestamps.copy()
     ts[50] = ts[48]
     ep.timestamps = ts
-    assert len(timestamp_gaps(ep, CFG)) >= 1
+    fs = timestamp_gaps(ep, CFG)
+    assert len(fs) >= 1
+    assert_bilingual(fs[0].evidence)
 
 
 from pathlib import Path  # noqa: E402
@@ -87,18 +93,23 @@ def test_video_longer_than_joints_needs_a_look():
     assert f.cause is Cause.DATA_ERROR and not f.hard and f.source == "meta"
     assert (f.t0, f.t1) == (0.0, ep.duration)
     assert "长 8.1 秒" in f.evidence and "2 路相机都这样" in f.evidence
+    assert_bilingual(f.evidence)
 
 
 def test_video_shorter_than_joints_is_hard():
     ep = with_videos(make_episode(ramp()), top=2.0, wrist=3.0)
     (f,) = video_length(ep, CFG)
     assert f.hard and "短 1.0 秒" in f.evidence and "top" in f.evidence
+    assert_bilingual(f.evidence)
     assert f.t0 == pytest.approx(2.0) and f.t1 == pytest.approx(3.0)
 
 
 def test_unknown_video_length_is_not_checked():
-    with pytest.raises(NotApplicable):
+    with pytest.raises(NotApplicable) as exc:
         video_length(with_videos(make_episode(ramp()), left=None), CFG)
+    from jianjin.checks.config import reason
+
+    assert_bilingual(reason(exc.value))
 
 
 def test_no_video_nothing_to_compare():

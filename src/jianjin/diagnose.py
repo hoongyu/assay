@@ -18,13 +18,16 @@ from itertools import combinations
 from jianjin.checks import CheckConfig, run_checks
 from jianjin.checks.video import Curves, run_video_checks
 from jianjin.judges.base import Curve
-from jianjin.types import Cause, Episode, Finding, source_name, spaced
+from jianjin.types import CAUSE_EN, Bi, Cause, Episode, Finding, en, source_name, spaced
 
 
 class Label(StrEnum):
     PASS = "合格"
     DOUBT = "存疑"
     REJECT = "作废"
+
+
+LABEL_EN = {Label.PASS: "PASS", Label.DOUBT: "DOUBT", Label.REJECT: "REJECT"}
 
 
 @dataclass
@@ -47,7 +50,8 @@ def _whole(f: Finding, duration: float) -> bool:
 
 # 原因不同、但说的是同一件事的：两个来源各报一条，而且都覆盖整条示范，就算指向同一处问题。
 # 关节的「空录」（手臂几乎没动）和视频的「指令不符」（没看到在做这个任务），都是说这条没做指令里的任务。
-SAME_PROBLEM = {frozenset({Cause.EMPTY, Cause.WRONG_TASK}): "整条没做指令里的任务"}
+SAME_PROBLEM = {frozenset({Cause.EMPTY, Cause.WRONG_TASK}): Bi("整条没做指令里的任务",
+                                                                "the episode never does the task in the instruction")}
 
 
 def _agree(a: Finding, b: Finding, duration: float) -> bool:
@@ -60,29 +64,38 @@ def _agree(a: Finding, b: Finding, duration: float) -> bool:
 
 
 def label_of(findings: list[Finding], duration: float) -> tuple[Label, list[str]]:
+    """判定和理由；理由是 types.Bi，带英文。"""
     hard = [f for f in findings if f.hard]
     if hard:
-        return Label.REJECT, [f"客观硬规则：{f.evidence}" for f in hard]
+        return Label.REJECT, [Bi(f"客观硬规则：{f.evidence}", f"Objective hard rule: {en(f.evidence)}") for f in hard]
     agree = []
     for a, b in combinations(findings, 2):
         if not _agree(a, b, duration):
             continue
-        when = f"第 {max(a.t0, b.t0):.1f} 到 {min(a.t1, b.t1):.1f} 秒"
+        sa, sb, ea, eb = source_name(a.source), source_name(b.source), source_name(a.source, "en"), source_name(b.source, "en")
+        t0, t1 = max(a.t0, b.t0), min(a.t1, b.t1)
+        when, when_en = f"第 {t0:.1f} 到 {t1:.1f} 秒", f"from {t0:.1f} to {t1:.1f} s"
+        both = (f"{sa}报「{a.cause.value}」、{sb}报「{b.cause.value}」",
+                f"{ea} ({CAUSE_EN[a.cause]}) and {eb} ({CAUSE_EN[b.cause]})")
         if a.cause == b.cause:
-            agree.append(f"{source_name(a.source)}和{source_name(b.source)}都报了「{a.cause.value}」，{when}重叠")
-        elif frozenset({a.cause, b.cause}) in SAME_PROBLEM:
-            agree.append(f"{source_name(a.source)}报「{a.cause.value}」、{source_name(b.source)}报「{b.cause.value}」，"
-                         f"说的都是{SAME_PROBLEM[frozenset({a.cause, b.cause})]}")
+            agree.append((f"{sa}和{sb}都报了「{a.cause.value}」，{when}重叠",
+                          f"{ea} and {eb} both report {CAUSE_EN[a.cause]}, overlapping {when_en}"))
+        elif (same := SAME_PROBLEM.get(frozenset({a.cause, b.cause}))) is not None:
+            agree.append((f"{both[0]}，说的都是{same}", f"{both[1]}: both say {same.en}"))
         else:
-            agree.append(f"{source_name(a.source)}报「{a.cause.value}」、{source_name(b.source)}报「{b.cause.value}」，"
-                         f"{when}重叠，指向同一处问题")
+            agree.append((f"{both[0]}，{when}重叠，指向同一处问题", f"{both[1]} overlap {when_en} and point at the same problem"))
     if agree:
-        return Label.REJECT, [spaced(r) for r in agree]
+        return Label.REJECT, [Bi(spaced(zh), e) for zh, e in agree]
     if findings:
-        names = "、".join(sorted({source_name(f.source) for f in findings}))
-        if len({f.source for f in findings}) == 1:
-            return Label.DOUBT, [spaced(f"只有{names}报了问题，没有第二个来源印证，要人看")]
-        return Label.DOUBT, [spaced(f"{names}报的问题对不上（时间不重叠，或者原因不同），要人看")]
+        sources = sorted({f.source for f in findings}, key=source_name)
+        names, names_en = "、".join(map(source_name, sources)), ", ".join(source_name(s, "en") for s in sources)
+        if len(sources) == 1:
+            return Label.DOUBT, [Bi(spaced(f"只有{names}报了问题，没有第二个来源印证，要人看"),
+                                    f"Only {names_en} reported a problem, with no second source to confirm it; "
+                                    "a person should look")]
+        return Label.DOUBT, [Bi(spaced(f"{names}报的问题对不上（时间不重叠，或者原因不同），要人看"),
+                                f"{names_en} report problems that do not line up (different times or different "
+                                "causes); a person should look")]
     return Label.PASS, []
 
 
@@ -109,7 +122,8 @@ def diagnose_batch(episodes: list[Episode], curves: dict[str, Curves] | None = N
         vf, vn = video[ep.id]
         not_checked = {**r.not_checked, **vn}
         if not curves:
-            not_checked["视频评判"] = "没跑视频评判（没有 GPU，或者缓存里没有结果）"
+            not_checked["video_judges"] = Bi("没跑视频评判（没有 GPU，或者缓存里没有结果）",
+                                             "The video judges did not run (no GPU, or no cached results)")
         progress = next((curves[j][ep.id] for j in order if ep.id in curves[j]), None)
         out.append(diagnose(ep.id, ep.duration, r.findings + vf, not_checked, progress))
     return out
