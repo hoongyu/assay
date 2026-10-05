@@ -120,6 +120,8 @@ uv run jianjin check <数据集目录> --judges robometer,topreward --camera obs
 
 本机有视频时，报告会给存疑、作废的示范配关键帧；`--no-frames` 关掉。
 
+加 `--summary`，报告顶部多一节「本批小结」：NVIDIA 的 Nemotron（在 Nebius Token Factory 上，`nvidia/Nemotron-3_5-Lightning`）写一段给质检组长和采集员看的话，中文、英文各一份。模型只看拣金算出的统计，不看原始数据；它写的文字里所有数字、示范编号、原因名都是占位符，由拣金按统计填，模型自己写的数字一律不收，不合格就退回模板。密钥读环境变量 `NEBIUS_API_KEY`，没设就用模板；回答按统计缓存在 `cache/summary/`，重出报告不再调用。
+
 考卷和测试：
 
 ```bash
