@@ -12,6 +12,8 @@ Draft for the user to paste into Devpost; the user submits. Deadline: 2026-10-30
 
 Robot foundation models are trained on teleoperation demonstrations, and in China this data is now produced in dedicated collection sites: at least 15 large ones, selling data at 500 to 1,000 CNY per hour. QA is still mostly people watching episodes one by one. The head of one large site estimated that of 100 hours recorded, maybe 50 survive QA. We wanted a QA tool that a collection site can run on its own machines, because its data is its product, and that tells operators what they did wrong, not just which episodes were thrown away.
 
+The problem is not only Chinese. When we ran jianjin on five public LeRobot datasets on Hugging Face, all published as successful demonstrations, 18 of 308 episodes turned out to be broken: recordings under one second, an arm that never moves, a person resetting the scene. Anyone training on community datasets inherits these episodes.
+
 ## What it does
 
 `jianjin check <dataset>` reads a batch of episodes (LeRobot v3, RoboMIND HDF5 or RoboVAD) and writes a single offline HTML report:
@@ -19,6 +21,8 @@ Robot foundation models are trained on teleoperation demonstrations, and in Chin
 - Every episode is judged PASS, DOUBT or REJECT. Rejection is conservative: an objective hard rule (missing readings, dropped frames, too short), or two independent sources pointing at the same problem.
 - Each flagged episode gets a card: the problem class, the time span, the evidence, the progress curve and keyframes. Example from a public "successful" towel-folding dataset: the right gripper opened and closed 6 times where the same task usually needs at most 4; on video, the gripper loses the towel corner and grasps it again.
 - With `--summary`, NVIDIA Nemotron 3.5 Lightning on Nebius Token Factory writes a short batch summary for the QA lead and the operators, in Chinese and English. jianjin fills in every number.
+
+Try it in two minutes without a GPU: the repository README has four commands that download the public datasets' joint data (about 73 MB) and produce a report. The joint checks alone flag 5 of 56 cube-stacking episodes, and all five are real problems.
 
 ## How we built it
 
@@ -43,7 +47,7 @@ Robot foundation models are trained on teleoperation demonstrations, and in Chin
 ## Accomplishments that we're proud of
 
 - A regrasp rule that transfers to another lab's robots and QA labels without retuning.
-- An LLM summary that cannot misstate a number, because it never writes one.
+- An LLM summary that cannot invent a number, because it never writes one.
 - Honest evaluation: dev and test splits fixed before looking, second looks at a test set disclosed, failures reported.
 
 ## What we learned
@@ -53,7 +57,7 @@ Robot foundation models are trained on teleoperation demonstrations, and in Chin
 
 ## What's next
 
-- A pilot with one collection site, to measure how much review time jianjin saves and whether per-operator feedback lowers the rejection rate.
+- A pilot with one collection site, to measure how much review time jianjin saves and whether per-operator feedback lowers the rejection rate. The business model follows how sites sell data: they charge per hour of data, and jianjin would charge per hour checked (7 CNY in our model, under 1.5% of the data's price).
 - A video model that can answer specific questions for the problems joints cannot see: unwanted contact, collision before grasp, objects knocked away.
 
 ## Built with

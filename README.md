@@ -4,7 +4,30 @@
 
 Automatic quality control for robot teleoperation demonstrations. For every recorded episode, jianjin returns PASS, DOUBT or REJECT and names the problem and the second it happens, so QA reviewers only look at the episodes the machine is unsure about, and every rejection comes with evidence. It runs on site; the report is a single HTML file that opens offline, so the data never has to leave the collection site.
 
+- **Public "successful" datasets are not clean.** In 308 episodes from five public LeRobot datasets, all published as successful, jianjin flagged 39; 18 are real problems, from one-second recordings to a gripper that loses the towel corner and grabs it again.
+- **It holds up on real QA labels.** On 1,678 episodes rejected by Beijing Humanoid's QA team (RoboMIND), the regrasp rule finds 61% of regrasps, with parameters tuned on another dataset and never touched.
+- **NVIDIA Nemotron on Nebius Token Factory** writes the batch summary, and jianjin fills in every number, so the model cannot invent one.
+
+![The top of a jianjin report: batch summary, verdict funnel, problem table](docs/images/report-stacking.png)
+
+*The top of a report for 56 cube-stacking episodes. The batch summary was written by Nemotron; the numbers in it come from jianjin.*
+
+![An episode card: regrasp detected, with progress curve and keyframes](docs/images/card-towel-ep2-regrasp.png)
+
+*One episode card. The right gripper opened and closed 6 times where this task usually needs at most 4. On video, it loses the towel corner at 12.9 s and grabs it again at 13.6 s.*
+
 Entered in the Nebius × NVIDIA Global AI Hackathon (Physical AI track) and the first Haichuang π embodied-AI competition (首届「海创π」具身智能专项赛).
+
+## Try it in two minutes
+
+```bash
+git clone https://github.com/hoongyu/jianjin && cd jianjin
+uv sync
+uv run --extra hub jianjin fetch exam_a   # the public LeRobot datasets of exam A, joint data only (about 73 MB)
+uv run jianjin check data/lerobot__svla_so100_stacking --out report.html
+```
+
+Open `report.html` in a browser. Without a GPU only the joint checks run, and they already flag 5 of the 56 episodes: three recordings shorter than one second (rejected) and two where the arm never moves (doubt). We checked all five on video; all five are real problems. The interface is in Chinese, because our first users are collection sites in China.
 
 ## Why
 
