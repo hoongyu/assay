@@ -136,3 +136,10 @@ def test_summarize_falls_back_when_the_call_fails(tmp_path):
 
     s = summarize(facts5(), chat=broken, cache_dir=tmp_path, langs=("zh",))
     assert s.source["zh"] == "template" and "网络断了" in s.problems["zh"][0]
+
+
+def test_summarize_spaces_latin_words_in_chinese(tmp_path):
+    from jianjin.summary import summarize
+
+    s = summarize(facts5(), chat=fake_chat("{cause_1}和Robometer都要看。"), cache_dir=tmp_path, langs=("zh",))
+    assert s.texts["zh"] == "二次抓取和 Robometer 都要看。"

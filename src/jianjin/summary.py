@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from jianjin.diagnose import Label, Verdict
-from jianjin.types import Cause, Episode, source_name
+from jianjin.types import Cause, Episode, source_name, spaced
 
 CAUSE_EN = {
     Cause.INCOMPLETE: "incomplete", Cause.EMPTY: "empty recording", Cause.MISPLACED: "mispositioned",
@@ -247,7 +247,7 @@ def summarize(facts: Facts, chat: Chat | None = None, model: str = DEFAULT_MODEL
                     path.write_text(json.dumps({"model": model, "prompt": PROMPT_VERSION, "lang": lang, "text": raw,
                                                 "source": source[lang], "problems": problems[lang]},
                                                ensure_ascii=False, indent=1), encoding="utf-8")
-        texts[lang] = fill(raw, facts, lang)
+        texts[lang] = spaced(fill(raw, facts, lang)) if lang == "zh" else fill(raw, facts, lang)
     used = model if "model" in source.values() or any(p for p in problems.values()) else None
     return Summary(texts, source, used, problems)
 
