@@ -627,6 +627,8 @@ test 用「Robometer 进度往回掉」只跑了一次。和论文表 II 的 9 �
 - 2026-10-02 核：Cosmos 3 的授权是 OpenMDW-1.1，模型卡写可商用；许可证原文只要求分发时保留协议和版权声明。Nebius Token Factory 上 `nvidia/Cosmos3-Super-Reasoner` 的 serverless 接口 2026-08-31 已下线，公开模型目录里没有 Cosmos，只剩 Dedicated Endpoint（价格未确认）。所以默认走 Nebius AI Cloud 租 GPU 自己跑。比赛规则允不允许，看 Nebius 的任务书。
 - 做法：加 Cosmos 3（NVIDIA 2026-05-31 开源）的适配器，用它的推理部分看视频，说出第几秒出了什么事，作为体检单上的文字解释；部署在 Nebius 上演示。
 - 这场的任务书等在做的项目降回 3 个后，由总管派发（预计在 Hack Apertus 10-16 结束后）。
+- 2026-10-05 核（比赛页面原文）：「跑在 Nebius 上」指运行时调用 Token Factory 的推理接口，或者用 Nebius AI Cloud 的 Serverless Jobs、Serverless Endpoints、DevPods 部署运行；普通虚拟机不在列，所以不走「租 GPU 自己跑」，改走 Serverless Endpoint。至少用一个 NVIDIA 开源模型。要交：公开仓库（带开源许可证、写清怎么跑的 README）、短于 3 分钟的视频、对 Nebius 和 NVIDIA 工具的反馈。评分四项等权：技术实现、设计、潜在影响、点子质量。截止 10-30 10:00（太平洋时间）。额度：填表加激活码（见比赛 resources 页）得 $25 Token Factory 额度，加入 Builders Program 再得 $25；线上参赛者没有 AI Cloud 的 GPU 额度，只在线下活动发。
+- 2026-10-05 核（模型卡、NVIDIA 的 cookbook、Nebius 文档）：Cosmos 3 有 Edge（4B）、Nano（16B，其中看视频的 reasoner 8B）、Super（64B）三个，都是 OpenMDW-1.1；视频加文字进、文字出，官方有让它按 mm:ss.ff 写出时间段的提示，推荐 4 fps 采样；视频处理和 Qwen3-VL 同一套。Nano 的 reasoner 权重约 16 到 17 GB，单张 H100 能跑；Colab 免费档的 T4 不支持 bf16，显存也不够。Nebius 有现成的 Cosmos3 reasoner Serverless Endpoint 模板（单张 H100）。价格（2026-10-01 起，每 GPU 小时，按秒计）：H100 按需 $4.50、抢占式 $2.15，RTX PRO 6000 按需 $1.80、抢占式 $0.95；第一次充值至少 $25，银行卡。Token Factory 上 Cosmos 的 serverless 2026-08-31 下线，专属端点的价格没核实。
 
 ## 8. 里程碑
 
