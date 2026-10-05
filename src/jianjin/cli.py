@@ -69,7 +69,25 @@ def _cmd_check(args: argparse.Namespace) -> int:
 def _cmd_eval(args: argparse.Namespace) -> int:
     # 读视频评判缓存的考卷，不是 Robometer 的成绩文件名带上评判名，免得盖掉 Robometer 的
     suffix = f"_{args.judge}" if args.exam in ("a-swap", "b-episode") and args.judge != "robometer" else ""
-    if args.exam == "b-regrasp":
+    if args.exam == "c":
+        from jianjin.eval.exam_c import format_exam_c, run_exam_c, success_sets
+
+        split = args.split or "dev"
+        dev = None
+        if args.dev_result:
+            dev = json.loads(Path(args.dev_result).read_text(encoding="utf-8"))
+        elif split != "dev":
+            raise SystemExit("test 要用 dev 选定的：加 --dev-result results/exam_c_dev.json")
+        succ = success_sets(args.config, args.data_root, args.robovad_root, split)
+        out = run_exam_c(args.robomind_root, split, succ, split_file=args.split_file, dev_result=dev)
+        text = format_exam_c(out)
+    elif args.exam == "c-regrasp":
+        from jianjin.eval.exam_c import format_regrasp_c, run_regrasp_c
+
+        split = "all"
+        out = run_regrasp_c(args.robomind_root)
+        text = format_regrasp_c(out)
+    elif args.exam == "b-regrasp":
         from jianjin.eval.exam_b_regrasp import format_regrasp_b, run_regrasp_b
 
         split = args.split or "train"
@@ -128,6 +146,12 @@ def _cmd_eval(args: argparse.Namespace) -> int:
 
 
 def _cmd_fetch(args: argparse.Namespace) -> int:
+    if args.what == "robomind":
+        from jianjin.eval.robomind_fetch import fetch_robomind_failure
+
+        stat = fetch_robomind_failure(args.data_root, workers=args.workers)
+        print("、".join(f"{k} {v} 条" for k, v in stat.items()))
+        return 0
     if args.what == "robovad":
         from jianjin.eval.robovad_fetch import fetch_robovad
 
@@ -192,10 +216,12 @@ def build_parser() -> argparse.ArgumentParser:
     c.set_defaults(func=_cmd_check)
 
     e = sub.add_parser("eval", help="跑考卷")
-    e.add_argument("exam", choices=["a", "a-swap", "b", "b-episode", "b-regrasp"])
+    e.add_argument("exam", choices=["a", "a-swap", "b", "b-episode", "b-regrasp", "c", "c-regrasp"])
     e.add_argument("--config", default="configs/exam_a.toml")
     e.add_argument("--data-root", default="data")
     e.add_argument("--robovad-root", default="data/robovad")
+    e.add_argument("--robomind-root", default="data/robomind_failure", help="考卷 C：jianjin fetch robomind 存的地方")
+    e.add_argument("--split-file", default="configs/exam_c_split.json", help="考卷 C 的任务切分")
     e.add_argument("--split", choices=["dev", "test", "train", "validation"], default=None)
     e.add_argument("--scorer", default="tracking")
     e.add_argument("--cache", default="cache")
@@ -203,14 +229,16 @@ def build_parser() -> argparse.ArgumentParser:
     e.add_argument("--seed", type=int, default=0)
     e.add_argument("--out", default=None)
     e.add_argument("--judge", default="robometer", help="a-swap、b-episode 读哪个视频评判的缓存")
-    e.add_argument("--dev-result", default=None, help="沿用这个结果里的选择：a-swap 用 dev 的，b-episode、b-regrasp 用 train 的")
+    e.add_argument("--dev-result", default=None, help="沿用这个结果里的选择：a-swap、c 用 dev 的，b-episode、b-regrasp 用 train 的")
     e.set_defaults(func=_cmd_eval)
 
     f = sub.add_parser("fetch", help="下载考卷数据")
-    f.add_argument("what", nargs="?", choices=["exam_a", "robovad"], default="exam_a")
+    f.add_argument("what", nargs="?", choices=["exam_a", "robovad", "robomind"], default="exam_a",
+                   help="robomind：RoboMIND 公开的失败示范，只读关节（约 2 GB 流量，存下 200 多 MB）")
     f.add_argument("--config", default="configs/exam_a.toml")
     f.add_argument("--data-root", default="data")
     f.add_argument("--videos", action="store_true", help="连视频一起下")
+    f.add_argument("--workers", type=int, default=4, help="robomind 同时下几条")
     f.set_defaults(func=_cmd_fetch)
 
     j = sub.add_parser("judge", help="在有 GPU 的机器上跑视频评判，结果写进缓存")

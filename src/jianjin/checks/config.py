@@ -37,3 +37,16 @@ class CheckConfig:
     # 余量 0 和 1 打平，取大的。加最短停留之前（*_v1.json）选的也是这两个。
     regrasp_margin: int = 1  # 开合次数超过「常见上限 + 这么多」才报
     regrasp_source: str = "state"  # 夹爪读主臂（action）还是从臂（state）
+    # 「动作不流畅」「速度过快」2026-10-05 加，见 docs/superpowers/specs/2026-10-05-motion-quality-design.md。
+    # 下面五个先验定、不调：一下犹豫零点几秒（「停顿过长」是 3 秒）；0.1 秒滤掉单帧的速度毛刺。
+    stop_s: float = 0.3  # 中途速度低于 still_rate 连续这么久，算停了一回
+    burst_low: float = 0.2  # 动作段：速度从同任务常见最快速度（各条速度 95 分位的中位数）的这么多以下
+    burst_high: float = 0.5  # 升到这么多以上，算一段
+    burst_dwell_s: float = 0.1  # 动作段数时，在一档里待不到这么久又回去的一趟不算
+    motion_quantile: float = 0.75  # 停顿回数、动作段数取参照那批的这个分位当「常见上限」
+    # 下面两个 2026-10-05 在考卷 C 开发集上选（results/exam_c_dev.json）：阈值取成功示范开发集每个数据集报出都不超过 5%
+    # 的最小格点（被 armnet 卡在 1.7，27/869）；平顺度的三个候选（中途停顿、动作段数、jerk）在 RoboMIND 上都反着报
+    # （AUC 0.31 到 0.45），按规矩选时长基线：检出 40/261、同任务其他原因报出 31/549，差几乎全在 UR 单臂。
+    # 「速度过快」的候选在开发集上一条没检出、反倒报出其他原因 7%，不加规则。
+    jerky_candidate: str = "duration"  # 动作不流畅看哪个候选（MOTION_CANDIDATES 里的 jerky 类）
+    jerky_threshold: float = 1.7  # 比值候选是倍数，次数候选是余量

@@ -18,6 +18,7 @@ def test_runner_collects_findings_and_not_checked():
     assert "too_short" in tiny_causes
     assert "end_pose" in results["tiny"].not_checked
     assert "regrasp" in results["paused"].not_checked
+    assert "jerky" in results["paused"].not_checked  # 同任务不够 5 条，没法比
 
 
 def test_runner_keeps_input_order():
