@@ -631,7 +631,7 @@ test 用「Robometer 进度往回掉」只跑了一次。和论文表 II 的 9 �
 - 2026-10-05 核（模型卡、NVIDIA 的 cookbook、Nebius 文档）：Cosmos 3 有 Edge（4B）、Nano（16B，其中看视频的 reasoner 8B）、Super（64B）三个，都是 OpenMDW-1.1；视频加文字进、文字出，官方有让它按 mm:ss.ff 写出时间段的提示，推荐 4 fps 采样；视频处理和 Qwen3-VL 同一套。Nano 的 reasoner 权重约 16 到 17 GB，单张 H100 能跑；Colab 免费档的 T4 不支持 bf16，显存也不够。Nebius 有现成的 Cosmos3 reasoner Serverless Endpoint 模板（单张 H100）。价格（2026-10-01 起，每 GPU 小时，按秒计）：H100 按需 $4.50、抢占式 $2.15，RTX PRO 6000 按需 $1.80、抢占式 $0.95；第一次充值至少 $25，银行卡。Token Factory 上 Cosmos 的 serverless 2026-08-31 下线，专属端点的价格没核实。
 - 2026-10-05 用户定：不租 GPU，不上 Cosmos；只用比赛送的 Token Factory 额度调 Nemotron（`nvidia/Nemotron-3_5-Lightning`，OpenMDW-1.1，权重公开），写「本批小结」：给质检组长和采集员的一段话，中英各一份，数字由拣金填（`jianjin check --summary`，设计见 `docs/superpowers/specs/2026-10-05-nemotron-summary-design.md`）。Token Factory 上能看视频的 NVIDIA 模型（Cosmos3-Super-Reasoner、Nemotron-3-Nano-Omni）都在 2026-08-31 下线了，所以这条路只用文字模型。
 - 2026-10-05 在真接口上跑通（叠方块 56 条，中英两段都是 Nemotron 写的，第一次就过了数字核对），前两次没过的经过见本批小结的 spec 第 6 节。给 Nebius 和 NVIDIA 的反馈（提交要求写），素材：
-  - Token Factory 的 OpenAI 兼容接口好接：标准库十几行就调通，不用装 SDK；比赛送的额度填表就到账。
+  - Token Factory 的 OpenAI 兼容接口好接：标准库十几行就调通，不用装 SDK；比赛送的额度申请下来就能用。
   - 快速入门只有一个 DeepSeek 的例子，没写 NVIDIA 模型的名字，也没写怎么控制推理；Context7 里查不到 Token Factory 的文档。
   - Nemotron 3.5 Lightning 默认开推理，推理过程直接写进回答正文，没有 `<think>` 标签，也不在单独的字段里，很容易被当成回答；按模型卡传 `chat_template_kwargs: {"enable_thinking": false}` 就关掉了，Token Factory 认这个参数。
   - Cosmos3-Super-Reasoner 的 serverless 2026-08-31 下线以后，Token Factory 上没有能看视频的 NVIDIA 模型，Physical AI 赛道想用 Cosmos 只能自己租卡部署。
