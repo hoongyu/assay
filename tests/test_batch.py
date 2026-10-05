@@ -276,3 +276,26 @@ def test_motion_scores_skips_when_not_comparable():
     still = [arm_ep(np.zeros(60), f"s{i}") for i in range(5)]
     scores, skipped = motion_scores(still, MOT)
     assert scores == {} and all("基本没动" in why for why in skipped.values())
+
+
+def test_jerky_rule_uses_chosen_candidate():
+    from jianjin.checks.batch import jerky
+
+    ref = normals()
+    eps = ref + [stop_and_go(), arm_ep(minjerk(45), "fast")]
+    cfg = replace(MOT, jerky_candidate="stops", jerky_threshold=0)
+    found, skipped = jerky(eps, cfg, reference=ref)
+    assert skipped == {} and set(found) == {"jerky"}
+    (f,) = found["jerky"]
+    assert f.check == "jerky" and f.cause is Cause.JERKY and not f.hard
+    assert f.t0 == 0 and f.t1 == pytest.approx(eps[-2].duration) and f.score == 3
+    assert "中途停下又走了 3 回" in f.evidence and "同任务 6 条示范常见不超过 0 回" in f.evidence
+    found, _ = jerky(eps, replace(MOT, jerky_candidate="duration", jerky_threshold=1.3), reference=ref)
+    assert set(found) == {"jerky"} and "是同任务 6 条示范中位数的 1.6 倍" in found["jerky"][0].evidence
+
+
+def test_jerky_rule_rejects_candidate_of_other_class():
+    from jianjin.checks.batch import jerky
+
+    with pytest.raises(ValueError):
+        jerky(normals(), replace(MOT, jerky_candidate="peak_speed", jerky_threshold=1.5))

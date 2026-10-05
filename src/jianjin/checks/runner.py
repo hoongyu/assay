@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from jianjin.checks.batch import empty_recording, end_pose, extra_motion, regrasp
+from jianjin.checks.batch import empty_recording, end_pose, extra_motion, jerky, regrasp
 from jianjin.checks.config import CheckConfig, NotApplicable
 from jianjin.checks.integrity import missing_values, timestamp_gaps, too_short, video_length
 from jianjin.checks.motion import long_pause
@@ -27,6 +27,7 @@ BATCH_CHECKS: dict[str, BatchCheck] = {
     "end_pose": end_pose,
     "empty_recording": empty_recording,
     "regrasp": regrasp,
+    "jerky": jerky,
 }
 
 

@@ -359,3 +359,34 @@ def motion_scores(
 
     found, skipped = _compare(episodes, cfg, reference, summarize, judge)
     return {k: v[0] for k, v in found.items()}, skipped
+
+
+def _motion_evidence(cand: str, s: MotionScore, cfg: CheckConfig) -> str:
+    d = s.detail
+    if cand == "duration":
+        return f"用了 {d['duration']:.1f} 秒，是同任务 {s.n} 条示范中位数的 {s.scores[cand]:.1f} 倍，像是中途犹豫、磕磕绊绊"
+    if cand == "stops":
+        shown = "、".join(f"{a:.1f}" for a, _ in d["stop_times"][:12]) + ("......" if len(d["stop_times"]) > 12 else "")
+        return (f"中途停下又走了 {d['n_stops']} 回（每回停 {cfg.stop_s:g} 秒以上），同任务 {s.n} 条示范常见不超过 "
+                f"{d['stop_upper']:.0f} 回，像是一顿一顿的；停在 {shown} 秒")
+    if cand == "bursts":
+        return (f"动作断成 {d['n_bursts']} 段（快慢起落了 {d['n_bursts']} 回），同任务 {s.n} 条示范常见不超过 "
+                f"{d['burst_upper']:.0f} 段，像是一顿一顿的")
+    return f"动作的急促程度（jerk）是同任务 {s.n} 条示范中位数的 {s.scores[cand]:.1f} 倍，像是动作发抖、不顺"
+
+
+def jerky(episodes: list[Episode], cfg: CheckConfig, reference: list[Episode] | None = None) -> tuple[Found, Skipped]:
+    """动作不流畅：用考卷 C 开发集选中的候选（cfg.jerky_candidate）和同任务那批比；选中的是时长基线，
+    平顺度候选在 RoboMIND 上反着报（见 config.py）。时间段写整条示范。"""
+    cand = cfg.jerky_candidate
+    if MOTION_CANDIDATES[cand][0] != "jerky":
+        raise ValueError(f"{cand} 不是动作不流畅的候选")
+    scores, skipped = motion_scores(episodes, cfg, reference)
+    found: Found = {}
+    for ep in episodes:
+        s = scores.get(ep.id)
+        if s is None or not s.scores[cand] > cfg.jerky_threshold:
+            continue
+        found[ep.id] = [Finding(check="jerky", cause=Cause.JERKY, t0=0.0, t1=ep.duration, score=float(s.scores[cand]),
+                                evidence=_motion_evidence(cand, s, cfg))]
+    return found, skipped

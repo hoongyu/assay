@@ -44,3 +44,9 @@ class CheckConfig:
     burst_high: float = 0.5  # 升到这么多以上，算一段
     burst_dwell_s: float = 0.1  # 动作段数时，在一档里待不到这么久又回去的一趟不算
     motion_quantile: float = 0.75  # 停顿回数、动作段数取参照那批的这个分位当「常见上限」
+    # 下面两个 2026-10-05 在考卷 C 开发集上选（results/exam_c_dev.json）：阈值取成功示范开发集每个数据集报出都不超过 5%
+    # 的最小格点（被 armnet 卡在 1.7，27/869）；平顺度的三个候选（中途停顿、动作段数、jerk）在 RoboMIND 上都反着报
+    # （AUC 0.31 到 0.45），按规矩选时长基线：检出 40/261、同任务其他原因报出 31/549，差几乎全在 UR 单臂。
+    # 「速度过快」的候选在开发集上一条没检出、反倒报出其他原因 7%，不加规则。
+    jerky_candidate: str = "duration"  # 动作不流畅看哪个候选（MOTION_CANDIDATES 里的 jerky 类）
+    jerky_threshold: float = 1.7  # 比值候选是倍数，次数候选是余量

@@ -21,6 +21,7 @@ class Cause(StrEnum):
     DROP = "物体掉落"
     EXTRA_MOTION = "多余动作"
     LONG_PAUSE = "停顿过长"
+    JERKY = "动作不流畅"
     WRONG_TASK = "指令不符"
     DATA_ERROR = "数据异常"
 
