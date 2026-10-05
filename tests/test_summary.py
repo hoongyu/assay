@@ -72,3 +72,67 @@ def test_fill_uses_values_of_the_language():
     facts = Facts({"n": "条数", "c": "原因"}, {"zh": {"n": "3", "c": "二次抓取"}, "en": {"n": "3", "c": "regrasp"}})
     assert fill("{n} 条「{c}」", facts, "zh") == "3 条「二次抓取」"
     assert fill("{n} {c} episodes", facts, "en") == "3 regrasp episodes"
+
+
+def fake_chat(*replies):
+    """依次回答 replies；记下每次收到的消息。"""
+    calls = []
+
+    def chat(messages, model):
+        calls.append(messages)
+        return replies[min(len(calls), len(replies)) - 1]
+
+    chat.calls = calls
+    return chat
+
+
+def facts5():
+    from jianjin.summary import batch_facts
+
+    vs, eps = batch()
+    return batch_facts(vs, eps, title="ds")
+
+
+def test_summarize_uses_model_text_with_numbers_filled(tmp_path):
+    from jianjin.summary import summarize
+
+    chat = fake_chat("<think>先算一下</think>本批 {n_total} 条，先看作废的 {n_reject} 条。")
+    s = summarize(facts5(), chat=chat, cache_dir=tmp_path, langs=("zh",))
+    assert s.texts["zh"] == "本批 5 条，先看作废的 1 条。" and s.source["zh"] == "model" and len(chat.calls) == 1
+    prompt = chat.calls[0][-1]["content"]
+    assert "{n_doubt}" in prompt and "= 2" in prompt  # 模型看得到每个占位符的意思和值
+
+
+def test_summarize_retries_once_then_falls_back_to_template(tmp_path):
+    from jianjin.summary import summarize
+
+    chat = fake_chat("有 7 条存疑。", "本批 {n_total} 条。")
+    s = summarize(facts5(), chat=chat, cache_dir=tmp_path, langs=("zh",))
+    assert s.texts["zh"] == "本批 5 条。" and s.source["zh"] == "model" and len(chat.calls) == 2
+    assert "阿拉伯数字" in chat.calls[1][-1]["content"]  # 重试时把问题告诉模型
+    bad = fake_chat("有 7 条存疑。", "还是 7 条。")
+    t = summarize(facts5(), chat=bad, cache_dir=tmp_path / "b", langs=("zh",))
+    assert t.source["zh"] == "template" and "5 条示范" in t.texts["zh"] and t.problems["zh"]
+
+
+def test_summarize_caches_model_answers_and_uses_template_without_key(tmp_path):
+    from jianjin.summary import summarize
+
+    summarize(facts5(), chat=fake_chat("本批 {n_total} 条。"), cache_dir=tmp_path, langs=("zh",))
+    again = fake_chat("不该被调用")
+    s = summarize(facts5(), chat=again, cache_dir=tmp_path, langs=("zh",))
+    assert s.texts["zh"] == "本批 5 条。" and again.calls == []
+    t = summarize(facts5(), chat=None, cache_dir=tmp_path / "t", langs=("zh", "en"))
+    assert t.source == {"zh": "template", "en": "template"} and t.model is None
+    assert t.texts["en"].startswith("Batch ds: 5 episodes checked")
+    assert not list((tmp_path / "t").rglob("*.json"))  # 模板不进缓存，有了密钥以后还会去调模型
+
+
+def test_summarize_falls_back_when_the_call_fails(tmp_path):
+    from jianjin.summary import summarize
+
+    def broken(messages, model):
+        raise OSError("网络断了")
+
+    s = summarize(facts5(), chat=broken, cache_dir=tmp_path, langs=("zh",))
+    assert s.source["zh"] == "template" and "网络断了" in s.problems["zh"][0]

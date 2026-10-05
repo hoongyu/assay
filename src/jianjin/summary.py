@@ -7,9 +7,14 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
+import urllib.request
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 from jianjin.diagnose import Label, Verdict
 from jianjin.types import Cause, Episode, source_name
@@ -134,3 +139,128 @@ def check_text(text: str, keys: set[str]) -> list[str]:
 def fill(text: str, facts: Facts, lang: str) -> str:
     values = facts.values[lang]
     return PLACEHOLDER.sub(lambda m: values[m.group(1)], text)
+
+
+# ---- 调模型 ----
+
+BASE_URL = "https://api.tokenfactory.nebius.com/v1/"
+DEFAULT_MODEL = "nvidia/Nemotron-3_5-Lightning"
+PROMPT_VERSION = "1"
+SYSTEM = (
+    "You write a short feedback note for the QA lead and the teleoperators of a robot data-collection site, "
+    "based ONLY on the statistics given. Rules: (1) Write every number, percentage, episode id, operator id, "
+    "batch name and problem name as a placeholder in curly braces exactly as listed, e.g. {n_doubt}. Never write "
+    "digits or number words yourself. (2) Use only the listed placeholders. (3) Do not invent problems, causes or "
+    "facts that are not listed. (4) Say what the reviewers should look at first and what the operators should "
+    "watch for next time. (5) Plain prose, no headings, no lists, no markdown."
+)
+LANG_SPEC = {
+    "zh": "Write the note in Simplified Chinese, at most 200 Chinese characters.",
+    "en": "Write the note in English, at most 120 words.",
+}
+Chat = Callable[[list[dict], str], str]
+
+
+@dataclass(frozen=True)
+class Summary:
+    texts: dict[str, str]  # 语言 → 填好数字的文字
+    source: dict[str, str]  # 语言 → model（模型写的）或 template（模板）
+    model: str | None  # 用了哪个模型；全是模板时为 None
+    problems: dict[str, list[str]]  # 语言 → 模型的输出没过核对、或者调用失败的原因
+
+
+def _messages(facts: Facts, lang: str) -> list[dict]:
+    rows = "\n".join(f"{{{k}}}: {facts.meaning[k]} = {facts.values[lang][k]}" for k in facts.meaning)
+    return [{"role": "system", "content": SYSTEM},
+            {"role": "user", "content": f"Statistics (placeholder: meaning = value):\n{rows}\n\n{LANG_SPEC[lang]}"}]
+
+
+def _strip_think(text: str) -> str:
+    """去掉推理段：有的模型把推理写在 <think>…</think> 里，有的只留下结尾的 </think>。"""
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.S)
+    return text.rsplit("</think>", 1)[-1].strip()
+
+
+def template(facts: Facts, lang: str) -> str:
+    """模板：同样的事实按固定句式写。没设密钥、模型的输出没过核对、调用失败时用它。"""
+    v = facts.values[lang]
+    zh = lang == "zh"
+    parts = ["本批「{batch}」{n_total} 条示范：合格 {n_pass}，存疑 {n_doubt}，作废 {n_reject}。" if zh else
+             "Batch {batch}: {n_total} episodes checked; {n_pass} passed, {n_doubt} need review, {n_reject} rejected."]
+    if "cause_1" in v:
+        parts.append("报得最多的是「{cause_1}」，{cause_1_n} 条（{cause_1_pct}），比如 {cause_1_eg}。" if zh else
+                     " The most frequent problem is {cause_1}: {cause_1_n} episodes ({cause_1_pct}), e.g. {cause_1_eg}.")
+    if "cause_2" in v:
+        parts.append("其次是「{cause_2}」，{cause_2_n} 条。" if zh else " Next is {cause_2}: {cause_2_n} episodes.")
+    if v["n_reject"] != "0":
+        parts.append("先看作废的 {n_reject} 条，再看存疑的。" if zh else " Review the {n_reject} rejected episodes first.")
+    elif v["n_doubt"] != "0":
+        parts.append("先看存疑的 {n_doubt} 条。" if zh else " Review the {n_doubt} flagged episodes first.")
+    if "unchecked_1" in v:
+        parts.append("{unchecked_1}有 {unchecked_1_n} 条没查。" if zh else " {unchecked_1} could not run on {unchecked_1_n} episodes.")
+    if "op_1_cause" in v:
+        parts.append("按采集员看，{op_1} 的 {op_1_n} 条里 {op_1_flagged} 条被标出，多是「{op_1_cause}」。" if zh else
+                     " By operator, {op_1} had {op_1_flagged} of {op_1_n} episodes flagged, mostly {op_1_cause}.")
+    return "".join(parts)
+
+
+def _ask(facts: Facts, lang: str, chat: Chat, model: str) -> tuple[str | None, list[str]]:
+    """问模型，不合格带着问题重试一次。返回能收的文字（带占位符）或 None，以及遇到的问题。"""
+    keys = set(facts.meaning)
+    messages = _messages(facts, lang)
+    problems: list[str] = []
+    for attempt in range(2):
+        raw = _strip_think(chat(messages, model))
+        found = check_text(raw, keys)
+        if not found:
+            return raw, problems
+        problems += [f"第 {attempt + 1} 次：{p}" for p in found]
+        messages = messages + [{"role": "assistant", "content": raw},
+                               {"role": "user", "content": "This note cannot be used: " + "; ".join(found)
+                                + ". Rewrite it following the rules; every number must be a placeholder."}]
+    return None, problems
+
+
+def summarize(facts: Facts, chat: Chat | None = None, model: str = DEFAULT_MODEL, cache_dir: str | Path | None = None,
+              langs: tuple[str, ...] = ("zh", "en")) -> Summary:
+    """每种语言写一段。模型的回答按「模型、提示版本、语言、事实」缓存；没有 chat（没设密钥）时用模板，不缓存。"""
+    texts, source, problems = {}, {}, {}
+    for lang in langs:
+        key = hashlib.sha256(json.dumps({"model": model, "prompt": PROMPT_VERSION, "lang": lang,
+                                         "meaning": facts.meaning, "values": facts.values[lang]},
+                                        sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[:24]
+        path = Path(cache_dir) / "summary" / f"{key}.json" if cache_dir else None
+        if path is not None and path.exists():
+            hit = json.loads(path.read_text(encoding="utf-8"))
+            raw, source[lang], problems[lang] = hit["text"], hit["source"], hit["problems"]
+        elif chat is None:
+            raw, source[lang], problems[lang] = template(facts, lang), "template", []
+        else:
+            try:
+                got, problems[lang] = _ask(facts, lang, chat, model)
+            except Exception as exc:  # 网络、额度、限流：这次用模板，不缓存，下次再试
+                raw, source[lang], problems[lang] = template(facts, lang), "template", [f"调用失败：{exc}"]
+            else:
+                raw, source[lang] = (got, "model") if got is not None else (template(facts, lang), "template")
+                if path is not None:
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(json.dumps({"model": model, "prompt": PROMPT_VERSION, "lang": lang, "text": raw,
+                                                "source": source[lang], "problems": problems[lang]},
+                                               ensure_ascii=False, indent=1), encoding="utf-8")
+        texts[lang] = fill(raw, facts, lang)
+    used = model if "model" in source.values() or any(p for p in problems.values()) else None
+    return Summary(texts, source, used, problems)
+
+
+def token_factory_chat(api_key: str, base_url: str = BASE_URL, timeout: float = 120.0) -> Chat:
+    """Nebius Token Factory 的 OpenAI 兼容接口，用标准库发请求。"""
+
+    def chat(messages: list[dict], model: str) -> str:
+        body = json.dumps({"model": model, "messages": messages, "temperature": 0.2, "max_tokens": 2048}).encode("utf-8")
+        req = urllib.request.Request(base_url.rstrip("/") + "/chat/completions", data=body,
+                                     headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        return data["choices"][0]["message"].get("content") or ""
+
+    return chat
