@@ -50,7 +50,7 @@
 
 **Files:** `src/jianjin/report.py`、`tests/test_report.py`
 
-- [ ] 测试：`render(..., lang="en")` 里除了中文小结那一段没有汉字；判定写 PASS、DOUBT、REJECT；`<html lang="en">`；页脚不再说「错杀……更贵」；中文版快照照旧通过（快照里的页脚和筛选按钮的内部值改了，更新快照）。
+- [ ] 测试：`render(..., lang="en")` 里除了中文小结那一段没有汉字；判定写 PASS、DOUBT、REJECT；`<html lang="en">`；页脚不再说「错杀......更贵」；中文版快照照旧通过（快照里的页脚和筛选按钮的内部值改了，更新快照）。
 - [ ] 界面文字表；`lang` 参数一路传下去。
 
 ### Task 7：命令行 `--lang`

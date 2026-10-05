@@ -14,7 +14,7 @@ Automatic quality control for robot teleoperation demonstrations. For every reco
 
 ![An episode card: regrasp detected, with progress curve and keyframes](docs/images/card-towel-ep2-regrasp.png)
 
-*One episode card. The right gripper switched between open and closed 6 times, where this task usually switches at most 4 times. Two of the switch times on the card, open at 12.8 s and closed at 13.5 s, match the video: the gripper loses the towel corner at 12.9 s and grabs it again at 13.6 s.*
+*One episode card. The right gripper switched between open and closed 6 times, where this task usually switches at most 4 times. The keyframes are taken at the switch times; two of them, open at 12.8 s and closed at 13.5 s, match the video: the gripper loses the towel corner at 12.9 s and grabs it again at 13.6 s.*
 
 Entered in the Nebius × NVIDIA Global AI Hackathon (Physical AI track) and the first Haichuang π embodied-AI competition (首届「海创π」具身智能专项赛).
 
@@ -24,10 +24,10 @@ Entered in the Nebius × NVIDIA Global AI Hackathon (Physical AI track) and the 
 git clone https://github.com/hoongyu/jianjin && cd jianjin
 uv sync
 uv run --extra hub jianjin fetch exam_a   # the public LeRobot datasets of exam A, joint data only (about 73 MB)
-uv run jianjin check data/lerobot__svla_so100_stacking --out report.html
+uv run jianjin check data/lerobot__svla_so100_stacking --lang en --out report.html
 ```
 
-Open `report.html` in a browser. Without a GPU only the joint checks run, and they already flag 5 of the 56 episodes: three recordings shorter than one second (rejected) and two where the arm never moves (doubt). We checked all five on video; all five are real problems. The interface is in Chinese, because our first users are collection sites in China.
+Open `report.html` in a browser. Without a GPU only the joint checks run, and they already flag 5 of the 56 episodes: three recordings shorter than one second (rejected) and two where the arm never moves (doubt). We checked all five on video; all five are real problems. Drop `--lang en` for the Chinese interface; our first users are collection sites in China.
 
 ## Why
 
@@ -56,7 +56,7 @@ Verdicts are conservative by choice: a rejection needs strong evidence, so good 
 - **DOUBT**: something was found, but not enough to reject; a person should look.
 - **PASS**: nothing was found. Checks that could not run (no video, too few episodes of the task, a batch whose end poses vary anyway) are listed separately and never count as passed.
 
-The report shows the verdict funnel for the batch, the problem distribution, per-operator statistics when the data carries operator ids, and one card per episode with the reasons, the progress curve, the flagged time span and keyframes.
+The report shows the verdict funnel for the batch, the problem distribution, per-operator statistics when the data carries operator ids, and one card per episode with the reasons, the progress curve, the flagged time span and keyframes (for a regrasp, taken at the gripper's switch times). `--lang en` writes the whole report in English: every piece of evidence is generated in both languages from the same numbers, without a model.
 
 ## Results
 
@@ -130,11 +130,13 @@ RoboMIND published 1,678 teleoperation episodes that its QA rejected, with the r
 - It writes prose with placeholders such as `{n_doubt}`, and jianjin fills in the numbers. A digit the model writes on its own is rejected, and so is a number word from two up ("one" and "一" pass: they are too common in ordinary prose to ban). jianjin retries once and then falls back to a template. The report says which one you are reading.
 - The check cannot tell whether a placeholder sits in the right sentence. To make that less likely, the model starts from the template's draft, which already has every placeholder in place; we have not measured how often it moves one.
 - Reasoning is turned off with `chat_template_kwargs: {"enable_thinking": false}`. With it on, the reasoning trace landed in the answer text and the answer was cut off at the token limit.
-- Answers are cached by their inputs, so re-rendering a report makes no new call.
+- Tips for the operators come from a fixed list we wrote, one per problem class, also given as placeholders (`{advice_1}`); the model picks and connects them but may not write advice of its own. (Without that rule, the first live summary told the operators to make sure one of jianjin's checks runs on all episodes, which no operator can act on.)
+- Answers are cached by their inputs, so re-rendering a report makes no new call. `jianjin summary-stats` counts the cached summaries that passed on the first try, passed after the retry, or fell back to the template.
 
 ```bash
 export NEBIUS_API_KEY=...   # set it in your own shell; never commit it
-uv run jianjin check <dataset dir> --out report.html --summary
+uv run jianjin check <dataset dir> --out report.html --summary --lang en
+uv run jianjin summary-stats
 ```
 
 Without the key, the template is used.
@@ -148,7 +150,7 @@ uv sync
 uv run jianjin check <dataset dir> --out report.html --json findings.json
 ```
 
-It reads LeRobot v3, RoboMIND HDF5 and RoboVAD directories. Without `--judges`, only the joint checks run, on CPU.
+It reads LeRobot v3, RoboMIND HDF5 and RoboVAD directories. Without `--judges`, only the joint checks run, on CPU. `--lang en` switches the report and the terminal output to English.
 
 The video judges need a GPU: run the notebooks in `notebooks/` on Colab, put the cache files they produce in `cache/`, then:
 
