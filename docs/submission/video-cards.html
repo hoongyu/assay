@@ -27,8 +27,10 @@
   .lead { font-size: 44px; line-height: 1.4; color: var(--muted); max-width: 1500px; }
   .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
   .grid.two { grid-template-columns: repeat(2, 1fr); }
-  .box { background: var(--panel); border: 2px solid var(--line); border-radius: 20px; padding: 40px;
+  .box { background: var(--panel); border-top: 4px solid var(--blue); padding: 40px;
     display: flex; flex-direction: column; gap: 16px; }
+  .box.solid { background: var(--accent); border-top-color: var(--accent); color: #FFFFFF; }
+  .box.solid .big { color: #FFFFFF; }
   .big { font-size: 64px; font-weight: 800; color: var(--accent); line-height: 1.1; }
   .box p { font-size: 32px; line-height: 1.4; }
   .box .src { font-size: 24px; color: var(--muted); }
@@ -60,7 +62,7 @@
     <p class="kicker">Results</p>
     <h2>Measured on public data and on a real QA team's labels</h2>
     <div class="grid two">
-      <div class="box"><p class="big">6 of 6</p><p>rejections in five public LeRobot datasets (308 episodes, none marked as failed) are unusable recordings. Of 33 sent to a person: 12 real, 12 false positives, 9 not checked.</p></div>
+      <div class="box solid"><p class="big">6 of 6</p><p>rejections in five public LeRobot datasets (308 episodes, none marked as failed) are unusable recordings. Of 33 sent to a person: 12 real, 12 false positives, 9 not checked.</p></div>
       <div class="box"><p class="big">99 of 162</p><p>comparable regrasps flagged in RoboMIND, 1,678 episodes rejected by Beijing Humanoid's QA. Rule chosen on another benchmark, not retuned.</p></div>
       <div class="box"><p class="big">197 of 201</p><p>injected cut endings caught on held-out datasets, with 0 of 202 clean episodes flagged (second look at the test set, disclosed).</p></div>
       <div class="box"><p class="big">What failed</p><p>Smoothness metrics did not separate "unsmooth" episodes on real labels. We kept a duration rule that catches 14%, and say so.</p></div>
