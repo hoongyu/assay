@@ -145,14 +145,18 @@ def fill(text: str, facts: Facts, lang: str) -> str:
 
 BASE_URL = "https://api.tokenfactory.nebius.com/v1/"
 DEFAULT_MODEL = "nvidia/Nemotron-3_5-Lightning"
-PROMPT_VERSION = "1"
+# 2026-10-05 第一版在真接口上两种语言都没过核对：照抄了提示里给的值（含批次名里的 100），还自造了 {placeholder}、
+# {x} 这样的占位符。第二版不给带数字的值，改成让它改写一份全是占位符的草稿，重试时逐个列出能用的占位符。
+PROMPT_VERSION = "2"
 SYSTEM = (
-    "You write a short feedback note for the QA lead and the teleoperators of a robot data-collection site, "
-    "based ONLY on the statistics given. Rules: (1) Write every number, percentage, episode id, operator id, "
-    "batch name and problem name as a placeholder in curly braces exactly as listed, e.g. {n_doubt}. Never write "
-    "digits or number words yourself. (2) Use only the listed placeholders. (3) Do not invent problems, causes or "
-    "facts that are not listed. (4) Say what the reviewers should look at first and what the operators should "
-    "watch for next time. (5) Plain prose, no headings, no lists, no markdown."
+    "You rewrite a plain draft into a short, useful feedback note for the QA lead and the teleoperators of a robot "
+    "data-collection site. The draft and the placeholder list are the ONLY facts. Rules: (1) Keep every placeholder "
+    "in curly braces exactly as written, e.g. {n_doubt}; the software replaces them with the real numbers and names "
+    "afterwards. (2) Never write digits or number words yourself, and never spell out a value that is only given as "
+    "a placeholder. (3) Use only the listed placeholders; do not make up new ones. (4) Do not invent problems or "
+    "facts. (5) You may reorder, merge or drop sentences, and add practical advice tied to the listed problems: what "
+    "the reviewers should look at first and what the operators should watch for next time. (6) Output only the note: "
+    "plain prose, no reasoning, no headings, no lists, no markdown."
 )
 LANG_SPEC = {
     "zh": "Write the note in Simplified Chinese, at most 200 Chinese characters.",
@@ -169,10 +173,19 @@ class Summary:
     problems: dict[str, list[str]]  # 语言 → 模型的输出没过核对、或者调用失败的原因
 
 
+def _shown(value: str) -> str:
+    """给模型看的取值：带数字的（数量、占比、编号、带数字的名字）不给，免得它照抄；零单独说；纯文字的照给。"""
+    if value == "0":
+        return "; value is zero"
+    return "" if DIGIT.search(value) else f"; value: {value}"
+
+
 def _messages(facts: Facts, lang: str) -> list[dict]:
-    rows = "\n".join(f"{{{k}}}: {facts.meaning[k]} = {facts.values[lang][k]}" for k in facts.meaning)
+    rows = "\n".join(f"{{{k}}}: {facts.meaning[k]}{_shown(facts.values[lang][k])}" for k in facts.meaning)
     return [{"role": "system", "content": SYSTEM},
-            {"role": "user", "content": f"Statistics (placeholder: meaning = value):\n{rows}\n\n{LANG_SPEC[lang]}"}]
+            {"role": "user", "content": f"Placeholders you may use (meaning; value when it has no digits):\n{rows}\n\n"
+                                        f"Plain draft:\n{template(facts, lang)}\n\n{LANG_SPEC[lang]} "
+                                        "Output only the note."}]
 
 
 def _strip_think(text: str) -> str:
@@ -204,21 +217,26 @@ def template(facts: Facts, lang: str) -> str:
     return "".join(parts)
 
 
-def _ask(facts: Facts, lang: str, chat: Chat, model: str) -> tuple[str | None, list[str]]:
-    """问模型，不合格带着问题重试一次。返回能收的文字（带占位符）或 None，以及遇到的问题。"""
+def _ask(facts: Facts, lang: str, chat: Chat, model: str) -> tuple[str | None, list[str], list[dict]]:
+    """问模型，不合格带着问题重试一次。返回能收的文字（带占位符）或 None、遇到的问题、每次尝试的原文。"""
     keys = set(facts.meaning)
+    allowed = ", ".join(f"{{{k}}}" for k in facts.meaning)
     messages = _messages(facts, lang)
     problems: list[str] = []
+    attempts: list[dict] = []
     for attempt in range(2):
-        raw = _strip_think(chat(messages, model))
-        found = check_text(raw, keys)
+        raw = chat(messages, model)
+        text = _strip_think(raw)
+        found = check_text(text, keys)
+        attempts.append({"raw": raw, "problems": found})
         if not found:
-            return raw, problems
+            return text, problems, attempts
         problems += [f"第 {attempt + 1} 次：{p}" for p in found]
-        messages = messages + [{"role": "assistant", "content": raw},
+        messages = messages + [{"role": "assistant", "content": text},
                                {"role": "user", "content": "This note cannot be used: " + "; ".join(found)
-                                + ". Rewrite it following the rules; every number must be a placeholder."}]
-    return None, problems
+                                + f". Rewrite it from the plain draft. Allowed placeholders: {allowed}. "
+                                "Do not write any digits or number words; output only the note."}]
+    return None, problems, attempts
 
 
 def summarize(facts: Facts, chat: Chat | None = None, model: str = DEFAULT_MODEL, cache_dir: str | Path | None = None,
@@ -237,7 +255,7 @@ def summarize(facts: Facts, chat: Chat | None = None, model: str = DEFAULT_MODEL
             raw, source[lang], problems[lang] = template(facts, lang), "template", []
         else:
             try:
-                got, problems[lang] = _ask(facts, lang, chat, model)
+                got, problems[lang], attempts = _ask(facts, lang, chat, model)
             except Exception as exc:  # 网络、额度、限流：这次用模板，不缓存，下次再试
                 raw, source[lang], problems[lang] = template(facts, lang), "template", [f"调用失败：{exc}"]
             else:
@@ -245,7 +263,8 @@ def summarize(facts: Facts, chat: Chat | None = None, model: str = DEFAULT_MODEL
                 if path is not None:
                     path.parent.mkdir(parents=True, exist_ok=True)
                     path.write_text(json.dumps({"model": model, "prompt": PROMPT_VERSION, "lang": lang, "text": raw,
-                                                "source": source[lang], "problems": problems[lang]},
+                                                "source": source[lang], "problems": problems[lang],
+                                                "attempts": attempts},
                                                ensure_ascii=False, indent=1), encoding="utf-8")
         texts[lang] = spaced(fill(raw, facts, lang)) if lang == "zh" else fill(raw, facts, lang)
     used = model if "model" in source.values() or any(p for p in problems.values()) else None

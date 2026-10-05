@@ -100,7 +100,21 @@ def test_summarize_uses_model_text_with_numbers_filled(tmp_path):
     s = summarize(facts5(), chat=chat, cache_dir=tmp_path, langs=("zh",))
     assert s.texts["zh"] == "本批 5 条，先看作废的 1 条。" and s.source["zh"] == "model" and len(chat.calls) == 1
     prompt = chat.calls[0][-1]["content"]
-    assert "{n_doubt}" in prompt and "= 2" in prompt  # 模型看得到每个占位符的意思和值
+    assert "{n_doubt}" in prompt and "合格 {n_pass}" in prompt  # 给它占位符的意思，和一份全是占位符的草稿
+    assert "二次抓取" in prompt  # 纯文字的值照给
+    assert "ep000001" not in prompt and "40%" not in prompt  # 带数字的值不给，免得它照抄
+
+
+def test_prompt_hides_values_with_digits_and_says_which_counts_are_zero():
+    from jianjin.summary import Facts, _messages
+
+    keys = ["batch", "n_total", "n_pass", "n_doubt", "n_reject"]
+    zh = dict(zip(keys, ["so100_stacking", "5", "5", "0", "0"]))
+    facts = Facts({k: k for k in keys}, {"zh": zh, "en": zh})
+    prompt = _messages(facts, "zh")[-1]["content"]
+    assert "so100" not in prompt and "{batch}" in prompt
+    row = next(line for line in prompt.splitlines() if line.startswith("{n_reject}"))
+    assert "zero" in row
 
 
 def test_summarize_retries_once_then_falls_back_to_template(tmp_path):
@@ -110,6 +124,13 @@ def test_summarize_retries_once_then_falls_back_to_template(tmp_path):
     s = summarize(facts5(), chat=chat, cache_dir=tmp_path, langs=("zh",))
     assert s.texts["zh"] == "本批 5 条。" and s.source["zh"] == "model" and len(chat.calls) == 2
     assert "阿拉伯数字" in chat.calls[1][-1]["content"]  # 重试时把问题告诉模型
+    assert "{n_total}" in chat.calls[1][-1]["content"]  # 并且把能用的占位符逐个列出来
+    import json
+
+    (hit,) = (tmp_path / "summary").glob("*.json")
+    attempts = json.loads(hit.read_text(encoding="utf-8"))["attempts"]
+    assert [a["raw"] for a in attempts] == ["有 7 条存疑。", "本批 {n_total} 条。"]  # 每次尝试的原文都留着
+    assert attempts[0]["problems"] and attempts[1]["problems"] == []
     bad = fake_chat("有 7 条存疑。", "还是 7 条。")
     t = summarize(facts5(), chat=bad, cache_dir=tmp_path / "b", langs=("zh",))
     assert t.source["zh"] == "template" and "5 条示范" in t.texts["zh"] and t.problems["zh"]
