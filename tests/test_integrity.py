@@ -1,9 +1,9 @@
 import numpy as np
 
 from helpers import assert_bilingual, make_episode
-from jianjin.checks.config import CheckConfig
-from jianjin.checks.integrity import missing_values, timestamp_gaps, too_short
-from jianjin.types import Cause
+from assay.checks.config import CheckConfig
+from assay.checks.integrity import missing_values, timestamp_gaps, too_short
+from assay.types import Cause
 
 CFG = CheckConfig()
 
@@ -70,9 +70,9 @@ from pathlib import Path  # noqa: E402
 
 import pytest  # noqa: E402
 
-from jianjin.checks.config import NotApplicable  # noqa: E402
-from jianjin.checks.integrity import video_length  # noqa: E402
-from jianjin.types import VideoRef  # noqa: E402
+from assay.checks.config import NotApplicable  # noqa: E402
+from assay.checks.integrity import video_length  # noqa: E402
+from assay.types import VideoRef  # noqa: E402
 
 
 def with_videos(ep, **lengths):
@@ -107,7 +107,7 @@ def test_video_shorter_than_joints_is_hard():
 def test_unknown_video_length_is_not_checked():
     with pytest.raises(NotApplicable) as exc:
         video_length(with_videos(make_episode(ramp()), left=None), CFG)
-    from jianjin.checks.config import reason
+    from assay.checks.config import reason
 
     assert_bilingual(reason(exc.value))
 
@@ -117,7 +117,7 @@ def test_no_video_nothing_to_compare():
 
 
 def test_runner_runs_video_length():
-    from jianjin.checks import run_checks
+    from assay.checks import run_checks
 
     (r,) = run_checks([with_videos(make_episode(ramp()), top=11.1)])
     assert [f.check for f in r.findings] == ["video_length"]

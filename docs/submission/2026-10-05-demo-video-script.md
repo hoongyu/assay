@@ -29,12 +29,12 @@ New-Item -ItemType Directory -Force cache\summary_old | Out-Null; Get-ChildItem 
 |---|---|---|
 | 0:00 到 0:10 | 放大慢放的重抓片段，先不加任何说明 | This episode comes from a public robot dataset, published for training. Watch the right gripper. |
 | 0:10 到 0:25 | 卡片「Why」 | Robot foundation models learn from teleoperation demonstrations like this one. In China, collection sites with a hundred or more robots now produce them, and one of them sells an hour of data for 500 to 1,000 yuan. Quality control still relies largely on people. |
-| 0:25 到 0:55 | 终端里现场跑下面那条命令，不快进，等最后两行出来 | jianjin runs on the collection site's own machine, one command per batch. These are the hundred towel-folding episodes from that dataset. The joint rules run on the CPU, the two video models' results come from a cached GPU run, and the batch summary is a live call to NVIDIA Nemotron on Nebius Token Factory. |
-| 0:55 到 1:20 | 浏览器打开 `reports/fold_towel_en.html`，停在顶部的本批小结（英文在前、中文在后）和漏斗 | The report is one HTML file that opens offline. At the top, the summary Nemotron just wrote, in English and Chinese. The model never sees the data, only our statistics. It writes placeholders: every number was filled in by jianjin, and the tip for the operators comes from our own list. Eighty-seven episodes pass, thirteen go to a person, none is rejected. |
+| 0:25 到 0:55 | 终端里现场跑下面那条命令，不快进，等最后两行出来 | Assay runs as one command per batch. These are the hundred towel-folding episodes from that dataset. The joint rules run on the CPU, the two video models' results come from a cached GPU run, and the batch summary is a live call to NVIDIA Nemotron on Nebius Token Factory. |
+| 0:55 到 1:20 | 浏览器打开 `reports/fold_towel_en.html`，停在顶部的本批小结（英文在前、中文在后）和漏斗 | The report is one HTML file that opens offline. At the top, the summary Nemotron just wrote, in English and Chinese. The model never sees the data, only our statistics. It writes placeholders: every number was filled in by Assay, and the tip for the operators comes from our own list. Eighty-seven episodes pass, thirteen go to a person, none is rejected. |
 | 1:20 到 1:45 | 往下滚到 ep2 的体检单，停在关键帧和证据那一行 | Episode 2 goes to a person. Its right gripper switched six times, where this task usually switches at most four. The keyframes are taken at the switches, and two of them, 12.8 and 13.5 seconds, are the moment you just watched: the gripper loses the towel corner and grabs it again. Beijing Humanoid's QA labels this a regrasp. |
 | 1:45 到 2:05 | 切到 `reports/svla_so100_stacking_en.html`，滚到作废的 ep39，停在关键帧 | A rejection needs two independent sources. Episode 39 of a cube-stacking dataset: the joints say the arm never moved, and the video model says the task never happened. On video: fourteen seconds of a still arm, then a human hand. |
-| 2:05 到 2:35 | 卡片「Results」，念到哪格指哪格 | In five public datasets, jianjin rejected six of 308 episodes, and all six were unusable. On 1,678 episodes that Beijing Humanoid's QA rejected, the regrasp rule, chosen on another benchmark and never retuned, flags 99 of the 162 regrasps it can compare. We also report what failed: common smoothness metrics did not separate the episodes the reviewers called unsmooth. |
-| 2:35 到 2:50 | 卡片「Closing」 | jianjin: screen every episode, explain what went wrong, and feed it back to the operators. It is open source on GitHub. |
+| 2:05 到 2:35 | 卡片「Results」，念到哪格指哪格 | In five public datasets, Assay rejected six of 308 episodes, and all six were unusable. On 1,678 episodes that Beijing Humanoid's QA rejected, the regrasp rule, chosen on another benchmark and never retuned, flags 99 of the 162 regrasps it can compare. We also report what failed: common smoothness metrics did not separate the episodes the reviewers called unsmooth. |
+| 2:35 到 2:50 | 卡片「Closing」 | Assay: screen every episode, explain what went wrong, and feed it back to the operators. It is open source on GitHub. |
 
 旁白约 330 词，按每分钟 150 词念约 2 分 15 秒，其余时间留给画面。时间不够时先删 0:10 到 0:25 那张卡片；「Nemotron」那张卡片是备用的，评委要是更在意 NVIDIA 模型怎么用，可以插在 1:20 前面，同时把 2:05 那段缩短。
 
@@ -43,7 +43,7 @@ New-Item -ItemType Directory -Force cache\summary_old | Out-Null; Get-ChildItem 
 0:25 那一段的命令：
 
 ```bash
-uv run jianjin check data/CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi --judges robometer,topreward --camera observation.images.left_top --out reports/fold_towel_en.html --summary --lang en
+uv run assay check data/CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi --judges robometer,topreward --camera observation.images.left_top --out reports/fold_towel_en.html --summary --lang en
 ```
 
 2026-10-05 不带 `--summary` 实测，这条命令 13 秒跑完；加上 Nemotron 两次调用，预计半分钟以内。

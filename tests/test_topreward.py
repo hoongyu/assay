@@ -3,8 +3,8 @@ import math
 import numpy as np
 import pytest
 
-from jianjin.judges import JUDGES
-from jianjin.judges.topreward import TOPRewardJudge, anchors, min_max
+from assay.judges import JUDGES
+from assay.judges.topreward import TOPRewardJudge, anchors, min_max
 
 
 class FakeScore:

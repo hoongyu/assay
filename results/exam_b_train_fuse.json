@@ -1,5 +1,5 @@
 {
-  "exam": "B（RoboVAD 帧级异常检测；拣金零样本，不在 RoboVAD 上训练）",
+  "exam": "B（RoboVAD 帧级异常检测；甄数零样本，不在 RoboVAD 上训练）",
   "split": "train",
   "scorer": "fuse:video:robometer:drop+accel",
   "camera": "left",

@@ -2,10 +2,10 @@ import numpy as np
 import pytest
 
 from helpers import assert_bilingual, make_episode
-from jianjin.checks import CheckConfig
-from jianjin.checks.video import WRONG_TASK, relative, wrong_task
-from jianjin.judges.base import Curve
-from jianjin.types import Cause
+from assay.checks import CheckConfig
+from assay.checks.video import WRONG_TASK, relative, wrong_task
+from assay.judges.base import Curve
+from assay.types import Cause
 
 
 def batch(n=6, task="pick"):
@@ -59,7 +59,7 @@ def test_wrong_task_without_threshold_is_not_checked():
     assert_bilingual(skipped["e0"])
 
 
-from jianjin.checks.video import drawdown, progress_drop  # noqa: E402
+from assay.checks.video import drawdown, progress_drop  # noqa: E402
 
 
 def test_drawdown_finds_biggest_fall_from_running_peak():
@@ -92,7 +92,7 @@ def test_progress_drop_without_threshold_or_curve():
     assert "缓存里没有" in skipped["e0"]
 
 
-from jianjin.checks.video import clip, return_start  # noqa: E402
+from assay.checks.video import clip, return_start  # noqa: E402
 
 
 def out_and_back():

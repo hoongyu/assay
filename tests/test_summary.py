@@ -3,8 +3,8 @@ from dataclasses import replace
 import numpy as np
 
 from helpers import make_episode
-from jianjin.diagnose import Label, Verdict
-from jianjin.types import Cause, Finding
+from assay.diagnose import Label, Verdict
+from assay.types import Cause, Finding
 
 
 def f(cause, source="joints"):
@@ -27,7 +27,7 @@ def batch(ops=None):
 
 
 def test_batch_facts_counts_causes_and_unchecked():
-    from jianjin.summary import batch_facts
+    from assay.summary import batch_facts
 
     vs, eps = batch()
     facts = batch_facts(vs, eps, title="ds")
@@ -44,7 +44,7 @@ def test_batch_facts_counts_causes_and_unchecked():
 
 
 def test_batch_facts_by_operator():
-    from jianjin.summary import batch_facts
+    from assay.summary import batch_facts
 
     vs, eps = batch(ops=["A", "A", "A", "B", "B"])
     zh = batch_facts(vs, eps, title="ds").values["zh"]
@@ -53,7 +53,7 @@ def test_batch_facts_by_operator():
 
 
 def test_check_text_rejects_numbers_the_model_wrote_itself():
-    from jianjin.summary import check_text
+    from assay.summary import check_text
 
     keys = {"n_doubt", "cause_1", "cause_1_n"}
     assert check_text("本批有 {n_doubt} 条存疑，最多的是「{cause_1}」（{cause_1_n} 条），先看一下同一处问题。", keys) == []
@@ -67,7 +67,7 @@ def test_check_text_rejects_numbers_the_model_wrote_itself():
 
 
 def test_fill_uses_values_of_the_language():
-    from jianjin.summary import Facts, fill
+    from assay.summary import Facts, fill
 
     facts = Facts({"n": "条数", "c": "原因"}, {"zh": {"n": "3", "c": "二次抓取"}, "en": {"n": "3", "c": "regrasp"}})
     assert fill("{n} 条「{c}」", facts, "zh") == "3 条「二次抓取」"
@@ -87,14 +87,14 @@ def fake_chat(*replies):
 
 
 def facts5():
-    from jianjin.summary import batch_facts
+    from assay.summary import batch_facts
 
     vs, eps = batch()
     return batch_facts(vs, eps, title="ds")
 
 
 def test_summarize_uses_model_text_with_numbers_filled(tmp_path):
-    from jianjin.summary import summarize
+    from assay.summary import summarize
 
     chat = fake_chat("<think>先算一下</think>本批 {n_total} 条，先看作废的 {n_reject} 条。")
     s = summarize(facts5(), chat=chat, cache_dir=tmp_path, langs=("zh",))
@@ -106,7 +106,7 @@ def test_summarize_uses_model_text_with_numbers_filled(tmp_path):
 
 
 def test_prompt_hides_values_with_digits_and_says_which_counts_are_zero():
-    from jianjin.summary import Facts, _messages
+    from assay.summary import Facts, _messages
 
     keys = ["batch", "n_total", "n_pass", "n_doubt", "n_reject"]
     zh = dict(zip(keys, ["so100_stacking", "5", "5", "0", "0"]))
@@ -118,7 +118,7 @@ def test_prompt_hides_values_with_digits_and_says_which_counts_are_zero():
 
 
 def test_summarize_retries_once_then_falls_back_to_template(tmp_path):
-    from jianjin.summary import summarize
+    from assay.summary import summarize
 
     chat = fake_chat("有 7 条存疑。", "本批 {n_total} 条。")
     s = summarize(facts5(), chat=chat, cache_dir=tmp_path, langs=("zh",))
@@ -137,7 +137,7 @@ def test_summarize_retries_once_then_falls_back_to_template(tmp_path):
 
 
 def test_summarize_caches_model_answers_and_uses_template_without_key(tmp_path):
-    from jianjin.summary import summarize
+    from assay.summary import summarize
 
     summarize(facts5(), chat=fake_chat("本批 {n_total} 条。"), cache_dir=tmp_path, langs=("zh",))
     again = fake_chat("不该被调用")
@@ -150,7 +150,7 @@ def test_summarize_caches_model_answers_and_uses_template_without_key(tmp_path):
 
 
 def test_summarize_falls_back_when_the_call_fails(tmp_path):
-    from jianjin.summary import summarize
+    from assay.summary import summarize
 
     def broken(messages, model):
         raise OSError("网络断了")
@@ -160,7 +160,7 @@ def test_summarize_falls_back_when_the_call_fails(tmp_path):
 
 
 def test_summarize_spaces_latin_words_in_chinese(tmp_path):
-    from jianjin.summary import summarize
+    from assay.summary import summarize
 
     s = summarize(facts5(), chat=fake_chat("{cause_1}和Robometer都要看。"), cache_dir=tmp_path, langs=("zh",))
     assert s.texts["zh"] == "二次抓取和 Robometer 都要看。"
@@ -187,7 +187,7 @@ def test_token_factory_chat_turns_thinking_off_and_rejects_truncated_answers(mon
 
     import pytest
 
-    from jianjin import summary
+    from assay import summary
 
     sent = []
 
@@ -207,14 +207,14 @@ def test_token_factory_chat_turns_thinking_off_and_rejects_truncated_answers(mon
 
 
 def test_summarize_drops_space_between_closing_bracket_and_chinese(tmp_path):
-    from jianjin.summary import summarize
+    from assay.summary import summarize
 
     s = summarize(facts5(), chat=fake_chat("「{cause_1}」 有 {cause_1_n} 条。"), cache_dir=tmp_path, langs=("zh",))
     assert s.texts["zh"] == "「二次抓取」有 2 条。"
 
 
 def test_every_cause_has_advice_without_numbers():
-    from jianjin.summary import ADVICE, check_text
+    from assay.summary import ADVICE, check_text
 
     assert set(ADVICE) == set(Cause)
     for zh, en in ADVICE.values():
@@ -224,7 +224,7 @@ def test_every_cause_has_advice_without_numbers():
 
 def test_advice_comes_from_placeholders():
     """给采集员的建议只能用我们写的句子（{advice_i}），模型不许自己编（2026-10-05 第一次真调用编出了没用的建议）。"""
-    from jianjin.summary import ADVICE, PROMPT_VERSION, SYSTEM, batch_facts, template
+    from assay.summary import ADVICE, PROMPT_VERSION, SYSTEM, batch_facts, template
 
     vs, eps = batch()
     facts = batch_facts(vs, eps, title="ds")
@@ -237,7 +237,7 @@ def test_advice_comes_from_placeholders():
 
 def test_check_text_problems_are_bilingual():
     from helpers import assert_bilingual
-    from jianjin.summary import check_text
+    from assay.summary import check_text
 
     for text in ("有 7 条存疑", "{n_reject} 条作废", "坏了的 {n_doubt"):
         assert_bilingual(check_text(text, {"n_doubt"})[0])
@@ -246,7 +246,7 @@ def test_check_text_problems_are_bilingual():
 def write_cache_entry(cache, name, lang, source, tries, prompt=None):
     import json
 
-    from jianjin.summary import PROMPT_VERSION
+    from assay.summary import PROMPT_VERSION
 
     d = cache / "summary"
     d.mkdir(parents=True, exist_ok=True)
@@ -256,7 +256,7 @@ def write_cache_entry(cache, name, lang, source, tries, prompt=None):
 
 
 def test_cache_stats_counts_the_current_prompt_version_only(tmp_path):
-    from jianjin.summary import cache_stats
+    from assay.summary import cache_stats
 
     write_cache_entry(tmp_path, "a", "zh", "model", 1)
     write_cache_entry(tmp_path, "b", "en", "model", 2)

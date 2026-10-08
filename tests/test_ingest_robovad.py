@@ -1,7 +1,7 @@
 import numpy as np
 
 from helpers import make_robovad
-from jianjin.ingest.robovad import read_robovad, task_key
+from assay.ingest.robovad import read_robovad, task_key
 
 
 def arm(n=90):

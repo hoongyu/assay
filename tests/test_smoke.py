@@ -1,5 +1,5 @@
-import jianjin
+import assay
 
 
 def test_version():
-    assert jianjin.__version__ == "0.1.0"
+    assert assay.__version__ == "0.1.0"

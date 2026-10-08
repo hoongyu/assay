@@ -1,9 +1,9 @@
 import math
 
-from jianjin.checks import CheckResult
-from jianjin.eval.inject import Defect
-from jianjin.eval.metrics import overlaps, score_kind, wilson
-from jianjin.types import Cause, Finding
+from assay.checks import CheckResult
+from assay.eval.inject import Defect
+from assay.eval.metrics import overlaps, score_kind, wilson
+from assay.types import Cause, Finding
 
 
 def test_wilson():

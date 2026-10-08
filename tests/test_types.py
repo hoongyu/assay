@@ -1,7 +1,7 @@
 import numpy as np
 
 from helpers import make_episode
-from jianjin.types import Cause, Finding
+from assay.types import Cause, Finding
 
 
 def test_duration_and_gripper():
@@ -28,7 +28,7 @@ def test_bilingual_text_is_the_chinese_string_with_english_attached():
     import copy
     import json
 
-    from jianjin.types import Bi, en
+    from assay.types import Bi, en
 
     t = Bi("停了 3.0 秒", "Paused for 3.0 s")
     assert t == "停了 3.0 秒" and isinstance(t, str) and en(t) == "Paused for 3.0 s"
@@ -38,8 +38,8 @@ def test_bilingual_text_is_the_chinese_string_with_english_attached():
 
 
 def test_reason_keeps_the_english_of_a_not_applicable():
-    from jianjin.checks.config import NotApplicable, reason
-    from jianjin.types import Bi, en
+    from assay.checks.config import NotApplicable, reason
+    from assay.types import Bi, en
 
     exc = NotApplicable(Bi("认不出夹爪通道", "No gripper channel found"))
     assert reason(exc) == "认不出夹爪通道" and en(reason(exc)) == "No gripper channel found"

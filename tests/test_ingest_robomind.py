@@ -1,7 +1,7 @@
 import numpy as np
 
 from helpers import make_robomind_h5
-from jianjin.ingest.robomind import read_robomind
+from assay.ingest.robomind import read_robomind
 
 
 def ramp(n, d):

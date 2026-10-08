@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 import sys
 
-from jianjin.cli import main
+from assay.cli import main
 
 BATCHES = [  # 数据目录、视频评判缓存用的相机、报告名
     ("data/lerobot__svla_so100_pickplace", "observation.images.top", "svla_so100_pickplace"),

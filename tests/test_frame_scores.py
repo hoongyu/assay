@@ -2,9 +2,9 @@ import numpy as np
 import pytest
 
 from helpers import make_episode
-from jianjin.checks import NotApplicable
-from jianjin.scores import SCORERS
-from jianjin.scores.frame import accel, calm, gripper_tracking, stillness, tracking
+from assay.checks import NotApplicable
+from assay.scores import SCORERS
+from assay.scores.frame import accel, calm, gripper_tracking, stillness, tracking
 
 NAMES = ["a", "b", "gripper"]
 

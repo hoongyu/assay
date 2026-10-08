@@ -1,7 +1,7 @@
 from helpers import assert_bilingual
-from jianjin.diagnose import Label, diagnose, label_of, overlaps
-from jianjin.judges.base import Curve
-from jianjin.types import Bi, Cause, Finding, en
+from assay.diagnose import Label, diagnose, label_of, overlaps
+from assay.judges.base import Curve
+from assay.types import Bi, Cause, Finding, en
 
 DUR = 10.0
 
@@ -68,7 +68,7 @@ def test_diagnose_sorts_causes_and_keeps_extras():
 import numpy as np  # noqa: E402
 
 from helpers import make_episode  # noqa: E402
-from jianjin.diagnose import diagnose_batch  # noqa: E402
+from assay.diagnose import diagnose_batch  # noqa: E402
 
 
 def smooth_batch(n=6):
@@ -117,7 +117,7 @@ def test_two_video_judges_agreeing_reject():
 
 
 def test_reasons_space_latin_names():
-    from jianjin.types import spaced
+    from assay.types import spaced
 
     assert spaced("关节和Robometer都报了「多余动作」") == "关节和 Robometer 都报了「多余动作」"
     _, reasons = label_of([f(Cause.LONG_PAUSE, 2, 6), f(Cause.DROP, 5, 7, source="robometer")], DUR)

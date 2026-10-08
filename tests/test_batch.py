@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 
 from helpers import assert_bilingual, make_episode
-from jianjin.checks.batch import end_pose, extra_motion, regrasp, regrasp_scores
-from jianjin.checks.config import CheckConfig
-from jianjin.types import Cause, en
+from assay.checks.batch import end_pose, extra_motion, regrasp, regrasp_scores
+from assay.checks.config import CheckConfig
+from assay.types import Cause, en
 
 CFG = CheckConfig()
 # 收尾规则的测试把参数写死，只验机制；默认值在开发集上重选
@@ -69,7 +69,7 @@ def test_reference_used_instead_of_batch():
     assert set(found) == {f"half{i}" for i in range(5)}
 
 
-from jianjin.checks.batch import empty_recording  # noqa: E402
+from assay.checks.batch import empty_recording  # noqa: E402
 
 
 def test_arm_that_never_moved_is_empty_recording():
@@ -254,7 +254,7 @@ def stop_and_go():
 
 
 def test_motion_scores_stop_and_go_and_fast():
-    from jianjin.checks.batch import motion_scores
+    from assay.checks.batch import motion_scores
 
     ref = normals()
     eps = ref + [stop_and_go(), arm_ep(minjerk(45), "fast")]
@@ -276,7 +276,7 @@ def test_motion_scores_stop_and_go_and_fast():
 
 
 def test_motion_scores_skips_when_not_comparable():
-    from jianjin.checks.batch import motion_scores
+    from assay.checks.batch import motion_scores
 
     scores, skipped = motion_scores(normals()[:4], MOT)
     assert scores == {} and all("没法比" in why for why in skipped.values())
@@ -292,7 +292,7 @@ def test_motion_scores_skips_when_not_comparable():
 
 
 def test_jerky_rule_uses_chosen_candidate():
-    from jianjin.checks.batch import jerky
+    from assay.checks.batch import jerky
 
     ref = normals()
     eps = ref + [stop_and_go(), arm_ep(minjerk(45), "fast")]
@@ -313,7 +313,7 @@ def test_jerky_rule_uses_chosen_candidate():
 
 
 def test_jerky_rule_rejects_candidate_of_other_class():
-    from jianjin.checks.batch import jerky
+    from assay.checks.batch import jerky
 
     with pytest.raises(ValueError):
         jerky(normals(), replace(MOT, jerky_candidate="peak_speed", jerky_threshold=1.5))

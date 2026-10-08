@@ -1,8 +1,8 @@
 import numpy as np
 
 from helpers import make_episode
-from jianjin.checks import CheckConfig, run_checks
-from jianjin.types import Cause
+from assay.checks import CheckConfig, run_checks
+from assay.types import Cause
 
 
 def test_runner_collects_findings_and_not_checked():

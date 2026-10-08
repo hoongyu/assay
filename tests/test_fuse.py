@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 
 from helpers import make_episode
-from jianjin.checks import NotApplicable
-from jianjin.scores.fuse import fuse, robust_stats
+from assay.checks import NotApplicable
+from assay.scores.fuse import fuse, robust_stats
 
 
 def const(v):

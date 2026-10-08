@@ -13,8 +13,8 @@ import itertools
 import sys
 from dataclasses import replace
 
-from jianjin.checks import CheckConfig
-from jianjin.eval.exam_a import load_config, run_exam_a
+from assay.checks import CheckConfig
+from assay.eval.exam_a import load_config, run_exam_a
 
 GRID = {
     "insert_pause": {"still_rate": [0.005, 0.01, 0.02, 0.04], "pause_s": [2.0, 3.0, 4.0]},

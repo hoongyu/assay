@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 
 from helpers import make_robovad, write_cached_curve
-from jianjin.eval.exam_b_episode import format_episode_b, run_episode_b
-from jianjin.ingest.robovad import read_robovad
+from assay.eval.exam_b_episode import format_episode_b, run_episode_b
+from assay.ingest.robovad import read_robovad
 
 NORMAL = {f"h_stackcubes_ep{i}": d for i, d in enumerate([0.0, 0.05, 0.1, 0.2])}
 

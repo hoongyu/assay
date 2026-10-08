@@ -1,6 +1,6 @@
 import numpy as np
 
-from jianjin.checks.signal import joint_scale, path_length, runs, speed
+from assay.checks.signal import joint_scale, path_length, runs, speed
 
 
 def test_runs():
@@ -32,7 +32,7 @@ def test_path_length_doubles_for_back_and_forth():
 
 import pytest  # noqa: E402
 
-from jianjin.checks.signal import excursion  # noqa: E402
+from assay.checks.signal import excursion  # noqa: E402
 
 
 def test_excursion_is_farthest_any_joint_got_from_start():
@@ -43,7 +43,7 @@ def test_excursion_is_farthest_any_joint_got_from_start():
 
 
 def test_level_changes_counts_with_hysteresis():
-    from jianjin.checks.signal import level_changes
+    from assay.checks.signal import level_changes
 
     x = np.array([0, 0, 10, 10, 0, 0, 10, 10, 0], dtype=float)  # 开合两回
     assert level_changes(x, 0, 10, 0.15) == [2, 4, 6, 8]
@@ -54,7 +54,7 @@ def test_level_changes_counts_with_hysteresis():
 
 
 def test_gripper_channels_by_name_then_index():
-    from jianjin.checks.signal import gripper_channels
+    from assay.checks.signal import gripper_channels
 
     assert gripper_channels(["left_j0", "left_gripper.pos", "right_j0", "right_gripper.pos"], 1) == [1, 3]
     assert gripper_channels(["j0", "j1"], 1) == [1]
@@ -63,7 +63,7 @@ def test_gripper_channels_by_name_then_index():
 
 def test_level_changes_ignores_brief_visits():
     """在一档里待不够 min_frames 的那一趟不算，前后同一档的接起来。"""
-    from jianjin.checks.signal import level_changes
+    from assay.checks.signal import level_changes
 
     x = np.array([0, 0, 0, 10, 10, 10, 10, 0, 0, 0, 10, 0, 0, 0], dtype=float)  # 第 10 帧一闪到开
     assert level_changes(x, 0, 10, 0.15) == [3, 7, 10, 11]
@@ -73,14 +73,14 @@ def test_level_changes_ignores_brief_visits():
 
 
 def test_arm_channels_skip_gripper_and_hand():
-    from jianjin.checks.signal import arm_channels
+    from assay.checks.signal import arm_channels
 
     assert arm_channels(["j0", "j1", "gripper"]) == [0, 1]
     assert arm_channels(["left_j0", "left_hand_j0", "right_gripper", "shoulder_pan.pos"]) == [0, 3]
 
 
 def test_stops_counts_only_mid_episode_runs():
-    from jianjin.checks.signal import stops
+    from assay.checks.signal import stops
 
     v = np.array([0, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0], dtype=float)
     assert stops(v, 0.5, 1) == [(4, 7), (9, 10)]  # 开头、结尾那两段不算
@@ -89,7 +89,7 @@ def test_stops_counts_only_mid_episode_runs():
 
 
 def test_bursts_counts_rises_and_ignores_blips():
-    from jianjin.checks.signal import bursts
+    from assay.checks.signal import bursts
 
     v = np.array([0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0], dtype=float)
     assert bursts(v, 0.2, 0.5) == [2, 7, 10]
@@ -102,7 +102,7 @@ def test_bursts_counts_rises_and_ignores_blips():
 
 
 def test_jerk_is_zero_for_constant_acceleration_and_unit_free():
-    from jianjin.checks.signal import jerk
+    from assay.checks.signal import jerk
 
     t = np.linspace(0, 1, 31)
     quad = (t**2)[:, None]

@@ -1,7 +1,7 @@
 import numpy as np
 
-from jianjin.judges import JUDGES
-from jianjin.judges.robometer import RobometerJudge, subsample
+from assay.judges import JUDGES
+from assay.judges.robometer import RobometerJudge, subsample
 
 
 class FakeEncoder:

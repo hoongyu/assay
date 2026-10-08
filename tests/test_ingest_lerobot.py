@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from helpers import make_lerobot_v3
-from jianjin.ingest.lerobot import read_lerobot
+from assay.ingest.lerobot import read_lerobot
 
 
 def ramp6(n):
