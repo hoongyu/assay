@@ -1,5 +1,5 @@
 {
-  "exam": "B（RoboVAD 帧级异常检测；拣金零样本，只用关节数据）",
+  "exam": "B（RoboVAD 帧级异常检测；甄数零样本，只用关节数据）",
   "split": "test",
   "scorer": "calm",
   "read_failures": [],

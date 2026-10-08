@@ -3,7 +3,7 @@ import math
 import numpy as np
 
 from helpers import make_robovad
-from jianjin.eval.exam_b import SETTINGS, format_table, labels_from_annotations, run_exam_b
+from assay.eval.exam_b import SETTINGS, format_table, labels_from_annotations, run_exam_b
 
 
 def blocked(n, lo, hi):
@@ -67,7 +67,7 @@ def test_table_has_denominators_and_paper(tmp_path):
 def test_eval_b_command(tmp_path, capsys):
     import json
 
-    from jianjin.cli import main
+    from assay.cli import main
 
     root = setup(tmp_path)
     out = tmp_path / "b.json"
@@ -78,7 +78,7 @@ def test_eval_b_command(tmp_path, capsys):
 
 def test_video_scorer_from_cache(tmp_path):
     from helpers import make_mp4
-    from jianjin.cli import main
+    from assay.cli import main
 
     root = setup(tmp_path)
     (root / "videos").mkdir()

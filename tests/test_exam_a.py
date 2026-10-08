@@ -3,9 +3,9 @@ import json
 import numpy as np
 
 from helpers import make_lerobot_v3
-from jianjin.checks import CheckConfig
-from jianjin.cli import main
-from jianjin.eval.exam_a import DatasetSpec, format_table, local_dir, run_exam_a
+from assay.checks import CheckConfig
+from assay.cli import main
+from assay.eval.exam_a import DatasetSpec, format_table, local_dir, run_exam_a
 
 
 def moving6(n, seed):
@@ -72,7 +72,7 @@ def test_excluded_tasks_left_out(tmp_path):
 
 
 def test_config_reads_excluded_tasks(tmp_path):
-    from jianjin.eval.exam_a import load_config
+    from assay.eval.exam_a import load_config
 
     cfg = tmp_path / "a.toml"
     cfg.write_text('[[dataset]]\nrepo = "o/m"\nsplit = "dev"\nlicense = "mit"\nexclude_tasks = ["fold"]\n',
@@ -82,7 +82,7 @@ def test_config_reads_excluded_tasks(tmp_path):
 
 
 def test_fetch_downloads_only_the_named_camera():
-    from jianjin.eval.fetch import patterns_for
+    from assay.eval.fetch import patterns_for
 
     top = DatasetSpec("o/a", "dev", "mit", "observation.images.top")
     assert patterns_for(top, True) == ["meta/*", "data/*", "videos/observation.images.top/*"]

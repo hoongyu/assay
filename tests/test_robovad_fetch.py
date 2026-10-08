@@ -1,6 +1,6 @@
 import zipfile
 
-from jianjin.eval.robovad_fetch import SMALL_PREFIXES, extract
+from assay.eval.robovad_fetch import SMALL_PREFIXES, extract
 
 
 def make_zip(path):

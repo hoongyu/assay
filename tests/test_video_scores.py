@@ -2,9 +2,9 @@ import numpy as np
 import pytest
 
 from helpers import make_episode
-from jianjin.checks import NotApplicable
-from jianjin.judges.base import Curve
-from jianjin.scores.video import CURVE_SCORES, per_frame
+from assay.checks import NotApplicable
+from assay.judges.base import Curve
+from assay.scores.video import CURVE_SCORES, per_frame
 
 
 def ep300():

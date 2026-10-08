@@ -4,12 +4,12 @@ import numpy as np
 import pytest
 
 from helpers import make_episode, make_lerobot_v3
-from jianjin.eval.exam_a import DatasetSpec, load_config, local_dir
-from jianjin.eval.inject import swap_task
-from jianjin.eval.task_swap import SCORE_NAMES, format_swap, run_swap, swap_pairs
-from jianjin.judges.base import Curve
-from jianjin.judges.cache import _path
-from jianjin.types import Cause
+from assay.eval.exam_a import DatasetSpec, load_config, local_dir
+from assay.eval.inject import swap_task
+from assay.eval.task_swap import SCORE_NAMES, format_swap, run_swap, swap_pairs
+from assay.judges.base import Curve
+from assay.judges.cache import _path
+from assay.types import Cause
 
 CAM = "observation.images.front"
 N_EP = 6  # 每个数据集够长的示范条数；同任务比较至少要 5 条
@@ -138,7 +138,7 @@ def test_relative_score_needs_enough_episodes_per_task(tmp_path):
 
 def test_judge_then_eval_commands(tmp_path, capsys, monkeypatch):
     from helpers import make_mp4
-    from jianjin.cli import main
+    from assay.cli import main
 
     root, specs = setup(tmp_path)
     for repo in ["org/a", "org/b"]:
@@ -164,7 +164,7 @@ def test_judge_then_eval_commands(tmp_path, capsys, monkeypatch):
 
 def test_choose_only_scores_the_rule_can_use():
     """「指令不符」规则只和同任务那批比：绝对分数检出再多也不选。"""
-    from jianjin.eval.task_swap import _choose
+    from assay.eval.task_swap import _choose
 
     rows = [{"name": "success", "detected_at_max": 57, "auc": 0.884},
             {"name": "rel_success", "detected_at_max": 49, "auc": 0.940},

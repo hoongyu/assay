@@ -4,7 +4,7 @@ Draft for the user to paste into Devpost; the user submits. Deadline: 2026-10-30
 
 ---
 
-**Project name:** jianjin (拣金)
+**Project name:** Assay
 
 **Tagline:** Automatic QA for robot teleoperation data: every episode gets PASS, DOUBT or REJECT, with the reason and the evidence.
 
@@ -12,16 +12,16 @@ Draft for the user to paste into Devpost; the user submits. Deadline: 2026-10-30
 
 Robot foundation models are trained on teleoperation demonstrations, and in China this data is now produced in dedicated collection sites: at least 15 large ones, typically with a hundred or more robots each. Beijing Humanoid's site sells its data at 500 to 1,000 CNY per hour. QA and labeling still rely largely on manual work, and the head of one large site estimated that of 100 hours recorded, maybe 50 come out usable. We wanted a QA tool that a collection site can run on its own machines, because its data is its product, and that tells operators what they did wrong, not just which episodes were thrown away.
 
-The problem is not only Chinese. When we ran jianjin on five public LeRobot datasets on Hugging Face, published for training with no episode marked as failed, it rejected 6 of 308 episodes, and all 6 were unusable: recordings under one second, an arm that never moves, a person resetting the scene. Of the 33 more it sent to a person, 12 were real problems. Anyone training on community datasets inherits these episodes.
+The problem is not only Chinese. When we ran Assay on five public LeRobot datasets on Hugging Face, published for training with no episode marked as failed, it rejected 6 of 308 episodes, and all 6 were unusable: recordings under one second, an arm that never moves, a person resetting the scene. Of the 33 more it sent to a person, 12 were real problems. Anyone training on community datasets inherits these episodes.
 
 ## What it does
 
-`jianjin check <dataset>` reads a batch of episodes (LeRobot v3, RoboMIND HDF5 or RoboVAD) and writes a single offline HTML report:
+`assay check <dataset>` reads a batch of episodes (LeRobot v3, RoboMIND HDF5 or RoboVAD) and writes a single offline HTML report:
 
 - Every episode is judged PASS, DOUBT or REJECT. Rejection is conservative: an objective hard rule (missing readings, dropped frames, too short), or two independent sources pointing at the same problem.
 - Each flagged episode gets a card: the problem class, the time span, the evidence, the progress curve and keyframes. For a regrasp, the keyframes are taken at the gripper's switch times.
 - The report comes in English or Chinese (`--lang en`). Every piece of evidence is written in both languages by the code, from the same numbers, without a model. Example from a public towel-folding dataset: the right gripper switched between open and closed 6 times where the same task usually switches at most 4 times, and two of the switch times, 12.8 s and 13.5 s, are where the video shows it losing the towel corner and grasping it again.
-- With `--summary`, NVIDIA Nemotron 3.5 Lightning on Nebius Token Factory writes a short batch summary for the QA lead and the operators, in English and Chinese. jianjin fills in every number, and the tips for the operators come only from a fixed list we wrote, one per problem class.
+- With `--summary`, NVIDIA Nemotron 3.5 Lightning on Nebius Token Factory writes a short batch summary for the QA lead and the operators, in English and Chinese. Assay fills in every number, and the tips for the operators come only from a fixed list we wrote, one per problem class.
 
 Try it in two minutes without a GPU: the repository README has four commands that download the public datasets' joint data (about 73 MB) and produce a report. The joint checks alone flag 5 of 56 cube-stacking episodes, and all five are real problems.
 
@@ -29,17 +29,17 @@ Try it in two minutes without a GPU: the repository README has four commands tha
 
 - Joint rules on CPU: integrity checks, long pauses, empty recordings, end poses that do not look finished, extra motion, regrasps (gripper open and close cycles compared with the same task's batch) and unusually long episodes.
 - Two zero-shot video judges, Robometer-4B and TOPReward on Qwen3-VL-4B, run on Colab GPUs with cached results.
-- Batch summary: Nemotron sees only aggregate statistics, never joint data or video. It writes prose with placeholders like `{n_doubt}` and `{advice_1}`; jianjin rejects any digit the model writes on its own, retries once, then falls back to a template. `jianjin summary-stats` counts how often each of the three happened. The request is about 15 lines of Python standard library against Token Factory's OpenAI-compatible endpoint, and answers are cached by their inputs.
+- Batch summary: Nemotron sees only aggregate statistics, never joint data or video. It writes prose with placeholders like `{n_doubt}` and `{advice_1}`; Assay rejects any digit the model writes on its own, retries once, then falls back to a template. `Assay summary-stats` counts how often each of the three happened. The request is about 15 lines of Python standard library against Token Factory's OpenAI-compatible endpoint, and answers are cached by their inputs.
 - Three exams on real data, with thresholds chosen on dev sets and every number reported with its denominator.
 
-Open-source tools such as Loop-Engineering-for-VLA and hflow already audit LeRobot datasets, with similarly conservative drop or review verdicts. What jianjin adds: the failure cause with its evidence and timing, written so it can go back to the operator; detection measured on a real QA team's labels; and a rejection only when a hard rule fires or two independent sources agree.
+Open-source tools such as Loop-Engineering-for-VLA and hflow already audit LeRobot datasets, with similarly conservative drop or review verdicts. What Assay adds: the failure cause with its evidence and timing, written so it can go back to the operator; detection measured on a real QA team's labels; and a rejection only when a hard rule fires or two independent sources agree.
 
 ## Results
 
 - Public demonstration datasets (5 LeRobot datasets, 308 episodes): 6 rejected, all 6 real problems (5 checked on video). 33 sent to a person: 12 real problems, 12 false positives, 9 not checked yet.
 - Injected defects on held-out datasets and tasks: cut endings 197/201 detected and frozen frames 199/201, with 0/202 clean episodes flagged. The cut-ending row is our second look at the test set: the first look flagged 11/202 clean towel-folding episodes, so we added bimanual dev data, changed the scaling and chose the threshold on dev again.
 - RoboVAD real anomalies (no model trained on RoboVAD; thresholds chosen on its train split): 247/387 anomalous episodes flagged against 33/242 normal ones.
-- RoboMIND, 1,678 episodes rejected by Beijing Humanoid's QA, 1,310 of them on real robots: of the 162 regrasp rejections jianjin can compare, the regrasp rule, tuned on another dataset and not retuned, flags 99 (61%; real robots only, 99/159). It also flags 7% of same-task episodes rejected for other reasons, 21% on the dual-arm tasks.
+- RoboMIND, 1,678 episodes rejected by Beijing Humanoid's QA, 1,310 of them on real robots: of the 162 regrasp rejections Assay can compare, the regrasp rule, tuned on another dataset and not retuned, flags 99 (61%; real robots only, 99/159). It also flags 7% of same-task episodes rejected for other reasons, 21% on the dual-arm tasks.
 
 ## Challenges we ran into
 
@@ -50,7 +50,7 @@ Open-source tools such as Loop-Engineering-for-VLA and hflow already audit LeRob
 ## Accomplishments that we're proud of
 
 - A regrasp rule chosen on one benchmark that still finds 99 of 162 comparable regrasps in another lab's QA labels without retuning. It is weakest on dual-arm tasks, where it also flags 21% of other rejections.
-- An LLM summary that never writes its own digits: the model writes placeholders and jianjin fills in every number.
+- An LLM summary that never writes its own digits: the model writes placeholders and Assay fills in every number.
 - Honest evaluation: dev and test splits fixed before looking, second looks at a test set disclosed, failures reported.
 
 ## What we learned
@@ -60,7 +60,7 @@ Open-source tools such as Loop-Engineering-for-VLA and hflow already audit LeRob
 
 ## What's next
 
-- A pilot with one collection site, to measure how much review time jianjin saves and whether per-operator feedback lowers the rejection rate. The business model follows how sites sell data: they charge per hour of data, and jianjin would charge per hour checked (7 CNY in our model, under 1.5% of what Beijing Humanoid charges for an hour of data).
+- A pilot with one collection site, to measure how much review time Assay saves and whether per-operator feedback lowers the rejection rate. The business model follows how sites sell data: they charge per hour of data, and Assay would charge per hour checked (7 CNY in our model, under 1.5% of what Beijing Humanoid charges for an hour of data).
 - A video model that can answer specific questions for the problems joints cannot see: unwanted contact, collision before grasp, objects knocked away.
 
 ## Built with

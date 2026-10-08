@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from helpers import make_robovad
-from jianjin.eval.exam_b_regrasp import format_regrasp_b, run_regrasp_b
+from assay.eval.exam_b_regrasp import format_regrasp_b, run_regrasp_b
 
 
 def arm(cycles: int, seg: int = 10) -> np.ndarray:
@@ -48,7 +48,7 @@ def test_choose_on_train_then_reuse_on_test(tmp_path):
 
 
 def test_cli_needs_train_choice_for_test(tmp_path, monkeypatch):
-    from jianjin.cli import main
+    from assay.cli import main
 
     root = fixture(tmp_path)
     out = tmp_path / "train.json"

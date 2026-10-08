@@ -4,11 +4,11 @@ import numpy as np
 import pytest
 
 from helpers import make_episode, make_mp4
-from jianjin.checks import NotApplicable
-from jianjin.judges import JUDGES
-from jianjin.judges.base import Curve, FakeJudge
-from jianjin.judges.cache import fingerprint, judge_episode, load_curve
-from jianjin.types import VideoRef
+from assay.checks import NotApplicable
+from assay.judges import JUDGES
+from assay.judges.base import Curve, FakeJudge
+from assay.judges.cache import fingerprint, judge_episode, load_curve
+from assay.types import VideoRef
 
 
 @pytest.fixture
@@ -86,7 +86,7 @@ def test_load_curve_without_local_video(ep, tmp_path):
 
 def test_load_curves_reads_a_batch(tmp_path):
     from helpers import write_cached_curve
-    from jianjin.judges.cache import load_curves
+    from assay.judges.cache import load_curves
 
     eps = [make_episode(np.zeros(90), ep_id=f"e{i}") for i in range(3)]
     for e in eps:

@@ -1,10 +1,10 @@
 import numpy as np
 
 from helpers import make_episode, make_lerobot_v3, make_mp4
-from jianjin.diagnose import Label, Verdict
-from jianjin.ingest import load
-from jianjin.keyframes import jpeg_data_uri, keyframe_times, shots_for
-from jianjin.types import Cause, Finding
+from assay.diagnose import Label, Verdict
+from assay.ingest import load
+from assay.keyframes import jpeg_data_uri, keyframe_times, shots_for
+from assay.types import Cause, Finding
 
 
 def v_with(*spans, label=Label.DOUBT):
@@ -52,7 +52,7 @@ def test_shots_only_for_doubt_and_reject_with_local_video(tmp_path):
 
 
 def test_video_past_joint_data_adds_one_frame_from_the_extra_part(tmp_path):
-    from jianjin.types import VideoRef
+    from assay.types import VideoRef
 
     x = np.tile(np.linspace(0, 1, 90)[:, None], (1, 6))
     ds = make_lerobot_v3(tmp_path / "d", [("pick", x), ("pick", x)])

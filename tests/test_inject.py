@@ -1,10 +1,10 @@
 import numpy as np
 
 from helpers import make_episode
-from jianjin.checks import CheckConfig
-from jianjin.checks.motion import long_pause
-from jianjin.eval.inject import insert_pause, truncate_end
-from jianjin.types import Cause, VideoRef
+from assay.checks import CheckConfig
+from assay.checks.motion import long_pause
+from assay.eval.inject import insert_pause, truncate_end
+from assay.types import Cause, VideoRef
 
 
 def base():

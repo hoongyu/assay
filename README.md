@@ -1,16 +1,18 @@
-# jianjin (拣金)
+# Assay (甄数)
+
+*Developed under the code name jianjin (拣金); the design notes and plans in `docs/` still use that name.*
 
 [中文](README.zh-CN.md)
 
-Automatic quality control for robot teleoperation demonstrations. For every recorded episode, jianjin returns PASS, DOUBT or REJECT and says why: the problem, the evidence and, where the problem is local, when it happens (a time span, or for a regrasp the times the gripper switched). QA reviewers only look at the episodes the machine is unsure about, and every rejection comes with evidence. The checks run on site and the report is a single HTML file that opens offline, so the data never has to leave the collection site.
+Automatic quality control for robot teleoperation demonstrations. For every recorded episode, Assay returns PASS, DOUBT or REJECT and says why: the problem, the evidence and, where the problem is local, when it happens (a time span, or for a regrasp the times the gripper switched). QA reviewers only look at the episodes the machine is unsure about, and every rejection comes with evidence. The joint checks run on a local CPU; the video judges need a GPU (so far we ran them on Colab and cached the results), and the report is a single HTML file that opens offline.
 
-- **Public demonstration datasets are not clean.** In 308 episodes from five public LeRobot datasets, none marked as failed, jianjin rejected 6, and all 6 are unusable: under one second, an arm that never moves, a person resetting the scene. It sent 33 more to a person: 12 are real problems, 12 false positives, 9 not checked yet.
-- **It holds up on real QA labels.** RoboMIND published 1,678 episodes that Beijing Humanoid's QA team rejected, with the reason. Of the 162 regrasp rejections jianjin can compare, the regrasp rule flags 99 (61%), with parameters chosen on another dataset and not retuned.
-- **NVIDIA Nemotron on Nebius Token Factory** writes the batch summary with placeholders, and jianjin fills in every number; any digit the model writes itself is rejected.
+- **Public demonstration datasets are not clean.** In 308 episodes from five public LeRobot datasets, none marked as failed, Assay rejected 6, and all 6 are unusable: under one second, an arm that never moves, a person resetting the scene. It sent 33 more to a person: 12 are real problems, 12 false positives, 9 not checked yet.
+- **It holds up on real QA labels.** RoboMIND published 1,678 episodes that Beijing Humanoid's QA team rejected, with the reason. Of the 162 regrasp rejections Assay can compare, the regrasp rule flags 99 (61%), with parameters chosen on another dataset and not retuned.
+- **NVIDIA Nemotron on Nebius Token Factory** writes the batch summary with placeholders, and Assay fills in every number; any digit the model writes itself is rejected.
 
-![The top of a jianjin report: batch summary, verdict funnel, problem table](docs/images/report-stacking.png)
+![The top of an Assay report: verdict funnel and problem table](docs/images/report-stacking.png)
 
-*The top of a report for 56 cube-stacking episodes. The batch summary was written by Nemotron; the numbers in it come from jianjin.*
+*The top of the English report for 56 cube-stacking episodes. With `--summary`, a batch summary written by Nemotron appears above the funnel; the numbers in it come from Assay.*
 
 ![An episode card: regrasp detected, with progress curve and keyframes](docs/images/card-towel-ep2-regrasp.png)
 
@@ -21,10 +23,10 @@ Entered in the Nebius × NVIDIA Global AI Hackathon (Physical AI track) and the 
 ## Try it in two minutes
 
 ```bash
-git clone https://github.com/hoongyu/jianjin && cd jianjin
+git clone https://github.com/hoongyu/assay && cd assay
 uv sync
-uv run --extra hub jianjin fetch exam_a   # the public LeRobot datasets of exam A, joint data only (about 73 MB)
-uv run jianjin check data/lerobot__svla_so100_stacking --lang en --out report.html
+uv run --extra hub assay fetch exam_a   # the public LeRobot datasets of exam A, joint data only (about 73 MB)
+uv run assay check data/lerobot__svla_so100_stacking --lang en --out report.html
 ```
 
 Open `report.html` in a browser. Without a GPU only the joint checks run, and they already flag 5 of the 56 episodes: three recordings shorter than one second (rejected) and two where the arm never moves (doubt). We checked all five on video; all five are real problems. Drop `--lang en` for the Chinese interface; our first users are collection sites in China.
@@ -33,7 +35,7 @@ Open `report.html` in a browser. Without a GPU only the joint checks run, and th
 
 Embodied-AI training data is mostly collected by teleoperation: an operator drives a leader arm, the robot follows, and video and joint data are recorded. China has built dedicated data-collection sites for this: at least 15 large ones according to a count by China Business Journal, typically with a hundred or more robots each. Beijing Humanoid's site has over 120 robots, can produce over 100,000 hours a year, and sells data at 500 to 1,000 CNY per hour. QA and labeling still rely largely on manual work; the head of one large site estimated that of 100 hours collected, maybe 50 come out of the funnel usable (an estimate, not an industry statistic), and a data-company executive said collected data often falls short of what algorithm teams need. Whether rejection reasons reach the operators is not reported; our guess is that they rarely do, so the same mistakes repeat on the next shift. Sources and how we checked them: [background notes (Chinese)](docs/research/2026-10-02-background.md).
 
-jianjin does two things:
+Assay does two things:
 
 1. The machine screens every episode first; people only review what it is unsure about.
 2. It says why: which second, which kind of problem, aggregated per operator for shift feedback.
@@ -64,7 +66,7 @@ Thresholds are chosen on development data; test sets are only used to report. Wh
 
 ### Bad episodes hidden in public demonstration datasets
 
-Five public LeRobot datasets (SO-100, SO-101, single-arm and bimanual), 308 episodes, published for training with no episode marked as failed (the dataset cards say nothing about quality). jianjin flagged 39: 6 REJECT and 33 DOUBT (11%).
+Five public LeRobot datasets (SO-100, SO-101, single-arm and bimanual), 308 episodes, published for training with no episode marked as failed (the dataset cards say nothing about quality). Assay flagged 39: 6 REJECT and 33 DOUBT (11%).
 
 - **REJECT, all 6 are real problems**: 3 recordings shorter than one second; 2 where the arm never moves (one on video: 14 seconds of a motionless arm, then a human hand in the last frame; one from joint data, with the video model agreeing); 1 recording of a person resetting the cubes. Five of the six were checked on video.
 - **DOUBT, 33**:
@@ -88,7 +90,7 @@ The incomplete check changed its scaling once to handle bimanual data, so that r
 
 ### Exam B: real anomalies in RoboVAD
 
-[RoboVAD](https://arxiv.org/abs/2609.17843) is a frame-level anomaly detection benchmark of robot manipulation videos. jianjin trains no model on RoboVAD: the video models are used zero-shot. Its scorers and thresholds were chosen on RoboVAD's validation and train splits; the test split only reports.
+[RoboVAD](https://arxiv.org/abs/2609.17843) is a frame-level anomaly detection benchmark of robot manipulation videos. Assay trains no model on RoboVAD: the video models are used zero-shot. Its scorers and thresholds were chosen on RoboVAD's validation and train splits; the test split only reports.
 
 | Setting | Frame-level micro/macro AUC | Rank among the paper's 9 methods | FIDeL, the paper's only joint-data method |
 |---|---|---|---|
@@ -97,15 +99,15 @@ The incomplete check changed its scaling once to handle bimanual data, so that r
 | cross_task | 60.2/60.2 | 5 | 58.1/53.7 |
 | cross_task+anomaly | 56.4/53.9 | 7 | 63.2/51.2 |
 
-- All methods in the paper were trained on RoboVAD; the best one beats jianjin by 11 to 28 points of micro AUC.
+- All methods in the paper were trained on RoboVAD; the best one beats Assay by 11 to 28 points of micro AUC.
 - Per episode (629 test episodes, joint rules plus two video models): 247/387 = 64% (59% to 68%) of anomalous episodes are flagged, 7 of them rejected; 33/242 = 14% (10% to 19%) of normal episodes are flagged, none rejected.
 - The regrasp rule alone (joint data only, compared with normal training episodes): 243/325 = 75% (70% to 79%) of failed grasps or drops, 0/242 (0% to 2%) of normal episodes. This is our second look at the test set: after the first, we stopped counting gripper visits shorter than 0.2 s, to fix a false positive on the Lego dataset.
 
 ### Exam C: real QA labels from Beijing Humanoid (RoboMIND)
 
-RoboMIND published 1,678 teleoperation episodes that its QA rejected, with the reason in 11 classes, but no successful episodes from the same batches. 1,310 come from real robots (UR, Franka, dual-arm) and 368 from simulation (Franka, and Tiangong with dexterous hands). jianjin reads only the joint data; it compares each episode with episodes of the same task rejected for other reasons, so "other reasons flagged" is not a false-positive rate: those episodes failed too. Tasks were split into dev and test before we looked at any metric.
+RoboMIND published 1,678 teleoperation episodes that its QA rejected, with the reason in 11 classes, but no successful episodes from the same batches. 1,310 come from real robots (UR, Franka, dual-arm) and 368 from simulation (Franka, and Tiangong with dexterous hands). Assay reads only the joint data; it compares each episode with episodes of the same task rejected for other reasons, so "other reasons flagged" is not a false-positive rate: those episodes failed too. Tasks were split into dev and test before we looked at any metric.
 
-| Reason | jianjin's rule | Detected | Same-task episodes with other reasons flagged |
+| Reason | Assay's rule | Detected | Same-task episodes with other reasons flagged |
 |---|---|---|---|
 | Regrasp (284) | Gripper opens and closes more than usual; parameters chosen on RoboVAD, not tuned on RoboMIND | 99/162 = 61% (53% to 68%) | 72/1,085 = 7% (5% to 8%) |
 | Unsmooth motion (557) | Takes over 1.7 times the task's median duration (test set, run once) | 26/187 = 14% (10% to 20%) | 18/458 = 4% (3% to 6%) |
@@ -117,26 +119,26 @@ RoboMIND published 1,678 teleoperation episodes that its QA rejected, with the r
 
 ### What we can and cannot claim
 
-- We can say: on real data, mostly from real robots (exam C is 1,310 real and 368 simulated episodes), jianjin finds bad episodes, says why, and every number has a denominator.
-- We cannot say that policies trained on jianjin-filtered data perform better. For that we only cite published work (CUPID, CoRL 2025; DemInf, RSS 2025) until a pilot with a robot or a collection site.
+- We can say: on real data, mostly from real robots (exam C is 1,310 real and 368 simulated episodes), Assay finds bad episodes, says why, and every number has a denominator.
+- We cannot say that policies trained on Assay-filtered data perform better. For that we only cite published work (CUPID, CoRL 2025; DemInf, RSS 2025) until a pilot with a robot or a collection site.
 - False positives remain: neatly stacked cubes and long occlusions fool the video models. Of the 18 RoboVAD episodes both video models rejected, 8 have no anomaly label; we have not watched them, so we cannot tell whether the models or the labels are wrong.
-- Motion quality is only partly covered. In RoboMIND, the big classes are unsmooth motion, regrasp, unwanted contact and collision before grasp; the task itself was usually completed. jianjin has a rule aimed at 954 of the 1,678 rejections (57%), but measured detection is far apart: regrasp 61%, unsmooth motion 14%. 656 (39%) it cannot check: 620 need vision (unwanted contact, collision before grasp, object displaced and two smaller classes), and 36 are "too fast", where no rule worked.
+- Motion quality is only partly covered. In RoboMIND, the big classes are unsmooth motion, regrasp, unwanted contact and collision before grasp; the task itself was usually completed. Assay has a rule aimed at 954 of the 1,678 rejections (57%), but measured detection is far apart: regrasp 61%, unsmooth motion 14%. 656 (39%) it cannot check: 620 need vision (unwanted contact, collision before grasp, object displaced and two smaller classes), and 36 are "too fast", where no rule worked.
 
 ## Nebius and NVIDIA
 
-`jianjin check --summary` adds a batch summary at the top of the report, written by NVIDIA Nemotron 3.5 Lightning (`nvidia/Nemotron-3_5-Lightning`, open weights under OpenMDW-1.1) through the Nebius Token Factory OpenAI-compatible API.
+`assay check --summary` adds a batch summary at the top of the report, written by NVIDIA Nemotron 3.5 Lightning (`nvidia/Nemotron-3_5-Lightning`, open weights under OpenMDW-1.1) through the Nebius Token Factory OpenAI-compatible API.
 
-- The model only sees statistics jianjin computed: counts, problem names, episode ids. It never sees joint data or video.
-- It writes prose with placeholders such as `{n_doubt}`, and jianjin fills in the numbers. A digit the model writes on its own is rejected, and so is a number word from two up ("one" and "一" pass: they are too common in ordinary prose to ban). jianjin retries once and then falls back to a template. The report says which one you are reading.
+- The model only sees statistics Assay computed: counts, problem names, episode ids. It never sees joint data or video.
+- It writes prose with placeholders such as `{n_doubt}`, and Assay fills in the numbers. A digit the model writes on its own is rejected, and so is a number word from two up ("one" and "一" pass: they are too common in ordinary prose to ban). Assay retries once and then falls back to a template. The report says which one you are reading.
 - The check cannot tell whether a placeholder sits in the right sentence. To make that less likely, the model starts from the template's draft, which already has every placeholder in place; we have not measured how often it moves one.
 - Reasoning is turned off with `chat_template_kwargs: {"enable_thinking": false}`. With it on, the reasoning trace landed in the answer text and the answer was cut off at the token limit.
-- Tips for the operators come from a fixed list we wrote, one per problem class, also given as placeholders (`{advice_1}`); the model picks and connects them but may not write advice of its own. (Without that rule, the first live summary told the operators to make sure one of jianjin's checks runs on all episodes, which no operator can act on.)
-- Answers are cached by their inputs, so re-rendering a report makes no new call. `jianjin summary-stats` counts the cached summaries that passed on the first try, passed after the retry, or fell back to the template.
+- Tips for the operators come from a fixed list we wrote, one per problem class, also given as placeholders (`{advice_1}`); the model picks and connects them but may not write advice of its own. (Without that rule, the first live summary told the operators to make sure one of Assay's checks runs on all episodes, which no operator can act on.)
+- Answers are cached by their inputs, so re-rendering a report makes no new call. `assay summary-stats` counts the cached summaries that passed on the first try, passed after the retry, or fell back to the template.
 
 ```bash
 export NEBIUS_API_KEY=...   # set it in your own shell; never commit it
-uv run jianjin check <dataset dir> --out report.html --summary --lang en
-uv run jianjin summary-stats
+uv run assay check <dataset dir> --out report.html --summary --lang en
+uv run assay summary-stats
 ```
 
 Without the key, the template is used.
@@ -147,7 +149,7 @@ Needs Python 3.12 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync
-uv run jianjin check <dataset dir> --out report.html --json findings.json
+uv run assay check <dataset dir> --out report.html --json findings.json
 ```
 
 It reads LeRobot v3, RoboMIND HDF5 and RoboVAD directories. Without `--judges`, only the joint checks run, on CPU. `--lang en` switches the report and the terminal output to English.
@@ -155,7 +157,7 @@ It reads LeRobot v3, RoboMIND HDF5 and RoboVAD directories. Without `--judges`, 
 The video judges need a GPU: run the notebooks in `notebooks/` on Colab, put the cache files they produce in `cache/`, then:
 
 ```bash
-uv run jianjin check <dataset dir> --judges robometer,topreward --camera observation.images.top --out report.html
+uv run assay check <dataset dir> --judges robometer,topreward --camera observation.images.top --out report.html
 ```
 
 When the video is on disk, the report adds keyframes to DOUBT and REJECT cards; `--no-frames` turns that off.
@@ -163,13 +165,13 @@ When the video is on disk, the report adds keyframes to DOUBT and REJECT cards; 
 Exams and tests:
 
 ```bash
-uv run --extra hub jianjin fetch exam_a     # public data for exam A; joint data only by default
-uv run jianjin eval a --split dev            # exam A on dev; --split test for the test set
-uv run jianjin eval b-episode --split train
-uv run jianjin eval b-regrasp --split train  # regrasp; on test add --dev-result results/exam_b_regrasp_train.json
-uv run --extra hub jianjin fetch robomind   # RoboMIND rejections, joint data only: 1.75 GB read, 253 MB stored; accept the dataset terms on Hugging Face and log in first
-uv run jianjin eval c --split dev            # exam C; on test add --split test --dev-result results/exam_c_dev.json
-uv run jianjin eval c-regrasp                # the regrasp rule on RoboMIND, run once
+uv run --extra hub assay fetch exam_a     # public data for exam A; joint data only by default
+uv run assay eval a --split dev            # exam A on dev; --split test for the test set
+uv run assay eval b-episode --split train
+uv run assay eval b-regrasp --split train  # regrasp; on test add --dev-result results/exam_b_regrasp_train.json
+uv run --extra hub assay fetch robomind   # RoboMIND rejections, joint data only: 1.75 GB read, 253 MB stored; accept the dataset terms on Hugging Face and log in first
+uv run assay eval c --split dev            # exam C; on test add --split test --dev-result results/exam_c_dev.json
+uv run assay eval c-regrasp                # the regrasp rule on RoboMIND, run once
 uv run pytest
 ```
 
@@ -182,13 +184,13 @@ uv run pytest
 ## Layout
 
 ```
-src/jianjin/
+src/assay/
   ingest/       read LeRobot v3, RoboMIND, RoboVAD
   checks/       joint and metadata rules; video.py holds the video rules
   judges/       video judge adapters (Robometer, TOPReward) and their cache
   diagnose.py   merge findings into a verdict
   report.py     offline HTML report; keyframes.py adds keyframes
-  summary.py    batch summary written by Nemotron, numbers filled in by jianjin
+  summary.py    batch summary written by Nemotron, numbers filled in by Assay
   eval/         the three exams
 notebooks/      Colab notebooks for the video judges
 configs/        datasets, splits and licenses used by the exams

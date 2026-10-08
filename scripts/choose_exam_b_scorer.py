@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import sys
 
-from jianjin.eval.exam_b import run_exam_b
-from jianjin.scores import SCORERS
+from assay.eval.exam_b import run_exam_b
+from assay.scores import SCORERS
 
 
 def main() -> None:

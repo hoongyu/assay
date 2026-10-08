@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from helpers import make_episode, make_robomind_failure_h5
-from jianjin.checks.config import CheckConfig
+from assay.checks.config import CheckConfig
 
 
 def minjerk(n, dist=1.0):
@@ -69,7 +69,7 @@ def success_sets():
 
 
 def test_pick_threshold_is_smallest_grid_value_with_every_set_at_most_5pct():
-    from jianjin.eval.exam_c import pick_threshold
+    from assay.eval.exam_c import pick_threshold
 
     t, flags = pick_threshold({"A": [1.0] * 19 + [1.35], "B": [1.0] * 9 + [1.25]}, "ratio")
     assert t == pytest.approx(1.3)  # B 那条 1.25 要压住（1/10 超过 5%），A 那条 1.35 可以留（1/20）
@@ -81,7 +81,7 @@ def test_pick_threshold_is_smallest_grid_value_with_every_set_at_most_5pct():
 
 
 def test_choose_prefers_baseline_unless_strictly_better():
-    from jianjin.eval.exam_c import choose
+    from assay.eval.exam_c import choose
 
     def m(gap, auc, t=1.5):
         return {"threshold": t, "gap": gap, "auc": auc}
@@ -98,7 +98,7 @@ def test_choose_prefers_baseline_unless_strictly_better():
 
 
 def test_run_exam_c_dev_then_test(tmp_path):
-    from jianjin.eval.exam_c import run_exam_c
+    from assay.eval.exam_c import run_exam_c
 
     split = make_tree(tmp_path / "failure_data")
     cfg = CheckConfig()
@@ -119,7 +119,7 @@ def test_run_exam_c_dev_then_test(tmp_path):
 
 
 def test_regrasp_on_robomind_uses_other_causes_as_reference(tmp_path):
-    from jianjin.eval.exam_c import run_regrasp_c
+    from assay.eval.exam_c import run_regrasp_c
 
     make_tree(tmp_path / "failure_data")
     out = run_regrasp_c(tmp_path / "failure_data", CheckConfig())

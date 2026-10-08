@@ -2,8 +2,8 @@ import numpy as np
 import pytest
 
 from helpers import make_mp4
-from jianjin.types import VideoRef
-from jianjin.video import read_clip
+from assay.types import VideoRef
+from assay.video import read_clip
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def test_open_ended_ref(mp4):
     assert len(frames) == 10
 
 
-from jianjin.video import frames_at  # noqa: E402
+from assay.video import frames_at  # noqa: E402
 
 
 def test_frames_at_takes_one_frame_per_time(mp4):

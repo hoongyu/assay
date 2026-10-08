@@ -2,8 +2,8 @@ import h5py
 import numpy as np
 import pytest
 
-from jianjin.eval.robomind_fetch import CappedReader, TooBig, copy_joints
-from jianjin.ingest.robomind import read_robomind
+from assay.eval.robomind_fetch import CappedReader, TooBig, copy_joints
+from assay.ingest.robomind import read_robomind
 
 
 def make_source(path):
@@ -30,7 +30,7 @@ def test_copy_joints_keeps_joints_and_drops_images(tmp_path):
         np.testing.assert_allclose(h["puppet/hand_joint_position"][()][:, 0], (np.arange(40) // 10 % 2))
         assert h["observations/rgb_images/camera_top"].shape == (0,)
         assert tuple(h["observations/rgb_images/camera_top"].attrs["original_shape"]) == (40, 50_000)
-        assert h.attrs["jianjin_joints_only"] and h.attrs["jianjin_source"] == "hf://datasets/x/failure_data/e1"
+        assert h.attrs["assay_joints_only"] and h.attrs["assay_source"] == "hf://datasets/x/failure_data/e1"
         assert h.attrs["sim"] == False  # noqa: E712  原文件的属性照抄
     (ep,) = read_robomind(tmp_path / "out").episodes
     assert ep.state.shape == (40, 7) and ep.meta["image_keys"] == ["camera_top"]

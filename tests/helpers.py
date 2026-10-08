@@ -10,7 +10,7 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from jianjin.types import Episode
+from assay.types import Episode
 
 
 def find_gripper(names: list[str]) -> int | None:
@@ -241,7 +241,7 @@ def write_cached_curve(cache: Path, ep: Episode, camera: str, progress: list[flo
                        judge: str = "robometer", times: list[float] | None = None,
                        success: list[float] | None = None) -> Path:
     """直接写一份缓存 JSON，形状和 judge_episode 写的一样（本机没视频时按示范名和任务描述认）。"""
-    from jianjin.judges.cache import _path
+    from assay.judges.cache import _path
 
     path = _path(cache, judge, ep, camera)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -257,8 +257,8 @@ NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
 
 def assert_bilingual(text: str) -> None:
-    """中文旁边带了英文（jianjin.types.Bi）：英文不含汉字，两份里的数字按顺序一样。"""
-    from jianjin.types import en
+    """中文旁边带了英文（assay.types.Bi）：英文不含汉字，两份里的数字按顺序一样。"""
+    from assay.types import en
 
     english = en(text)
     assert english != text, f"没有英文：{text}"

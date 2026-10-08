@@ -4,10 +4,10 @@ from pathlib import Path
 import numpy as np
 
 from helpers import HAN, make_episode
-from jianjin.diagnose import diagnose
-from jianjin.judges.base import Curve
-from jianjin.report import render
-from jianjin.types import Bi, Cause, Finding
+from assay.diagnose import diagnose
+from assay.judges.base import Curve
+from assay.report import render
+from assay.types import Bi, Cause, Finding
 
 SNAP = Path(__file__).parent / "snapshots" / "report_small.html"
 
@@ -30,7 +30,7 @@ def small():
 def test_snapshot():
     vs, eps = small()
     html = render(vs, eps, title="ds", judges=["robometer"], generated="2026-10-03 12:00")
-    if os.environ.get("JIANJIN_UPDATE_SNAPSHOTS") or not SNAP.exists():
+    if os.environ.get("ASSAY_UPDATE_SNAPSHOTS") or not SNAP.exists():
         SNAP.parent.mkdir(exist_ok=True)
         SNAP.write_text(html, encoding="utf-8")
     assert html == SNAP.read_text(encoding="utf-8")
@@ -115,7 +115,7 @@ def test_note_without_rejects():
 
 
 def test_summary_section_only_when_given():
-    from jianjin.summary import Summary
+    from assay.summary import Summary
 
     vs, eps = small()
     s = Summary(texts={"zh": "本批 3 条，先看存疑的。", "en": "Batch ds: 3 <episodes>."},
@@ -123,7 +123,7 @@ def test_summary_section_only_when_given():
                 problems={"zh": [], "en": ["第 1 次：自己写了阿拉伯数字：3"]})
     html = render(vs, eps, title="ds", summary=s)
     assert "本批小结" in html and "本批 3 条，先看存疑的。" in html and "Batch ds: 3 &lt;episodes&gt;." in html
-    assert "nvidia/Nemotron-3_5-Lightning" in html and "数字由拣金按统计填" in html
+    assert "nvidia/Nemotron-3_5-Lightning" in html and "数字由甄数按统计填" in html
     assert "Template text" in html and html.index("本批小结") < html.index("每条示范")
     assert "本批小结" not in render(vs, eps, title="ds")
 
@@ -148,7 +148,7 @@ def test_english_report_has_no_chinese():
         html = render(vs, eps, title="ds", judges=judges, generated="2026-10-03 12:00", shots=shots, lang="en",
                       failures=[("a.hdf5", Bi("坏了", "broken"))])
         assert not HAN.search(html), HAN.search(html)
-        assert '<html lang="en">' in html and "jianjin QA report" in html
+        assert '<html lang="en">' in html and "Assay QA report" in html
     assert all(w in html for w in ("PASS", "DOUBT", "REJECT", "long pause", "object dropped", "whole episode",
                                    "1.0 to 2.0 s", "Robometer wrong task: Only 3 episodes", "at 3.5 s (after the joint data)",
                                    "Objective hard rule: Only 0.50 s long", "rarely thrown away"))
@@ -156,7 +156,7 @@ def test_english_report_has_no_chinese():
 
 
 def test_english_report_puts_the_english_summary_first():
-    from jianjin.summary import Summary
+    from assay.summary import Summary
 
     vs, eps = small()
     s = Summary(texts={"zh": "本批 3 条。", "en": "Batch ds: 3 episodes."}, source={"zh": "model", "en": "model"},

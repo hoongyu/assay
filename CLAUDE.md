@@ -1,4 +1,4 @@
-# jianjin（拣金）
+# Assay（甄数；开发代号 jianjin，拣金）
 
 数采场示范数据的自动质检。这个项目由黑客松总管（`C:\Claude_code\Hackertrip`）派发，参赛信息在 `.hackertrip/`。
 

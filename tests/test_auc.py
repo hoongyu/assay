@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from jianjin.eval.auc import roc_auc
+from assay.eval.auc import roc_auc
 
 
 def test_known_value():

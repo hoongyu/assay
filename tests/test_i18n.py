@@ -1,7 +1,7 @@
-from jianjin.checks.runner import BATCH_CHECKS, EPISODE_CHECKS
-from jianjin.diagnose import LABEL_EN, Label
-from jianjin.i18n import CHECKS, check_name
-from jianjin.types import CAUSE_EN, SOURCE_EN, SOURCE_NAMES, Cause, source_name
+from assay.checks.runner import BATCH_CHECKS, EPISODE_CHECKS
+from assay.diagnose import LABEL_EN, Label
+from assay.i18n import CHECKS, check_name
+from assay.types import CAUSE_EN, SOURCE_EN, SOURCE_NAMES, Cause, source_name
 
 
 def test_every_cause_source_and_label_has_english():

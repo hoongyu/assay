@@ -3,8 +3,8 @@ import json
 import numpy as np
 
 from helpers import make_lerobot_v3
-from jianjin.cli import main
-from jianjin.ingest import load
+from assay.cli import main
+from assay.ingest import load
 
 
 def paused6():
@@ -50,7 +50,7 @@ def test_check_writes_report(tmp_path, capsys):
     out = tmp_path / "r.html"
     assert main(["check", str(ds), "--out", str(out)]) == 0
     html = out.read_text(encoding="utf-8")
-    assert "拣金质检报告" in html and "没跑视频评判" in html
+    assert "甄数质检报告" in html and "没跑视频评判" in html
     assert "存疑 1" in capsys.readouterr().out
 
 
@@ -99,7 +99,7 @@ def test_check_report_has_keyframes_when_video_is_local(tmp_path, capsys):
 
 
 def test_fetch_robomind_parses():
-    from jianjin.cli import build_parser
+    from assay.cli import build_parser
 
     args = build_parser().parse_args(["fetch", "robomind", "--workers", "2"])
     assert args.what == "robomind" and args.workers == 2
@@ -117,7 +117,7 @@ def test_check_summary_without_key_uses_template(tmp_path, monkeypatch, capsys):
 
 def test_check_summary_without_key_uses_cached_model_text(tmp_path, monkeypatch, capsys):
     """没设密钥，但这批的小结已经缓存过：用缓存里模型写的，不说「用模板」。"""
-    from jianjin import summary as sm
+    from assay import summary as sm
 
     monkeypatch.delenv("NEBIUS_API_KEY", raising=False)
     ds = make_lerobot_v3(tmp_path / "d", [("pick", paused6())])
@@ -143,7 +143,7 @@ def test_check_in_english(tmp_path, monkeypatch, capsys):
     assert main(["check", str(ds), "--out", str(out), "--json", str(js), "--lang", "en", "--summary",
                  "--cache", str(tmp_path / "c")]) == 0
     html = out.read_text(encoding="utf-8")
-    assert '<html lang="en">' in html and "jianjin QA report" in html
+    assert '<html lang="en">' in html and "Assay QA report" in html
     printed = capsys.readouterr().out
     assert "DOUBT 1" in printed and "long pause: 1" in printed and "Report written to" in printed
     assert "Batch summary (en): template" in printed and not HAN.search(printed), printed

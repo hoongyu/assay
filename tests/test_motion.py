@@ -1,8 +1,8 @@
 import numpy as np
 from helpers import assert_bilingual, make_episode
-from jianjin.checks.config import CheckConfig
-from jianjin.checks.motion import long_pause
-from jianjin.types import Cause
+from assay.checks.config import CheckConfig
+from assay.checks.motion import long_pause
+from assay.types import Cause
 
 CFG = CheckConfig()
 
