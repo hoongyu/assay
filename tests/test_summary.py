@@ -74,6 +74,27 @@ def test_fill_uses_values_of_the_language():
     assert fill("{n} {c} episodes", facts, "en") == "3 regrasp episodes"
 
 
+def test_fill_drops_the_second_full_stop_after_a_sentence_value():
+    # 2026-10-11 真接口：建议本身以句号结尾，模型在占位符后面又加一个，出来“do..”“一致。。”
+    from assay.summary import Facts, fill
+
+    facts = Facts({"advice_1": "建议"}, {"zh": {"advice_1": "开录前核对任务描述。"}, "en": {"advice_1": "Check the task."}})
+    assert fill("提醒：{advice_1}。次要问题", facts, "zh") == "提醒：开录前核对任务描述。次要问题"
+    assert fill("Tip: {advice_1}. Next", facts, "en") == "Tip: Check the task. Next"
+    assert fill("Wait... then {advice_1}", facts, "en") == "Wait... then Check the task."  # 省略号不动
+
+
+def test_fill_uses_singular_episode_for_one():
+    # 2026-10-11 真接口：“1 episodes (2%)”“Review the 1 rejected episodes first”
+    from assay.summary import Facts, fill
+
+    facts = Facts({"n": "条数"}, {"en": {"n": "1"}, "zh": {"n": "1"}})
+    assert fill("{n} episodes (2%)", facts, "en") == "1 episode (2%)"
+    assert fill("Review the {n} rejected episodes first", facts, "en") == "Review the 1 rejected episode first"
+    many = Facts({"n": "条数"}, {"en": {"n": "41"}, "zh": {"n": "41"}})
+    assert fill("{n} episodes", many, "en") == "41 episodes"
+
+
 def fake_chat(*replies):
     """依次回答 replies；记下每次收到的消息。"""
     calls = []
