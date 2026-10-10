@@ -145,8 +145,13 @@ def check_text(text: str, keys: set[str]) -> list[str]:
 
 
 def fill(text: str, facts: Facts, lang: str) -> str:
+    """填数字。建议以句号结尾，模型常在占位符后面再加一个，并成一个（省略号不动）；英文的 1 后面用单数。"""
     values = facts.values[lang]
-    return PLACEHOLDER.sub(lambda m: values[m.group(1)], text)
+    text = PLACEHOLDER.sub(lambda m: values[m.group(1)], text)
+    text = re.sub(r"(?<![.。])([.。])[.。](?![.。])", r"\1", text)
+    if lang == "en":
+        text = re.sub(r"\b1 ((?:[a-z]+ )?)episodes\b", r"1 \1episode", text)
+    return text
 
 
 # ---- 调模型 ----

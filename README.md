@@ -10,9 +10,9 @@ Automatic quality control for robot teleoperation demonstrations. For every reco
 - **It holds up on real QA labels.** RoboMIND published 1,678 episodes that Beijing Humanoid's QA team rejected, with the reason. Of the 162 regrasp rejections Assay can compare, the regrasp rule flags 99 (61%), with parameters chosen on another dataset and not retuned.
 - **NVIDIA Nemotron on Nebius Token Factory** writes the batch summary with placeholders, and Assay fills in every number; any digit the model writes itself is rejected.
 
-![The top of an Assay report: verdict funnel and problem table](docs/images/report-stacking.png)
+![The top of an Assay report: batch summary written by Nemotron, verdict funnel and problem table](docs/images/report-stacking.png)
 
-*The top of the English report for 56 cube-stacking episodes. With `--summary`, a batch summary written by Nemotron appears above the funnel; the numbers in it come from Assay.*
+*The top of the English report for 56 cube-stacking episodes. The batch summary was written by Nemotron on Nebius Token Factory; every number in it was filled in by Assay.*
 
 ![An episode card: regrasp detected, with progress curve and keyframes](docs/images/card-towel-ep2-regrasp.png)
 
@@ -134,6 +134,8 @@ RoboMIND published 1,678 teleoperation episodes that its QA rejected, with the r
 - Reasoning is turned off with `chat_template_kwargs: {"enable_thinking": false}`. With it on, the reasoning trace landed in the answer text and the answer was cut off at the token limit.
 - Tips for the operators come from a fixed list we wrote, one per problem class, also given as placeholders (`{advice_1}`); the model picks and connects them but may not write advice of its own. (Without that rule, the first live summary told the operators to make sure one of Assay's checks runs on all episodes, which no operator can act on.)
 - Answers are cached by their inputs, so re-rendering a report makes no new call. `assay summary-stats` counts the cached summaries that passed on the first try, passed after the retry, or fell back to the template.
+- Measured on 2026-10-11 with the current prompt (version 4), on four public batches (SO-100 pick-and-place, stacking and sorting, SO-101 pick-and-place) in English and Chinese: 8 of 8 summaries passed the number check on the first try, with no retries and no fallback to the template. Eight is a small denominator.
+- Reading the eight showed what the number check cannot catch. In 1 of 8 (sorting, English) the model used the not-checked placeholder twice in one muddled sentence and paraphrased a tip instead of using ours: the tip rule is an instruction, not a check. Two problems were in our own code and are fixed: a doubled full stop after a tip, and "1 episodes".
 
 ```bash
 export NEBIUS_API_KEY=...   # set it in your own shell; never commit it

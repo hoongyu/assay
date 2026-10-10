@@ -40,6 +40,7 @@ Open-source tools such as Loop-Engineering-for-VLA and hflow already audit LeRob
 - Injected defects on held-out datasets and tasks: cut endings 197/201 detected and frozen frames 199/201, with 0/202 clean episodes flagged. The cut-ending row is our second look at the test set: the first look flagged 11/202 clean towel-folding episodes, so we added bimanual dev data, changed the scaling and chose the threshold on dev again.
 - RoboVAD real anomalies (no model trained on RoboVAD; thresholds chosen on its train split): 247/387 anomalous episodes flagged against 33/242 normal ones.
 - RoboMIND, 1,678 episodes rejected by Beijing Humanoid's QA, 1,310 of them on real robots: of the 162 regrasp rejections Assay can compare, the regrasp rule, tuned on another dataset and not retuned, flags 99 (61%; real robots only, 99/159). It also flags 7% of same-task episodes rejected for other reasons, 21% on the dual-arm tasks.
+- Batch summaries from Nemotron 3.5 Lightning on Token Factory (four public batches, English and Chinese): 8/8 passed the number check on the first try, with no retries and no template fallbacks. Reading them, 1 of 8 still used a placeholder twice in one muddled sentence and paraphrased a tip, which the number check cannot catch.
 
 ## Challenges we ran into
 
