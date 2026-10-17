@@ -1,0 +1,36 @@
+{
+ "date": "2026-10-17",
+ "data": "robomimic v1.5 MH low_dim（MIT），Square 和 Can 各 300 条",
+ "method": "assay check --no-frames，参数没有调整，第一次运行",
+ "flagged_by_quality": {
+  "square": {
+   "better": [
+    2,
+    100
+   ],
+   "okay": [
+    10,
+    100
+   ],
+   "worse": [
+    33,
+    100
+   ]
+  },
+  "can": {
+   "better": [
+    1,
+    100
+   ],
+   "okay": [
+    3,
+    100
+   ],
+   "worse": [
+    44,
+    100
+   ]
+  }
+ },
+ "label": "标出的都是存疑，没有作废；示范都录到了任务完成"
+}

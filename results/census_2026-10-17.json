@@ -1,0 +1,515 @@
+{
+ "date": "2026-10-17",
+ "method": "assay check --no-frames（只用关节规则，参数没有调整）；只下载 meta/ 和 data/",
+ "datasets": [
+  {
+   "repo": "RDLwicked/gim_arm_socket_plug_teleop_3cam_joint",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 376,
+   "labels": {
+    "合格": 334,
+    "存疑": 42,
+    "作废": 0
+   },
+   "flag_causes": {
+    "动作不流畅": 41,
+    "二次抓取": 1
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "RDLwicked/gim_arm_industrial_assembly_teleop_3cam_joint",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 272,
+   "labels": {
+    "合格": 250,
+    "存疑": 22,
+    "作废": 0
+   },
+   "flag_causes": {
+    "动作不流畅": 19,
+    "二次抓取": 4
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "rocochallenge2025/rocochallenge2026_Industrial_Assembly",
+   "group": "electric",
+   "license": "mit",
+   "sampled": "all",
+   "episodes_checked": 200,
+   "labels": {
+    "合格": 162,
+    "存疑": 38,
+    "作废": 0
+   },
+   "flag_causes": {
+    "二次抓取": 37,
+    "多余动作": 1,
+    "没做完": 1
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "RohanVasa/Switch_On_20260725_160650",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 50,
+   "labels": {
+    "合格": 46,
+    "存疑": 4,
+    "作废": 0
+   },
+   "flag_causes": {
+    "动作不流畅": 4
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "plzsay/turn_valve_20260915_213218",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 30,
+   "labels": {
+    "合格": 26,
+    "存疑": 4,
+    "作废": 0
+   },
+   "flag_causes": {
+    "二次抓取": 2,
+    "停顿过长": 2
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "k-matsushima/push_buttons",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 143,
+   "labels": {
+    "合格": 143,
+    "存疑": 0,
+    "作废": 0
+   },
+   "flag_causes": {},
+   "not_checked": 1
+  },
+  {
+   "repo": "lerobot/berkeley_cable_routing",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 1647,
+   "labels": {
+    "合格": 1337,
+    "存疑": 241,
+    "作废": 69
+   },
+   "flag_causes": {
+    "多余动作": 145,
+    "动作不流畅": 222,
+    "数据异常": 69
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "andreaskoepf/dk1_cable_tie_2026-06-12",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 98,
+   "labels": {
+    "合格": 45,
+    "存疑": 53,
+    "作废": 0
+   },
+   "flag_causes": {
+    "二次抓取": 37,
+    "没做完": 31
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "jellyho/yam_cable_tie",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 160,
+   "labels": {
+    "合格": 148,
+    "存疑": 12,
+    "作废": 0
+   },
+   "flag_causes": {
+    "没做完": 12
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "lerobot/aloha_static_battery",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 49,
+   "labels": {
+    "合格": 47,
+    "存疑": 2,
+    "作废": 0
+   },
+   "flag_causes": {
+    "没做完": 2
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "NIATphysicalAI/Battery_sort",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 99,
+   "labels": {
+    "合格": 74,
+    "存疑": 25,
+    "作废": 0
+   },
+   "flag_causes": {
+    "二次抓取": 23,
+    "没做完": 2
+   },
+   "not_checked": 7
+  },
+  {
+   "repo": "unitreerobotics/G1_Dex3_PickCharger_Dataset",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 200,
+   "labels": {
+    "合格": 187,
+    "存疑": 13,
+    "作废": 0
+   },
+   "flag_causes": {
+    "动作不流畅": 12,
+    "多余动作": 5
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "Syqnal/kitting_connector",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 176,
+   "labels": {
+    "合格": 131,
+    "存疑": 45,
+    "作废": 0
+   },
+   "flag_causes": {
+    "二次抓取": 18,
+    "空录": 15,
+    "没做完": 3,
+    "停顿过长": 12
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "lerobot/aloha_static_screw_driver",
+   "group": "electric",
+   "license": "mit",
+   "sampled": "all",
+   "episodes_checked": 50,
+   "labels": {
+    "合格": 47,
+    "存疑": 3,
+    "作废": 0
+   },
+   "flag_causes": {
+    "没做完": 3
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "lerobot/aloha_mobile_cabinet",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 85,
+   "labels": {
+    "合格": 79,
+    "存疑": 6,
+    "作废": 0
+   },
+   "flag_causes": {
+    "没做完": 3,
+    "二次抓取": 3
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "lerobot/iamlab_cmu_pickup_insert",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 631,
+   "labels": {
+    "合格": 548,
+    "存疑": 83,
+    "作废": 0
+   },
+   "flag_causes": {
+    "动作不流畅": 48,
+    "没做完": 12,
+    "多余动作": 42,
+    "停顿过长": 3
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "777im/so101_pick_plug_insert_v5_v6",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 72,
+   "labels": {
+    "合格": 71,
+    "存疑": 1,
+    "作废": 0
+   },
+   "flag_causes": {
+    "停顿过长": 1
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "villekuosmanen/cable_unclip_remote",
+   "group": "electric",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 50,
+   "labels": {
+    "合格": 43,
+    "存疑": 7,
+    "作废": 0
+   },
+   "flag_causes": {
+    "二次抓取": 7
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "cadene/droid_1.0.1_v30",
+   "group": "mainstream",
+   "license": "apache-2.0",
+   "sampled": "first data file",
+   "episodes_checked": 0,
+   "labels": {
+    "合格": 0,
+    "存疑": 0,
+    "作废": 0
+   },
+   "flag_causes": {},
+   "not_checked": 1
+  },
+  {
+   "repo": "allenai/MolmoAct2-BimanualYAM-Dataset",
+   "group": "mainstream",
+   "license": "apache-2.0",
+   "sampled": "first data file",
+   "episodes_checked": 1,
+   "labels": {
+    "合格": 1,
+    "存疑": 0,
+    "作废": 0
+   },
+   "flag_causes": {},
+   "not_checked": 0
+  },
+  {
+   "repo": "lerobot/abc_130k_v3_train",
+   "group": "mainstream",
+   "license": "apache-2.0",
+   "sampled": "first data file",
+   "episodes_checked": 127,
+   "labels": {
+    "合格": 125,
+    "存疑": 2,
+    "作废": 0
+   },
+   "flag_causes": {
+    "二次抓取": 2
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "BitRobot/HIW-500-LeRobot",
+   "group": "mainstream",
+   "license": "cc-by-4.0",
+   "sampled": "first data file",
+   "episodes_checked": 114,
+   "labels": {
+    "合格": 83,
+    "存疑": 31,
+    "作废": 0
+   },
+   "flag_causes": {
+    "动作不流畅": 25,
+    "多余动作": 12,
+    "停顿过长": 2
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "lerobot/high_quality_folding",
+   "group": "mainstream",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 1200,
+   "labels": {
+    "合格": 848,
+    "存疑": 352,
+    "作废": 0
+   },
+   "flag_causes": {
+    "二次抓取": 323,
+    "动作不流畅": 267,
+    "多余动作": 123,
+    "空录": 3
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "unitreerobotics/G1_Dex3_ToastedBread_Dataset",
+   "group": "mainstream",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 418,
+   "labels": {
+    "合格": 356,
+    "存疑": 62,
+    "作废": 0
+   },
+   "flag_causes": {
+    "动作不流畅": 53,
+    "多余动作": 21
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "unitreerobotics/Z1_StackBox_Dataset",
+   "group": "mainstream",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 1265,
+   "labels": {
+    "合格": 1166,
+    "存疑": 99,
+    "作废": 0
+   },
+   "flag_causes": {
+    "没做完": 88,
+    "动作不流畅": 16,
+    "多余动作": 8
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "brandonyang/artem-pour-water",
+   "group": "mainstream",
+   "license": "apache-2.0",
+   "sampled": "all",
+   "episodes_checked": 1445,
+   "labels": {
+    "合格": 1186,
+    "存疑": 259,
+    "作废": 0
+   },
+   "flag_causes": {
+    "没做完": 249,
+    "动作不流畅": 11,
+    "多余动作": 8,
+    "空录": 1,
+    "二次抓取": 3
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "lerobot/taco_play",
+   "group": "mainstream",
+   "license": "cc-by-4.0",
+   "sampled": "all",
+   "episodes_checked": 3603,
+   "labels": {
+    "合格": 3508,
+    "存疑": 95,
+    "作废": 0
+   },
+   "flag_causes": {
+    "多余动作": 77,
+    "没做完": 15,
+    "空录": 3
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "lerobot/jaco_play",
+   "group": "mainstream",
+   "license": "cc-by-4.0",
+   "sampled": "all",
+   "episodes_checked": 1085,
+   "labels": {
+    "合格": 1062,
+    "存疑": 23,
+    "作废": 0
+   },
+   "flag_causes": {
+    "动作不流畅": 19,
+    "多余动作": 3,
+    "没做完": 2,
+    "空录": 1
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "lerobot/berkeley_autolab_ur5",
+   "group": "mainstream",
+   "license": "cc-by-4.0",
+   "sampled": "all",
+   "episodes_checked": 1000,
+   "labels": {
+    "合格": 999,
+    "存疑": 1,
+    "作废": 0
+   },
+   "flag_causes": {
+    "停顿过长": 1
+   },
+   "not_checked": 0
+  },
+  {
+   "repo": "lerobot/stanford_kuka_multimodal_dataset",
+   "group": "mainstream",
+   "license": "mit",
+   "sampled": "all",
+   "episodes_checked": 3000,
+   "labels": {
+    "合格": 2835,
+    "存疑": 165,
+    "作废": 0
+   },
+   "flag_causes": {
+    "空录": 151,
+    "多余动作": 14
+   },
+   "not_checked": 0
+  }
+ ]
+}
