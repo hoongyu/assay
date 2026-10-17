@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from assay.ingest.lerobot import read_lerobot
+from assay.ingest.robomimic import is_robomimic, read_robomimic
 from assay.ingest.robomind import read_robomind
 from assay.ingest.robovad import read_robovad
 from assay.types import LoadResult
@@ -17,7 +18,7 @@ def load(path: str | Path) -> LoadResult:
     if (path / "annotations.json").exists() and (path / "proprioception").is_dir():
         return read_robovad(path)
     if path.is_file() and path.suffix in {".hdf5", ".h5"}:
-        return read_robomind(path)
+        return read_robomimic(path) if is_robomimic(path) else read_robomind(path)
     if path.is_dir() and (any(path.rglob("*.hdf5")) or any(path.rglob("*.h5"))):
         return read_robomind(path)
     raise ValueError(
