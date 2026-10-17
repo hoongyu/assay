@@ -92,3 +92,13 @@ def test_repeated_episode_index_in_metadata_is_a_dataset_failure(tmp_path):
     assert res.episodes == []
     (name, why), = res.failures
     assert name == "meta/episodes" and "episode_index" in why and "重复" in why
+
+
+def test_only_files_matching_data_path_template_are_read(tmp_path):
+    import shutil
+    root = make_lerobot_v3(tmp_path / "stale", [("pick", ramp6(60))])
+    # 转换后没删的旧版 v2.1 文件，内容和新文件一样
+    shutil.copy(root / "data" / "chunk-000" / "file-000.parquet", root / "data" / "chunk-000" / "episode_000000.parquet")
+    res = read_lerobot(root)
+    assert res.failures == []
+    assert [e.state.shape[0] for e in res.episodes] == [60]

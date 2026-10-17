@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import numpy as np
@@ -82,6 +83,14 @@ def _read_lengths(root: Path) -> tuple[dict[int, int], int]:
     return out, rows
 
 
+def _data_files(root: Path, info: dict) -> list[Path]:
+    """按 info.json 的 data_path 模板找数据文件；有的仓库转换后没删旧版文件，不能见 parquet 就读。"""
+    template = info.get("data_path")
+    if not template:
+        return sorted((root / "data").rglob("*.parquet"))
+    return sorted(root.glob(re.sub(r"\{[^}]*\}", "*", template)))
+
+
 def read_lerobot(root: Path) -> LoadResult:
     root = Path(root)
     info = json.loads((root / "meta" / "info.json").read_text(encoding="utf-8"))
@@ -100,7 +109,7 @@ def read_lerobot(root: Path) -> LoadResult:
     # 一条示范可能跨两个数据文件：先按 episode_index 收齐各文件里的行，再拼成一条
     parts: dict[int, list[tuple]] = {}
     failures: list[tuple[str, str]] = []
-    for f in sorted((root / "data").rglob("*.parquet")):
+    for f in _data_files(root, info):
         rel = f.relative_to(root).as_posix()
         try:
             t = pq.read_table(f)
