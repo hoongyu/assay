@@ -69,14 +69,17 @@ def _read_video_refs(root: Path, info: dict) -> dict[int, dict[str, VideoRef]]:
     return out
 
 
-def _read_lengths(root: Path) -> dict[int, int]:
-    """meta/episodes 里每条示范的帧数；只下了部分数据文件时，用它认出没读全的示范。"""
+def _read_lengths(root: Path) -> tuple[dict[int, int], int]:
+    """meta/episodes 里每条示范的帧数，和总行数。只下了部分数据文件时，用帧数认出没读全的示范；
+    行数多于不同编号的个数，说明 episode_index 重复，元数据是坏的。"""
     out: dict[int, int] = {}
+    rows = 0
     for f in sorted((root / "meta" / "episodes").rglob("*.parquet")):
         if {"episode_index", "length"} <= set(pq.read_schema(f).names):
             t = pq.read_table(f, columns=["episode_index", "length"])
+            rows += t.num_rows
             out.update(zip(t["episode_index"].to_pylist(), t["length"].to_pylist()))
-    return out
+    return out, rows
 
 
 def read_lerobot(root: Path) -> LoadResult:
@@ -88,8 +91,11 @@ def read_lerobot(root: Path) -> LoadResult:
     fps = float(info["fps"])
     feats = info.get("features", {})
     tasks = _read_tasks(root / "meta" / "tasks.parquet")
+    lengths, meta_rows = _read_lengths(root)
+    if meta_rows > len(lengths):
+        return LoadResult([], [("meta/episodes", f"episode_index 重复：元数据 {meta_rows} 行只有 {len(lengths)} 个不同编号，"
+                                                 "帧数和视频位置对不上示范，整份数据没法逐条检查")])
     videos = _read_video_refs(root, info)
-    lengths = _read_lengths(root)
 
     # 一条示范可能跨两个数据文件：先按 episode_index 收齐各文件里的行，再拼成一条
     parts: dict[int, list[tuple]] = {}

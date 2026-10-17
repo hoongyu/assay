@@ -81,3 +81,14 @@ def test_partly_downloaded_episode_is_a_failure(tmp_path):
     assert [e.state.shape[0] for e in res.episodes] == [60]
     (name, why), = res.failures
     assert name == "part/ep000001" and "20/90" in why
+
+
+def test_repeated_episode_index_in_metadata_is_a_dataset_failure(tmp_path):
+    import pyarrow.parquet as pq
+    root = make_lerobot_v3(tmp_path / "dup", [("pick", ramp6(60)), ("pick", ramp6(90))])
+    meta = root / "meta" / "episodes" / "chunk-000"
+    pq.write_table(pq.read_table(meta / "file-000.parquet"), meta / "file-001.parquet")  # 第二个文件又从 0 编号
+    res = read_lerobot(root)
+    assert res.episodes == []
+    (name, why), = res.failures
+    assert name == "meta/episodes" and "episode_index" in why and "重复" in why
