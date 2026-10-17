@@ -117,10 +117,30 @@ RoboMIND published 1,678 teleoperation episodes that its QA rejected, with the r
 - Real robots only: regrasp 99/159 = 62% (55% to 69%) with 72/866 = 8% of others flagged; unsmooth motion on test 21/115 = 18% (12% to 26%) with 10/339 = 3%. By robot, regrasp is weakest on the dual-arm tasks: 43/52 detected, but 53/252 = 21% of other-cause episodes flagged too (UR: 49/98 and 17/562).
 - Smoothness metrics did not work. On dev, counting stops, counting movement segments and jerk all scored below chance (AUC 0.31 to 0.45): episodes labeled unsmooth have fewer stops and segments than episodes rejected for other reasons. On test they were near chance (0.45 to 0.56). Duration as a whole was no better on dev (AUC 0.41), but its tail was: taking over 1.7 times the task median flagged 15% of unsmooth episodes and 6% of the others on dev, 14% and 4% on test. Other open-source tools have warned about smoothness metrics (hflow does not use smoothness to reject; an audit of SAL and TED found they mostly measure episode length); we measured it on real QA labels. So the unsmooth-motion rule only looks at duration; it flags none of the 444 successful test episodes.
 
+### Exam D: operator skill labels in robomimic
+
+[robomimic](https://robomimic.github.io/)'s MH datasets were recorded by six human teleoperators per task, 50 episodes each, rated better, okay or worse. Every episode completes the task (the last reward is 1 in 300/300 Square and 299/300 Can episodes), so the difference is motion quality and Assay can only say "doubt". Parameters were chosen on other datasets; this was the first run, nothing was tuned.
+
+| Task | Better | Okay | Worse |
+|---|---|---|---|
+| Square (300) | 2/100 = 2% (1% to 7%) | 10/100 = 10% (6% to 17%) | 33/100 = 33% (25% to 43%) |
+| Can (300) | 1/100 = 1% (0% to 5%) | 3/100 = 3% (1% to 8%) | 44/100 = 44% (35% to 54%) |
+
+Of the 93 flagged episodes, 77 come from the worse operators (83%, 74% to 89%); 123 of the 200 worse episodes are not flagged. The causes are mostly unsmooth motion, regrasp and extra motion. Aggregates: `results/exam_d_robomimic.json`.
+
+### Census: 30 public LeRobot datasets
+
+We ran the joint checks, unchanged, on 30 LeRobot v3 datasets from the Hugging Face Hub (18 of them electrical and industrial manipulation: plugs and sockets, switches, valves, buttons, cables, batteries, chargers, assembly; the four largest sampled to their first data file). 17,646 episodes took about 509 seconds in total on a laptop CPU, including start-up for each run.
+
+- Reject: 69, all shorter than one second (41 are 0.2 s), which the joint data alone confirms.
+- Doubt: 1,690 (9.6%). These datasets have no labels, so this is what a person would review; we have not spot-checked them yet.
+- Three datasets have repeated `episode_index` values in their metadata. One DROID conversion restarts the numbering in each of its 2,048 metadata files, so it cannot be checked episode by episode; the other two lose 8 episodes.
+- The census found three bugs in Assay's LeRobot reader (an episode split across two data files, stale v2.1 files left in a converted repository, repeated metadata indices). They are fixed and the numbers above are from the rerun. Per dataset: `results/census_2026-10-17.json`.
+
 ### What we can and cannot claim
 
 - We can say: on real data, mostly from real robots (exam C is 1,310 real and 368 simulated episodes), Assay finds bad episodes, says why, and every number has a denominator.
-- We cannot say that policies trained on Assay-filtered data perform better. For that we only cite published work (CUPID, CoRL 2025; DemInf, RSS 2025) until a pilot with a robot or a collection site.
+- We cannot say that policies trained on Assay-filtered data perform better. For that we only cite published work (CUPID, CoRL 2025; DemInf, RSS 2025). A downstream experiment on robomimic is ready (`notebooks/colab_downstream_robomimic.ipynb`: all, Assay-filtered, random drop of the same size, worse operators removed; BC-RNN, 3 seeds; hypotheses written down before running) but has not been run yet.
 - False positives remain: neatly stacked cubes and long occlusions fool the video models. Of the 18 RoboVAD episodes both video models rejected, 8 have no anomaly label; we have not watched them, so we cannot tell whether the models or the labels are wrong.
 - Motion quality is only partly covered. In RoboMIND, the big classes are unsmooth motion, regrasp, unwanted contact and collision before grasp; the task itself was usually completed. Assay has a rule aimed at 954 of the 1,678 rejections (57%), but measured detection is far apart: regrasp 61%, unsmooth motion 14%. 656 (39%) it cannot check: 620 need vision (unwanted contact, collision before grasp, object displaced and two smaller classes), and 36 are "too fast", where no rule worked.
 
@@ -154,7 +174,7 @@ uv sync
 uv run assay check <dataset dir> --out report.html --json findings.json
 ```
 
-It reads LeRobot v3, RoboMIND HDF5 and RoboVAD directories. Without `--judges`, only the joint checks run, on CPU. `--lang en` switches the report and the terminal output to English.
+It reads LeRobot v3, RoboMIND HDF5 and RoboVAD directories, and robomimic HDF5 files. Without `--judges`, only the joint checks run, on CPU. `--lang en` switches the report and the terminal output to English.
 
 The video judges need a GPU: run the notebooks in `notebooks/` on Colab, put the cache files they produce in `cache/`, then:
 
@@ -187,14 +207,15 @@ uv run pytest
 
 ```
 src/assay/
-  ingest/       read LeRobot v3, RoboMIND, RoboVAD
+  ingest/       read LeRobot v3, RoboMIND, RoboVAD, robomimic
   checks/       joint and metadata rules; video.py holds the video rules
   judges/       video judge adapters (Robometer, TOPReward) and their cache
   diagnose.py   merge findings into a verdict
   report.py     offline HTML report; keyframes.py adds keyframes
   summary.py    batch summary written by Nemotron, numbers filled in by Assay
   eval/         the three exams
-notebooks/      Colab notebooks for the video judges
+notebooks/      Colab notebooks for the video judges and the downstream experiment
+space/          Hugging Face Space demo (Gradio, joint checks on CPU)
 configs/        datasets, splits and licenses used by the exams
 results/        exam results (JSON, aggregates only)
 docs/           design docs, plans, background notes (Chinese)
@@ -222,3 +243,5 @@ No data ships with the repository: `data/`, `cache/` and `reports/` are not comm
 | `lerobot/svla_so100_sorting`, `lerobot/svla_so101_pickplace`, `CoRL2026-CSI/SO101-DualArm-teleop_fold_towel_100epi` | Exam A test | Apache-2.0 |
 | RoboVAD (Zenodo) | Exam B; its train split also set the regrasp parameters and the progress-drop threshold | Stated three ways (CC BY-NC-ND 4.0, CC BY 4.0, CC BY-SA 4.0); we follow the strictest, CC BY-NC-ND 4.0: no derivatives, no commercial use, no redistribution. Only aggregate results are in this repository |
 | RoboMIND (Hugging Face) | Exam C: the 1,678 episodes of `failure_data/`, joint data only (253 MB locally; one file over the size cap is skipped, so 1,677 are read) | Apache-2.0; downloading requires agreeing to share contact information |
+| robomimic v1.5 MH, low-dim (Hugging Face) | Exam D and the downstream notebook | MIT |
+| 30 LeRobot datasets listed in `results/census_2026-10-17.json` | Census, joint data only | Apache-2.0 (23), CC BY 4.0 (4), MIT (3) |
