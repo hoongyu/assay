@@ -102,3 +102,14 @@ def test_only_files_matching_data_path_template_are_read(tmp_path):
     res = read_lerobot(root)
     assert res.failures == []
     assert [e.state.shape[0] for e in res.episodes] == [60]
+
+
+def test_a_few_repeated_indices_skip_only_those_episodes(tmp_path):
+    import pyarrow.parquet as pq
+    root = make_lerobot_v3(tmp_path / "few", [("pick", ramp6(60)), ("pick", ramp6(90)), ("pick", ramp6(70))])
+    meta = root / "meta" / "episodes" / "chunk-000"
+    pq.write_table(pq.read_table(meta / "file-000.parquet").slice(1, 1), meta / "file-001.parquet")  # 只有 1 号重复
+    res = read_lerobot(root)
+    assert [e.id for e in res.episodes] == ["few/ep000000", "few/ep000002"]
+    (name, why), = res.failures
+    assert name == "few/ep000001" and "重复" in why

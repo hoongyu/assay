@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import collections
 import json
 import re
 from pathlib import Path
@@ -70,17 +71,17 @@ def _read_video_refs(root: Path, info: dict) -> dict[int, dict[str, VideoRef]]:
     return out
 
 
-def _read_lengths(root: Path) -> tuple[dict[int, int], int]:
-    """meta/episodes 里每条示范的帧数，和总行数。只下了部分数据文件时，用帧数认出没读全的示范；
-    行数多于不同编号的个数，说明 episode_index 重复，元数据是坏的。"""
+def _read_lengths(root: Path) -> tuple[dict[int, int], collections.Counter]:
+    """meta/episodes 里每条示范的帧数，和每个编号出现的次数。只下了部分数据文件时，用帧数认出没读全的示范；
+    同一个 episode_index 出现不止一次，这条的帧数和视频位置就不确定。"""
     out: dict[int, int] = {}
-    rows = 0
+    seen: collections.Counter = collections.Counter()
     for f in sorted((root / "meta" / "episodes").rglob("*.parquet")):
         if {"episode_index", "length"} <= set(pq.read_schema(f).names):
             t = pq.read_table(f, columns=["episode_index", "length"])
-            rows += t.num_rows
+            seen.update(t["episode_index"].to_pylist())
             out.update(zip(t["episode_index"].to_pylist(), t["length"].to_pylist()))
-    return out, rows
+    return out, seen
 
 
 def _data_files(root: Path, info: dict) -> list[Path]:
@@ -100,9 +101,10 @@ def read_lerobot(root: Path) -> LoadResult:
     fps = float(info["fps"])
     feats = info.get("features", {})
     tasks = _read_tasks(root / "meta" / "tasks.parquet")
-    lengths, meta_rows = _read_lengths(root)
-    if meta_rows > len(lengths):
-        return LoadResult([], [("meta/episodes", f"episode_index 重复：元数据 {meta_rows} 行只有 {len(lengths)} 个不同编号，"
+    lengths, seen = _read_lengths(root)
+    repeated = {e for e, k in seen.items() if k > 1}
+    if len(repeated) * 2 > len(seen):  # 大面积重复（比如每个元数据文件都从 0 编号），整份没法用
+        return LoadResult([], [("meta/episodes", f"episode_index 重复：元数据 {sum(seen.values())} 行只有 {len(seen)} 个不同编号，"
                                                  "帧数和视频位置对不上示范，整份数据没法逐条检查")])
     videos = _read_video_refs(root, info)
 
@@ -134,6 +136,9 @@ def read_lerobot(root: Path) -> LoadResult:
     episodes: list[Episode] = []
     for e in sorted(parts):
         ep_id = f"{root.name}/ep{e:06d}"
+        if e in repeated:
+            failures.append((ep_id, f"元数据里编号 {e} 重复出现 {seen[e]} 次，帧数和视频位置不确定，没检查"))
+            continue
         frames = np.concatenate([p[0] for p in parts[e]])
         order = np.argsort(frames, kind="stable")
         state = np.concatenate([p[3] for p in parts[e]])[order]
