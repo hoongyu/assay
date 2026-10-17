@@ -1,0 +1,2 @@
+huggingface_hub>=0.30
+assay @ git+https://github.com/hoongyu/assay.git@main

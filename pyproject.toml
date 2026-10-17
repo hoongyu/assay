@@ -25,4 +25,4 @@ packages = ["src/assay"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["tests"]
+pythonpath = ["tests", "space"]
