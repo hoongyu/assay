@@ -53,3 +53,31 @@ def test_broken_data_file_is_recorded_not_raised(ds):
     assert len(res.episodes) == 2
     assert len(res.failures) == 1
     assert "file-001" in res.failures[0][0]
+
+
+def _split_data_file(root, cut):
+    """把唯一的数据文件在第 cut 行切成两个文件，模拟一条示范跨文件。"""
+    import pyarrow.parquet as pq
+    f0 = root / "data" / "chunk-000" / "file-000.parquet"
+    t = pq.read_table(f0)
+    pq.write_table(t.slice(0, cut), f0)
+    pq.write_table(t.slice(cut), root / "data" / "chunk-000" / "file-001.parquet")
+
+
+def test_episode_split_across_files_is_joined(tmp_path):
+    root = make_lerobot_v3(tmp_path / "split", [("pick", ramp6(60)), ("pick", ramp6(90))])
+    _split_data_file(root, 80)  # 第 2 条示范的前 20 帧在 file-000，后 70 帧在 file-001
+    res = read_lerobot(root)
+    assert res.failures == []
+    assert [e.state.shape[0] for e in res.episodes] == [60, 90]
+    np.testing.assert_allclose(res.episodes[1].state[:, 0], np.linspace(0, 1, 90), atol=1e-6)
+
+
+def test_partly_downloaded_episode_is_a_failure(tmp_path):
+    root = make_lerobot_v3(tmp_path / "part", [("pick", ramp6(60)), ("pick", ramp6(90))])
+    _split_data_file(root, 80)
+    (root / "data" / "chunk-000" / "file-001.parquet").unlink()  # 只下了第一个数据文件
+    res = read_lerobot(root)
+    assert [e.state.shape[0] for e in res.episodes] == [60]
+    (name, why), = res.failures
+    assert name == "part/ep000001" and "20/90" in why

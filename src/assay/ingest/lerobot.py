@@ -69,6 +69,16 @@ def _read_video_refs(root: Path, info: dict) -> dict[int, dict[str, VideoRef]]:
     return out
 
 
+def _read_lengths(root: Path) -> dict[int, int]:
+    """meta/episodes 里每条示范的帧数；只下了部分数据文件时，用它认出没读全的示范。"""
+    out: dict[int, int] = {}
+    for f in sorted((root / "meta" / "episodes").rglob("*.parquet")):
+        if {"episode_index", "length"} <= set(pq.read_schema(f).names):
+            t = pq.read_table(f, columns=["episode_index", "length"])
+            out.update(zip(t["episode_index"].to_pylist(), t["length"].to_pylist()))
+    return out
+
+
 def read_lerobot(root: Path) -> LoadResult:
     root = Path(root)
     info = json.loads((root / "meta" / "info.json").read_text(encoding="utf-8"))
@@ -79,8 +89,10 @@ def read_lerobot(root: Path) -> LoadResult:
     feats = info.get("features", {})
     tasks = _read_tasks(root / "meta" / "tasks.parquet")
     videos = _read_video_refs(root, info)
+    lengths = _read_lengths(root)
 
-    episodes: list[Episode] = []
+    # 一条示范可能跨两个数据文件：先按 episode_index 收齐各文件里的行，再拼成一条
+    parts: dict[int, list[tuple]] = {}
     failures: list[tuple[str, str]] = []
     for f in sorted((root / "data").rglob("*.parquet")):
         rel = f.relative_to(root).as_posix()
@@ -97,26 +109,44 @@ def read_lerobot(root: Path) -> LoadResult:
         except Exception as exc:  # 一个文件坏了不中断整批
             failures.append((rel, f"读不了：{exc}"))
             continue
-        names = _names(feats.get(STATE_KEY, {}), state.shape[1])
-        gripper = next((i for i, n in enumerate(names) if "gripper" in n.lower()), None)
         for e in np.unique(ep_idx):
             rows = np.flatnonzero(ep_idx == e)
-            rows = rows[np.argsort(frame_idx[rows], kind="stable")]
-            task = tasks.get(int(task_idx[rows[0]]), "") if task_idx is not None else ""
-            episodes.append(
-                Episode(
-                    id=f"{root.name}/ep{int(e):06d}",
-                    source="lerobot",
-                    task=task,
-                    fps=fps,
-                    state=state[rows],
-                    action=action[rows] if action is not None else None,
-                    timestamps=ts[rows] - ts[rows[0]],
-                    state_names=names,
-                    gripper_index=gripper,
-                    cameras=videos.get(int(e), {}),
-                    meta={"dataset": root.name, "episode_index": int(e), "robot_type": info.get("robot_type")},
-                )
+            parts.setdefault(int(e), []).append((
+                frame_idx[rows], ts[rows], task_idx[rows] if task_idx is not None else None,
+                state[rows], action[rows] if action is not None else None,
+            ))
+
+    episodes: list[Episode] = []
+    for e in sorted(parts):
+        ep_id = f"{root.name}/ep{e:06d}"
+        frames = np.concatenate([p[0] for p in parts[e]])
+        order = np.argsort(frames, kind="stable")
+        state = np.concatenate([p[3] for p in parts[e]])[order]
+        expected = lengths.get(e)
+        if expected is not None and len(state) < expected:
+            failures.append((ep_id, f"只读到 {len(state)}/{expected} 帧，其余在没下载的数据文件里"))
+            continue
+        ts = np.concatenate([p[1] for p in parts[e]])[order]
+        action = (np.concatenate([p[4] for p in parts[e]])[order]
+                  if all(p[4] is not None for p in parts[e]) else None)
+        first_task = parts[e][0][2]
+        task = tasks.get(int(first_task[0]), "") if first_task is not None else ""
+        names = _names(feats.get(STATE_KEY, {}), state.shape[1])
+        gripper = next((i for i, n in enumerate(names) if "gripper" in n.lower()), None)
+        episodes.append(
+            Episode(
+                id=ep_id,
+                source="lerobot",
+                task=task,
+                fps=fps,
+                state=state,
+                action=action,
+                timestamps=ts - ts[0],
+                state_names=names,
+                gripper_index=gripper,
+                cameras=videos.get(e, {}),
+                meta={"dataset": root.name, "episode_index": e, "robot_type": info.get("robot_type")},
             )
+        )
     episodes.sort(key=lambda ep: ep.id)
     return LoadResult(episodes, failures)
