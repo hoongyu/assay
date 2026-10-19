@@ -1,0 +1,111 @@
+{
+ "date": "2026-10-20 00:04",
+ "base_url": "https://api.tokenfactory.nebius.com/v1/",
+ "model": "nvidia/Nemotron-3.5-Super-VL",
+ "clip": "fold_towel_ep2_regrasp_11s-15.5s.mp4",
+ "question": "This is a robot teleoperation recording of two arms folding a towel. Look at the right gripper (on the right side of the image) between 1.5 s and 3.0 s of the clip. Does it lose its grip on the towel and grasp the towel again? Answer with JSON only, no other text: {\"regrasp\": \"yes\" | \"no\" | \"unclear\", \"gripper_visible\": \"yes\" | \"no\"}",
+ "calls": {
+  "text_only": {
+   "status": 200,
+   "seconds": 0.9,
+   "usage": {
+    "completion_tokens": 2,
+    "prompt_tokens": 23,
+    "total_tokens": 25,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": null,
+     "audio_tokens": null,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": null,
+     "cached_tokens": 0,
+     "created_cache_tokens": 0,
+     "multimodal_tokens": null
+    }
+   },
+   "finish_reason": "stop",
+   "answer": "ready",
+   "request_kb": 0.2
+  },
+  "one_image": {
+   "status": 200,
+   "seconds": 0.8,
+   "usage": {
+    "completion_tokens": 18,
+    "prompt_tokens": 401,
+    "total_tokens": 419,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": null,
+     "audio_tokens": null,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": null,
+     "cached_tokens": 0,
+     "created_cache_tokens": 0,
+     "multimodal_tokens": {
+      "image": 287
+     }
+    }
+   },
+   "finish_reason": "stop",
+   "answer": "{\"regrasp\": \"no\", \"gripper_visible\": \"yes\"}",
+   "request_kb": 16.0
+  },
+  "eight_images": {
+   "status": 200,
+   "seconds": 0.9,
+   "usage": {
+    "completion_tokens": 18,
+    "prompt_tokens": 2450,
+    "total_tokens": 2468,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": null,
+     "audio_tokens": null,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": null,
+     "cached_tokens": 0,
+     "created_cache_tokens": 0,
+     "multimodal_tokens": {
+      "image": 2296
+     }
+    }
+   },
+   "finish_reason": "stop",
+   "answer": "{\"regrasp\": \"no\", \"gripper_visible\": \"yes\"}",
+   "request_kb": 123.3
+  },
+  "video_mp4": {
+   "status": 200,
+   "seconds": 1.1,
+   "usage": {
+    "completion_tokens": 18,
+    "prompt_tokens": 881,
+    "total_tokens": 899,
+    "completion_tokens_details": {
+     "accepted_prediction_tokens": null,
+     "audio_tokens": null,
+     "reasoning_tokens": 0,
+     "rejected_prediction_tokens": null
+    },
+    "prompt_tokens_details": {
+     "audio_tokens": null,
+     "cached_tokens": 0,
+     "created_cache_tokens": 0,
+     "multimodal_tokens": {
+      "video": 767
+     }
+    }
+   },
+   "finish_reason": "stop",
+   "answer": "{\"regrasp\": \"yes\", \"gripper_visible\": \"yes\"}",
+   "request_kb": 168.1
+  }
+ }
+}
