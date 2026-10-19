@@ -22,7 +22,7 @@ def load(path: str | Path) -> LoadResult:
     if path.is_dir() and (any(path.rglob("*.hdf5")) or any(path.rglob("*.h5"))):
         return read_robomind(path)
     raise ValueError(
-        f"认不出 {path} 的格式：既不是 LeRobot v3（没有 meta/info.json）、"
+        f"认不出 {path} 的格式：既不是 LeRobot v2.x 或 v3（没有 meta/info.json）、"
         "RoboVAD（没有 annotations.json 和 proprioception/），也没有 HDF5 文件"
     )
 

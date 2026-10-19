@@ -36,7 +36,7 @@ CAUSE_EN = {
 
 @dataclass(frozen=True)
 class VideoRef:
-    """一路视频在文件里的位置；LeRobot v3 多条示范共用一个 mp4。"""
+    """一路视频在文件里的位置；LeRobot v3 多条示范共用一个 mp4，v2.x 每条示范一个（to_s 为 None：放到结尾）。"""
 
     path: Path
     from_s: float

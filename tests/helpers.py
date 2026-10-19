@@ -128,6 +128,50 @@ def make_lerobot_v3(root: Path, episodes: list[tuple[str, np.ndarray]], fps: int
     return root
 
 
+def make_lerobot_v2(root: Path, episodes: list[tuple[str, np.ndarray]], fps: int = 30, version: str = "v2.1") -> Path:
+    """在 root 下造一个最小的 LeRobot v2.x 数据集：每条示范一个 parquet，元数据是 jsonl。"""
+    (root / "meta").mkdir(parents=True)
+    (root / "data" / "chunk-000").mkdir(parents=True)
+    info = {
+        "codebase_version": version,
+        "robot_type": "so101_follower",
+        "fps": fps,
+        "chunks_size": 1000,
+        "total_episodes": len(episodes),
+        "data_path": "data/chunk-{episode_chunk:03d}/episode_{episode_index:06d}.parquet",
+        "video_path": "videos/chunk-{episode_chunk:03d}/{video_key}/episode_{episode_index:06d}.mp4",
+        "features": {
+            "observation.state": {"dtype": "float32", "shape": [6], "names": SO101_NAMES},
+            "action": {"dtype": "float32", "shape": [6], "names": SO101_NAMES},
+            "observation.images.front": {"dtype": "video", "shape": [480, 640, 3]},
+        },
+    }
+    (root / "meta" / "info.json").write_text(json.dumps(info), encoding="utf-8")
+    tasks = sorted({t for t, _ in episodes})
+    (root / "meta" / "tasks.jsonl").write_text(
+        "".join(json.dumps({"task_index": i, "task": t}) + "\n" for i, t in enumerate(tasks)), encoding="utf-8")
+    (root / "meta" / "episodes.jsonl").write_text(
+        "".join(json.dumps({"episode_index": ei, "tasks": [t], "length": len(s)}) + "\n"
+                for ei, (t, s) in enumerate(episodes)), encoding="utf-8")
+    index = 0
+    for ei, (task, state) in enumerate(episodes):
+        n = len(state)
+        pq.write_table(
+            pa.table({
+                "episode_index": [ei] * n,
+                "frame_index": list(range(n)),
+                "timestamp": (np.arange(n) / fps).tolist(),
+                "task_index": [tasks.index(task)] * n,
+                "index": list(range(index, index + n)),
+                "observation.state": _matrix_column(state),
+                "action": _matrix_column(state),
+            }),
+            root / "data" / "chunk-000" / f"episode_{ei:06d}.parquet",
+        )
+        index += n
+    return root
+
+
 # ---- RoboMIND ----
 
 
