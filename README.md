@@ -140,7 +140,7 @@ We ran the joint checks, unchanged, on 30 LeRobot v3 datasets from the Hugging F
 ### What we can and cannot claim
 
 - We can say: on real data, mostly from real robots (exam C is 1,310 real and 368 simulated episodes), Assay finds bad episodes, says why, and every number has a denominator.
-- We cannot say that policies trained on Assay-filtered data perform better. For that we only cite published work (CUPID, CoRL 2025; DemInf, RSS 2025). A downstream experiment on robomimic is ready (`notebooks/colab_downstream_robomimic.ipynb`: all, Assay-filtered, random drop of the same size, worse operators removed; BC-RNN, 3 seeds; hypotheses written down before running) but has not been run yet.
+- We cannot say that policies trained on Assay-filtered data perform better. Our downstream experiment on robomimic Square MH (BC-RNN, 3 seeds, 600 epochs, 50 rollouts per evaluation; hypotheses written down before running; `experiments/downstream_robomimic/`) gives a split answer. Removing the 45 episodes Assay flags beats removing 45 random ones: 36% vs 21% success at epoch 600 (150 rollouts each), higher in all 3 seeds, though not significant counted per seed. It does not beat keeping all 300: 36% vs 39%, within noise; removing the 100 episodes robomimic labels worse does not either (34%). Success was still rising at epoch 600. For a gain from filtering we still only cite published work (CUPID, CoRL 2025; DemInf, RSS 2025).
 - False positives remain: neatly stacked cubes and long occlusions fool the video models. Of the 18 RoboVAD episodes both video models rejected, 8 have no anomaly label; we have not watched them, so we cannot tell whether the models or the labels are wrong.
 - Motion quality is only partly covered. In RoboMIND, the big classes are unsmooth motion, regrasp, unwanted contact and collision before grasp; the task itself was usually completed. Assay has a rule aimed at 954 of the 1,678 rejections (57%), but measured detection is far apart: regrasp 61%, unsmooth motion 14%. 656 (39%) it cannot check: 620 need vision (unwanted contact, collision before grasp, object displaced and two smaller classes), and 36 are "too fast", where no rule worked.
 
@@ -215,6 +215,7 @@ src/assay/
   summary.py    batch summary written by Nemotron, numbers filled in by Assay
   eval/         the three exams
 notebooks/      Colab notebooks for the video judges and the downstream experiment
+experiments/    scripts and notes for the downstream experiment as it was run
 space/          Hugging Face Space demo (Gradio, joint checks on CPU)
 configs/        datasets, splits and licenses used by the exams
 results/        exam results (JSON, aggregates only)

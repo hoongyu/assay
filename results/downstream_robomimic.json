@@ -1,0 +1,387 @@
+{
+ "date": "2026-10-19",
+ "question": "用甄数筛过的示范训练，策略会不会更好",
+ "data": "robomimic v1.5 Square MH low_dim（MIT），300 条真人遥操作示范，6 名操作员各 50 条，按水平分好、中、差各 100 条；md5 fc24729093cdfa278e665edb576b3a51",
+ "conditions": {
+  "exp_all": "全部 300 条",
+  "exp_assay": "去掉甄数标出的 45 条（assay check --no-frames，关节规则判存疑或作废的；甄数 4335bd3），剩 255 条",
+  "exp_random": "每个种子随机去掉同样 45 条（numpy default_rng(种子)），剩 255 条",
+  "exp_oracle": "去掉 robomimic 标签里水平差的 100 条（mask/okay_better），剩 200 条，作参照"
+ },
+ "hypotheses_preregistered": [
+  "assay 组的成功率不低于 all 组",
+  "assay 组的成功率高于 random 组"
+ ],
+ "method": "robomimic v0.5.0 的 BC-RNN（examples/train_bc_rnn.py 的 robosuite_hyperparameters，低维观测，GMM），robosuite 1.5.2，MuJoCo 3.3.7；每组 3 个种子（1、2、3），每次训 600 轮、每轮 100 步、批量 100；每 100 轮在仿真里评一次，每次 50 个回合、每回合最多 400 步，成功即停；不做验证集，不存模型。Colab 高内存 T4（8 个 vCPU），4 个进程并行。",
+ "metric": "第 600 轮（最后一次评估）的成功率；3 个种子合并为 150 个回合，给 Wilson 95% 区间。事先定的口径另报 3 个种子的均值和标准差，以及每次训练里最好那次评估的均值。",
+ "summary": {
+  "exp_all": {
+   "seeds": [
+    1,
+    2,
+    3
+   ],
+   "n_demos": [
+    300,
+    300,
+    300
+   ],
+   "last_epoch": [
+    600,
+    600,
+    600
+   ],
+   "last": [
+    0.44,
+    0.34,
+    0.4
+   ],
+   "best": [
+    0.44,
+    0.34,
+    0.44
+   ],
+   "last_mean": 0.393,
+   "last_sd": 0.041,
+   "best_mean": 0.407,
+   "best_sd": 0.047,
+   "last_pooled": "59/150",
+   "last_pooled_rate": 0.393,
+   "last_wilson95": [
+    0.319,
+    0.473
+   ],
+   "curve_mean": {
+    "100": 0.0,
+    "200": 0.0,
+    "300": 0.087,
+    "400": 0.333,
+    "500": 0.307,
+    "600": 0.393
+   },
+   "gpu_minutes": 277.7
+  },
+  "exp_assay": {
+   "seeds": [
+    1,
+    2,
+    3
+   ],
+   "n_demos": [
+    255,
+    255,
+    255
+   ],
+   "last_epoch": [
+    600,
+    600,
+    600
+   ],
+   "last": [
+    0.52,
+    0.24,
+    0.32
+   ],
+   "best": [
+    0.52,
+    0.34,
+    0.32
+   ],
+   "last_mean": 0.36,
+   "last_sd": 0.118,
+   "best_mean": 0.393,
+   "best_sd": 0.09,
+   "last_pooled": "54/150",
+   "last_pooled_rate": 0.36,
+   "last_wilson95": [
+    0.288,
+    0.439
+   ],
+   "curve_mean": {
+    "100": 0.0,
+    "200": 0.013,
+    "300": 0.16,
+    "400": 0.287,
+    "500": 0.38,
+    "600": 0.36
+   },
+   "gpu_minutes": 280.4
+  },
+  "exp_random": {
+   "seeds": [
+    1,
+    2,
+    3
+   ],
+   "n_demos": [
+    255,
+    255,
+    255
+   ],
+   "last_epoch": [
+    600,
+    600,
+    600
+   ],
+   "last": [
+    0.48,
+    0.04,
+    0.12
+   ],
+   "best": [
+    0.48,
+    0.1,
+    0.3
+   ],
+   "last_mean": 0.213,
+   "last_sd": 0.191,
+   "best_mean": 0.293,
+   "best_sd": 0.155,
+   "last_pooled": "32/150",
+   "last_pooled_rate": 0.213,
+   "last_wilson95": [
+    0.155,
+    0.286
+   ],
+   "curve_mean": {
+    "100": 0.0,
+    "200": 0.0,
+    "300": 0.04,
+    "400": 0.187,
+    "500": 0.207,
+    "600": 0.213
+   },
+   "gpu_minutes": 284.6
+  },
+  "exp_oracle": {
+   "seeds": [
+    1,
+    2,
+    3
+   ],
+   "n_demos": [
+    200,
+    200,
+    200
+   ],
+   "last_epoch": [
+    600,
+    600,
+    600
+   ],
+   "last": [
+    0.22,
+    0.5,
+    0.3
+   ],
+   "best": [
+    0.34,
+    0.54,
+    0.42
+   ],
+   "last_mean": 0.34,
+   "last_sd": 0.118,
+   "best_mean": 0.433,
+   "best_sd": 0.082,
+   "last_pooled": "51/150",
+   "last_pooled_rate": 0.34,
+   "last_wilson95": [
+    0.269,
+    0.419
+   ],
+   "curve_mean": {
+    "100": 0.0,
+    "200": 0.007,
+    "300": 0.133,
+    "400": 0.427,
+    "500": 0.327,
+    "600": 0.34
+   },
+   "gpu_minutes": 273.7
+  }
+ },
+ "runs": {
+  "square_exp_all_s1": {
+   "filter_key": "exp_all",
+   "seed": 1,
+   "n_demos": 300,
+   "success_by_epoch": {
+    "100": 0.0,
+    "200": 0.0,
+    "300": 0.08,
+    "400": 0.3,
+    "500": 0.36,
+    "600": 0.44
+   },
+   "wall_seconds": 5886.1
+  },
+  "square_exp_all_s2": {
+   "filter_key": "exp_all",
+   "seed": 2,
+   "n_demos": 300,
+   "success_by_epoch": {
+    "100": 0.0,
+    "200": 0.0,
+    "300": 0.14,
+    "400": 0.26,
+    "500": 0.18,
+    "600": 0.34
+   },
+   "wall_seconds": 5456.3
+  },
+  "square_exp_all_s3": {
+   "filter_key": "exp_all",
+   "seed": 3,
+   "n_demos": 300,
+   "success_by_epoch": {
+    "100": 0.0,
+    "200": 0.0,
+    "300": 0.04,
+    "400": 0.44,
+    "500": 0.38,
+    "600": 0.4
+   },
+   "wall_seconds": 5318.2
+  },
+  "square_exp_assay_s1": {
+   "filter_key": "exp_assay",
+   "seed": 1,
+   "n_demos": 255,
+   "success_by_epoch": {
+    "100": 0.0,
+    "200": 0.0,
+    "300": 0.08,
+    "400": 0.32,
+    "500": 0.48,
+    "600": 0.52
+   },
+   "wall_seconds": 5807.0
+  },
+  "square_exp_assay_s2": {
+   "filter_key": "exp_assay",
+   "seed": 2,
+   "n_demos": 255,
+   "success_by_epoch": {
+    "100": 0.0,
+    "200": 0.02,
+    "300": 0.3,
+    "400": 0.32,
+    "500": 0.34,
+    "600": 0.24
+   },
+   "wall_seconds": 5606.1
+  },
+  "square_exp_assay_s3": {
+   "filter_key": "exp_assay",
+   "seed": 3,
+   "n_demos": 255,
+   "success_by_epoch": {
+    "100": 0.0,
+    "200": 0.02,
+    "300": 0.1,
+    "400": 0.22,
+    "500": 0.32,
+    "600": 0.32
+   },
+   "wall_seconds": 5409.7
+  },
+  "square_exp_oracle_s1": {
+   "filter_key": "exp_oracle",
+   "seed": 1,
+   "n_demos": 200,
+   "success_by_epoch": {
+    "100": 0.0,
+    "200": 0.0,
+    "300": 0.04,
+    "400": 0.34,
+    "500": 0.24,
+    "600": 0.22
+   },
+   "wall_seconds": 5937.9
+  },
+  "square_exp_oracle_s2": {
+   "filter_key": "exp_oracle",
+   "seed": 2,
+   "n_demos": 200,
+   "success_by_epoch": {
+    "100": 0.0,
+    "200": 0.02,
+    "300": 0.2,
+    "400": 0.54,
+    "500": 0.32,
+    "600": 0.5
+   },
+   "wall_seconds": 5350.8
+  },
+  "square_exp_oracle_s3": {
+   "filter_key": "exp_oracle",
+   "seed": 3,
+   "n_demos": 200,
+   "success_by_epoch": {
+    "100": 0.0,
+    "200": 0.0,
+    "300": 0.16,
+    "400": 0.4,
+    "500": 0.42,
+    "600": 0.3
+   },
+   "wall_seconds": 5133.5
+  },
+  "square_exp_random_s1": {
+   "filter_key": "exp_random_s1",
+   "seed": 1,
+   "n_demos": 255,
+   "success_by_epoch": {
+    "100": 0.0,
+    "200": 0.0,
+    "300": 0.08,
+    "400": 0.34,
+    "500": 0.24,
+    "600": 0.48
+   },
+   "wall_seconds": 5880.2
+  },
+  "square_exp_random_s2": {
+   "filter_key": "exp_random_s2",
+   "seed": 2,
+   "n_demos": 255,
+   "success_by_epoch": {
+    "100": 0.0,
+    "200": 0.0,
+    "300": 0.0,
+    "400": 0.1,
+    "500": 0.08,
+    "600": 0.04
+   },
+   "wall_seconds": 5786.7
+  },
+  "square_exp_random_s3": {
+   "filter_key": "exp_random_s3",
+   "seed": 3,
+   "n_demos": 255,
+   "success_by_epoch": {
+    "100": 0.0,
+    "200": 0.0,
+    "300": 0.04,
+    "400": 0.12,
+    "500": 0.3,
+    "600": 0.12
+   },
+   "wall_seconds": 5409.1
+  }
+ },
+ "notes": [
+  "600 轮时各组成功率还在上升，没有收敛；robomimic 论文训 2,000 轮取最好的检查点，结论只对 600 轮成立。",
+  "同一种子重跑结果不同（GPU 计算和仿真起始状态有随机性）：第一次尝试在第 300 轮的读数与最终这次不同，单次 50 个回合的读数误差约 ±7 个百分点。",
+  "种子之间差别大：random 组 3 个种子在第 600 轮是 48%、4%、12%。按 450 个回合算 assay 和 random 的差别超出评估误差，按 3 个种子算不显著。",
+  "回放检查：数据集里人的原始动作在仿真里开环重演，15 条成功 12 条（better 10 条里 8 条，worse 5 条里 4 条），环境和数据对得上（数据集 robosuite 1.5.1，装的是 1.5.2）。",
+  "前两次尝试的 VM 在训练到第 350 至 400 轮时被 Colab 收回（本机进入待机、到内核的连接断开约 35 分钟后），结果作废，不计入；本文件只含第三次完整跑完的 12 次训练。"
+ ],
+ "compute": {
+  "gpu": "Colab T4（--high-mem）",
+  "rate_units_per_hour": 1.27,
+  "final_attempt_hours": 4.93,
+  "units_final_attempt": 6.04,
+  "units_total_incl_failed_attempts_and_probes": 10.0
+ }
+}
