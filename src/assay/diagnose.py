@@ -38,6 +38,7 @@ class Verdict:
     causes: list[Finding]
     not_checked: dict[str, str] = field(default_factory=dict)
     progress: Curve | None = None
+    reviews: list = field(default_factory=list)  # 视觉模型的复核结论（assay.review），不改判定
 
 
 def overlaps(a: tuple[float, float], b: tuple[float, float]) -> bool:

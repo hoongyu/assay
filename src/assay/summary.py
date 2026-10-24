@@ -300,24 +300,34 @@ class Truncated(Exception):
     """回答写到长度上限被截断了，不拿去核对。"""
 
 
-def token_factory_chat(api_key: str, base_url: str = BASE_URL, timeout: float = 120.0, thinking: bool = False) -> Chat:
-    """Nebius Token Factory 的 OpenAI 兼容接口，用标准库发请求。
+def token_factory_body(messages: list[dict], model: str, temperature: float = 0.2, max_tokens: int = 1024,
+                       thinking: bool = False) -> dict:
+    """Token Factory /chat/completions 的请求体。命令行和网页（Worker 里的同步 XHR）共用，参数只在这里定。
 
     推理默认关掉：Nemotron 3.5 Lightning 默认开推理（模型卡：chat_template_kwargs 的 enable_thinking），
     2026-10-05 在 Token Factory 上实测，推理过程以「Here's a thinking process」开头直接写进正文、没有 <think> 标签，
     每次六七千字符，写到 2,048 个词元的上限还没写出那段话。"""
+    return {"model": model, "messages": messages, "temperature": temperature, "max_tokens": max_tokens,
+            "chat_template_kwargs": {"enable_thinking": thinking}}
+
+
+def token_factory_text(data: dict) -> str:
+    """从回答的 JSON 里取正文；写到长度上限被截断的不收。"""
+    choice = data["choices"][0]
+    if choice.get("finish_reason") == "length":
+        raise Truncated("回答写到长度上限被截断了")
+    return choice["message"].get("content") or ""
+
+
+def token_factory_chat(api_key: str, base_url: str = BASE_URL, timeout: float = 120.0, **opts) -> Chat:
+    """Nebius Token Factory 的 OpenAI 兼容接口，用标准库发请求；opts 交给 token_factory_body。"""
 
     def chat(messages: list[dict], model: str) -> str:
-        body = json.dumps({"model": model, "messages": messages, "temperature": 0.2, "max_tokens": 1024,
-                           "chat_template_kwargs": {"enable_thinking": thinking}}).encode("utf-8")
+        body = json.dumps(token_factory_body(messages, model, **opts)).encode("utf-8")
         req = urllib.request.Request(base_url.rstrip("/") + "/chat/completions", data=body,
                                      headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=timeout) as r:
-            data = json.loads(r.read().decode("utf-8"))
-        choice = data["choices"][0]
-        if choice.get("finish_reason") == "length":
-            raise Truncated("回答写到长度上限被截断了")
-        return choice["message"].get("content") or ""
+            return token_factory_text(json.loads(r.read().decode("utf-8")))
 
     return chat
 

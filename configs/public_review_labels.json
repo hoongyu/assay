@@ -1,0 +1,240 @@
+{
+ "date": "2026-10-05 (reviewed), 2026-10-24 (written down)",
+ "source": "README 'Bad episodes hidden in public demonstration datasets'; reproduced with assay check --judges robometer,topreward --cache cache (fold_towel with --camera observation.images.left_top): 6 reject, 33 doubt",
+ "labels": {
+  "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000000": {
+   "verdict": "doubt",
+   "human": "real",
+   "how": "metadata",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only"
+  },
+  "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000002": {
+   "verdict": "doubt",
+   "human": "real",
+   "how": "video",
+   "note": "right gripper loses the towel corner and grasps again (regrasp)"
+  },
+  "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000003": {
+   "verdict": "doubt",
+   "human": "real",
+   "how": "metadata",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only"
+  },
+  "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000007": {
+   "verdict": "doubt",
+   "human": "real",
+   "how": "metadata",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only"
+  },
+  "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000034": {
+   "verdict": "doubt",
+   "human": "real",
+   "how": "metadata",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only"
+  },
+  "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000037": {
+   "verdict": "doubt",
+   "human": "real",
+   "how": "metadata",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only"
+  },
+  "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000038": {
+   "verdict": "doubt",
+   "human": "real",
+   "how": "metadata",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only"
+  },
+  "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000061": {
+   "verdict": "doubt",
+   "human": "real",
+   "how": "metadata",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only"
+  },
+  "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000062": {
+   "verdict": "doubt",
+   "human": "false_positive",
+   "how": "video",
+   "note": "towel folded fine, low progress from the video judge"
+  },
+  "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000067": {
+   "verdict": "doubt",
+   "human": "real",
+   "how": "metadata",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only"
+  },
+  "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000076": {
+   "verdict": "doubt",
+   "human": "false_positive",
+   "how": "video",
+   "note": "towel folded fine, low progress from the video judge"
+  },
+  "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000083": {
+   "verdict": "doubt",
+   "human": "real",
+   "how": "metadata",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only"
+  },
+  "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000099": {
+   "verdict": "doubt",
+   "human": "not_checked",
+   "how": "",
+   "note": "no local video"
+  },
+  "lerobot__svla_so100_pickplace/ep000000": {
+   "verdict": "doubt",
+   "human": "false_positive",
+   "how": "video",
+   "note": "pick-and-place succeeded, scored slightly below the batch"
+  },
+  "lerobot__svla_so100_pickplace/ep000010": {
+   "verdict": "doubt",
+   "human": "real",
+   "how": "video",
+   "note": "recording stops while the arm is still returning"
+  },
+  "lerobot__svla_so100_pickplace/ep000031": {
+   "verdict": "doubt",
+   "human": "not_checked",
+   "how": "",
+   "note": "gripper blocks the camera"
+  },
+  "lerobot__svla_so100_pickplace/ep000033": {
+   "verdict": "doubt",
+   "human": "false_positive",
+   "how": "video",
+   "note": "pick-and-place succeeded, scored slightly below the batch"
+  },
+  "lerobot__svla_so100_pickplace/ep000039": {
+   "verdict": "doubt",
+   "human": "false_positive",
+   "how": "video",
+   "note": "pick-and-place succeeded, scored slightly below the batch"
+  },
+  "lerobot__svla_so100_pickplace/ep000040": {
+   "verdict": "doubt",
+   "human": "false_positive",
+   "how": "video",
+   "note": "pick-and-place succeeded, scored slightly below the batch"
+  },
+  "lerobot__svla_so100_pickplace/ep000047": {
+   "verdict": "doubt",
+   "human": "false_positive",
+   "how": "video",
+   "note": "pick-and-place succeeded, scored slightly below the batch"
+  },
+  "lerobot__svla_so100_sorting/ep000008": {
+   "verdict": "reject",
+   "human": "real",
+   "how": "joints",
+   "note": "arm never moves (joint data), the video judge agrees"
+  },
+  "lerobot__svla_so100_sorting/ep000021": {
+   "verdict": "doubt",
+   "human": "not_checked",
+   "how": "",
+   "note": "no local video"
+  },
+  "lerobot__svla_so100_sorting/ep000023": {
+   "verdict": "doubt",
+   "human": "real",
+   "how": "joints",
+   "note": "arm never moves (joint data only)"
+  },
+  "lerobot__svla_so100_sorting/ep000030": {
+   "verdict": "doubt",
+   "human": "not_checked",
+   "how": "",
+   "note": "no local video"
+  },
+  "lerobot__svla_so100_sorting/ep000031": {
+   "verdict": "doubt",
+   "human": "not_checked",
+   "how": "",
+   "note": "no local video"
+  },
+  "lerobot__svla_so100_stacking/ep000015": {
+   "verdict": "doubt",
+   "human": "false_positive",
+   "how": "video",
+   "note": "stacking fine: cubes stacked so neatly the lower one is hidden, or the arm covers the cubes for a long time"
+  },
+  "lerobot__svla_so100_stacking/ep000020": {
+   "verdict": "reject",
+   "human": "real",
+   "how": "video",
+   "note": "recording shorter than one second"
+  },
+  "lerobot__svla_so100_stacking/ep000025": {
+   "verdict": "doubt",
+   "human": "false_positive",
+   "how": "video",
+   "note": "stacking fine: cubes stacked so neatly the lower one is hidden, or the arm covers the cubes for a long time"
+  },
+  "lerobot__svla_so100_stacking/ep000027": {
+   "verdict": "doubt",
+   "human": "false_positive",
+   "how": "video",
+   "note": "stacking fine: cubes stacked so neatly the lower one is hidden, or the arm covers the cubes for a long time"
+  },
+  "lerobot__svla_so100_stacking/ep000028": {
+   "verdict": "doubt",
+   "human": "false_positive",
+   "how": "video",
+   "note": "stacking fine: cubes stacked so neatly the lower one is hidden, or the arm covers the cubes for a long time"
+  },
+  "lerobot__svla_so100_stacking/ep000037": {
+   "verdict": "reject",
+   "human": "real",
+   "how": "video",
+   "note": "recording shorter than one second"
+  },
+  "lerobot__svla_so100_stacking/ep000038": {
+   "verdict": "reject",
+   "human": "real",
+   "how": "video",
+   "note": "recording shorter than one second"
+  },
+  "lerobot__svla_so100_stacking/ep000039": {
+   "verdict": "reject",
+   "human": "real",
+   "how": "video",
+   "note": "arm never moves for 14 s, a human hand in the last frame"
+  },
+  "lerobot__svla_so100_stacking/ep000051": {
+   "verdict": "doubt",
+   "human": "false_positive",
+   "how": "video",
+   "note": "stacking fine: cubes stacked so neatly the lower one is hidden, or the arm covers the cubes for a long time"
+  },
+  "lerobot__svla_so100_stacking/ep000055": {
+   "verdict": "reject",
+   "human": "real",
+   "how": "video",
+   "note": "a person resetting the cubes"
+  },
+  "lerobot__svla_so101_pickplace/ep000013": {
+   "verdict": "doubt",
+   "human": "not_checked",
+   "how": "",
+   "note": "no local video"
+  },
+  "lerobot__svla_so101_pickplace/ep000019": {
+   "verdict": "doubt",
+   "human": "not_checked",
+   "how": "",
+   "note": "no local video"
+  },
+  "lerobot__svla_so101_pickplace/ep000032": {
+   "verdict": "doubt",
+   "human": "not_checked",
+   "how": "",
+   "note": "no local video"
+  },
+  "lerobot__svla_so101_pickplace/ep000034": {
+   "verdict": "doubt",
+   "human": "not_checked",
+   "how": "",
+   "note": "no local video"
+  }
+ }
+}
