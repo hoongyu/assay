@@ -8,7 +8,7 @@ Automatic quality control for robot teleoperation demonstrations. For every reco
 
 - **Public demonstration datasets are not clean.** In 308 episodes from five public LeRobot datasets, none marked as failed, Assay rejected 6, and all 6 are unusable: under one second, an arm that never moves, a person resetting the scene. It sent 33 more to a person: 12 are real problems, 12 false positives, 9 not checked yet.
 - **It holds up on real QA labels.** RoboMIND published 1,678 episodes that Beijing Humanoid's QA team rejected, with the reason. Of the 162 regrasp rejections Assay can compare, the regrasp rule flags 99 (61%), with parameters chosen on another dataset and not retuned.
-- **NVIDIA Nemotron on Nebius Token Factory** writes the batch summary with placeholders, and Assay fills in every number; any digit the model writes itself is rejected.
+- **The joints say when; NVIDIA Nemotron on Nebius Token Factory says what.** For each flagged episode, Nemotron 3.5 Super VL watches the clip the rule points to and answers one fixed question; [TBD: review score with denominators]. Nemotron 3.5 Lightning writes the batch summary with placeholders, and Assay fills in every number; any digit the model writes itself is rejected.
 
 ![The top of an Assay report: batch summary written by Nemotron, verdict funnel and problem table](docs/images/report-stacking.png)
 
@@ -50,7 +50,8 @@ Assay does two things:
 | Joints, compared with the other episodes of the same task | Path far longer than usual; end pose unlike a finished task; arm barely moves; gripper opens and closes more than usual; takes far longer than usual | Extra motion, incomplete, empty recording, regrasp, unsmooth motion | CPU |
 | Video judge: Robometer-4B, zero-shot | Progress over the episode far below the batch; progress suddenly drops | Wrong task, object dropped | GPU, cached |
 | Video judge: TOPReward (wraps Qwen3-VL-4B), zero-shot | Asks the model whether the robot completed the task; the probability of "yes" is far below the batch | Wrong task | GPU, cached |
-| NVIDIA Nemotron on Nebius Token Factory (optional) | Writes the batch summary for the QA lead and the operators, in Chinese and English | Nothing: it never judges | API call |
+| Video review: NVIDIA Nemotron 3.5 Super VL on Nebius Token Factory (`--review`) | Watches the clip a flagged episode's rule points to and answers one question from a fixed list | Agrees or disagrees with the finding, shown on the card; it never changes a verdict on its own | API call |
+| NVIDIA Nemotron 3.5 Lightning on Nebius Token Factory (`--summary`) | Writes the batch summary for the QA lead and the operators, in Chinese and English | Nothing: it writes text, not verdicts | API call |
 
 Verdicts are conservative by choice: a rejection needs strong evidence, so good episodes are rarely thrown away. The price is that some bad episodes pass; on the RoboVAD test set, 140 of 387 anomalous episodes got PASS.
 
@@ -146,6 +147,24 @@ We ran the joint checks, unchanged, on 30 LeRobot v3 datasets from the Hugging F
 
 ## Nebius and NVIDIA
 
+Two NVIDIA open models run on the Nebius Token Factory OpenAI-compatible API: Nemotron 3.5 Super VL reviews the video of flagged episodes, and Nemotron 3.5 Lightning writes the batch summary.
+
+### Video review: Nemotron 3.5 Super VL
+
+`assay check --review` asks `nvidia/Nemotron-3.5-Super-VL` about every DOUBT or REJECT episode that has local video. The joints say when; the model says what.
+
+- One question per episode, generated from its finding: around the two closest gripper switches for a regrasp ("does a robot gripper lose its grip on the object and grasp it again?"), the last seconds for an unfinished ending, the extra footage when the video runs longer than the joint data, the whole episode when a video judge doubts the task.
+- The model must answer from a fixed list (yes, no, unclear, or for extra footage: the robot continues the task, a person is in the scene, nothing moves). Anything else is asked once more, then recorded as unclear. It cannot write numbers into the report.
+- The answer is shown on the episode card next to the rule's evidence. It never changes a verdict on its own: a rejection still needs two independent sources.
+- The clip is cut with PyAV, re-encoded at 10 fps with the long side at 448 px, and sent as a base64 mp4 in a `video_url` part (`--review-input frames` sends 8 JPEG keyframes instead). Answers are cached by request content.
+- Measured on the 39 episodes flagged in the five public datasets, against the human review in `configs/public_review_labels.json` (`scripts/eval_super_vl.py`, result in `results/super_vl_review.json`): [TBD].
+
+```bash
+uv run assay check <dataset dir> --out report.html --review --lang en
+```
+
+### Batch summary: Nemotron 3.5 Lightning
+
 `assay check --summary` adds a batch summary at the top of the report, written by NVIDIA Nemotron 3.5 Lightning (`nvidia/Nemotron-3_5-Lightning`, open weights under OpenMDW-1.1) through the Nebius Token Factory OpenAI-compatible API.
 
 - The model only sees statistics Assay computed: counts, problem names, episode ids. It never sees joint data or video.
@@ -213,6 +232,8 @@ src/assay/
   diagnose.py   merge findings into a verdict
   report.py     offline HTML report; keyframes.py adds keyframes
   summary.py    batch summary written by Nemotron, numbers filled in by Assay
+  review.py     video review questions and answers for Nemotron 3.5 Super VL (no network, also used in the browser)
+  review_run.py cuts the clips and calls Token Factory for `--review`
   eval/         the three exams
 notebooks/      Colab notebooks for the video judges and the downstream experiment
 experiments/    scripts and notes for the downstream experiment as it was run
@@ -233,7 +254,8 @@ Models:
 | Robometer-4B (`lerobot/Robometer-4B`) | Video progress judge | Apache-2.0 |
 | Qwen3-VL-4B-Instruct (used by the TOPReward method) | Second video judge, wrong task only | Apache-2.0 |
 | LeRobot 0.6.1 | Loads the two models above; installed on Colab only | Apache-2.0 |
-| Nemotron 3.5 Lightning (`nvidia/Nemotron-3_5-Lightning`, via Nebius Token Factory) | Batch summary with `--summary`; optional | OpenMDW-1.1, open weights |
+| Nemotron 3.5 Super VL (`nvidia/Nemotron-3.5-Super-VL`, via Nebius Token Factory) | Video review with `--review` | OpenMDW-1.1, open weights |
+| Nemotron 3.5 Lightning (`nvidia/Nemotron-3_5-Lightning`, via Nebius Token Factory) | Batch summary with `--summary` | OpenMDW-1.1, open weights |
 
 No data ships with the repository: `data/`, `cache/` and `reports/` are not committed.
 
