@@ -55,8 +55,9 @@ def _cmd_check(args: argparse.Namespace) -> int:
                       "unclear": "no usable answer"}
 
         def show(r) -> None:
-            say(f"  {r.episode_id}  {r.check} → {r.answer}（{verdict_zh[r.outcome]}）",
-                f"  {r.episode_id}  {r.check} -> {r.answer} ({verdict_en[r.outcome]})")
+            short = r.episode_id.rsplit("/", 1)[-1]  # 终端字号调大录屏时不折行
+            say(f"  {short}  {r.check} → {r.answer}（{verdict_zh[r.outcome]}）",
+                f"  {short}  {r.check} -> {r.answer} ({verdict_en[r.outcome]})")
 
         skipped: list[str] = []
         try:
@@ -65,7 +66,10 @@ def _cmd_check(args: argparse.Namespace) -> int:
         except (RuntimeError, OSError) as exc:  # 没设密钥又没有缓存、网络错误
             say(f"  视频复核没跑完：{exc}", f"  Video review stopped: {exc}")
         if skipped:
-            say(f"  {len(skipped)} 条没有本地视频，没复核", f"  {len(skipped)} episodes have no local video and were not reviewed")
+            one = len(skipped) == 1
+            say(f"  {len(skipped)} 条没有本地视频，没复核",
+                f"  {len(skipped)} {'episode has' if one else 'episodes have'} no local video and "
+                f"{'was' if one else 'were'} not reviewed")
         fresh = [u for u in chat.usage if not u.get("cached")]
         tokens = sum(u.get("prompt_tokens", 0) for u in fresh)
         say(f"  新调用 {len(fresh)} 次，输入 {tokens} 个 token；{len(chat.usage) - len(fresh)} 次用了缓存",
@@ -98,7 +102,7 @@ def _cmd_check(args: argparse.Namespace) -> int:
             shots, missing = shots_for(verdicts, res.episodes, args.camera)
             say(f"  画面：{len(shots)} 条存疑或作废的示范配了关键帧" + (f"，{missing} 条没有本地视频或读不出画面" if missing else ""),
                 f"  Frames: keyframes for {len(shots)} DOUBT or REJECT episodes"
-                + (f"; {missing} have no local video or no readable frames" if missing else ""))
+                + (f"; {missing} {'has' if missing == 1 else 'have'} no local video or no readable frames" if missing else ""))
         summary = None
         if args.summary:
             import os

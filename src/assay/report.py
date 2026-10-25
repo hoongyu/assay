@@ -298,7 +298,7 @@ def _review(r, lang: str) -> str:
     answer = english if lang == "en" else zh
     return (f'<div class="review"><span class="src">{_t("review", lang)}</span>'
             f'<span class="q">{_t("review_q", lang)}{_t("sep", lang)}{escape(r.question)}</span>'
-            f'<span class="a">{_t("review_a", lang)}{_t("sep", lang)}{escape(answer)}{_t("sep", lang)}'
+            f'<span class="a">{_t("review_a", lang)}{_t("sep", lang)}{escape(answer)}{", " if lang == "en" else "，"}'
             f'{_t("review_" + r.outcome, lang)}</span></div>')
 
 
