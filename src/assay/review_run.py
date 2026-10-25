@@ -29,6 +29,7 @@ from assay.video import frames_at, read_clip
 VIDEO_FPS = 10  # 片段按这个帧率重新编码；模型大约每秒取 2 帧
 MAX_SIDE = 448
 N_FRAMES = 8
+MIN_VIDEO_S = 1.0  # 更短的片段改发关键帧：2026-10-25 一段 0.03 秒（只有 1 帧）的视频被 Token Factory 以 HTTP 400 拒收
 Media = Callable[[VideoRef, float, float], tuple[bytes, list[bytes], list[float]]]
 
 
@@ -103,7 +104,8 @@ def run_reviews(verdicts: list[Verdict], episodes: list[Episode], chat, *, media
             skipped.append(req.episode_id)
             continue
         video, frames, times = media(refs[0], req.t0, req.t1)
-        kw = {"video": video} if mode == "video" else {"frames": frames, "frame_times": times}
+        as_video = mode == "video" and req.t1 - req.t0 >= MIN_VIDEO_S
+        kw = {"video": video} if as_video else {"frames": frames, "frame_times": times}
         res = review(req, chat, model, **kw)
         results[req.episode_id] = res
         if on_result:

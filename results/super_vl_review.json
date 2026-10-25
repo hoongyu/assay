@@ -1,0 +1,2347 @@
+{
+ "date": "2026-10-25 08:26",
+ "model": "nvidia/Nemotron-3.5-Super-VL",
+ "prompt_version": "1",
+ "base_url": "https://api.tokenfactory.nebius.com/v1/",
+ "video_fps": 10,
+ "max_side": 448,
+ "keyframes": 8,
+ "calls": 57,
+ "new_calls": 57,
+ "prompt_tokens_new": 114001,
+ "completion_tokens_new": 445,
+ "summary": {
+  "doubt/false_positive [frames]": {
+   "confirms": 3,
+   "clears": 9
+  },
+  "doubt/false_positive [video]": {
+   "clears": 11,
+   "confirms": 1
+  },
+  "doubt/not_checked [frames]": {
+   "clears": 1
+  },
+  "doubt/not_checked [video]": {
+   "clears": 1
+  },
+  "doubt/real [frames]": {
+   "clears": 1,
+   "confirms": 1
+  },
+  "doubt/real [video]": {
+   "confirms": 2
+  },
+  "doubt/real/video_length [frames]": {
+   "nothing_moves": 7,
+   "robot_continues_task": 2
+  },
+  "doubt/real/video_length [video]": {
+   "nothing_moves": 7,
+   "person_in_scene": 2
+  },
+  "reject/real [frames]": {
+   "confirms": 5
+  },
+  "reject/real [video]": {
+   "error": 1,
+   "confirms": 3,
+   "clears": 1
+  }
+ },
+ "episodes": [
+  {
+   "episode_id": "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000000",
+   "verdict": "doubt",
+   "human": "real",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only",
+   "check": "video_length",
+   "t0": 24.6,
+   "t1": 27.37,
+   "question": "This is a robot teleoperation recording. Task: Fold the towel in half. The robot's joint recording ends 2.0 s into this clip; the rest of the video was recorded after that. What happens in the video after that point?",
+   "choices": [
+    "robot_continues_task",
+    "person_in_scene",
+    "nothing_moves",
+    "unclear"
+   ],
+   "camera": "observation.images.left_top",
+   "request_kb": {
+    "video": 75.0,
+    "frames": 108.2
+   },
+   "video": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 559,
+      "total_tokens": 568,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 455
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   },
+   "frames": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 2496,
+      "total_tokens": 2505,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000002",
+   "verdict": "doubt",
+   "human": "real",
+   "note": "right gripper loses the towel corner and grasps again (regrasp)",
+   "check": "regrasp",
+   "t0": 11.33,
+   "t1": 14.97,
+   "question": "This is a robot teleoperation recording. Task: Fold the towel in half. Around 1.5 s and 2.1 s into this clip, does a robot gripper lose its grip on the object and grasp it again?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.left_top",
+   "request_kb": {
+    "video": 100.5,
+    "frames": 125.2
+   },
+   "video": {
+    "answer": "yes",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 700,
+      "total_tokens": 707,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 611
+       }
+      },
+      "seconds": 0.9
+     }
+    ]
+   },
+   "frames": {
+    "answer": "no",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2481,
+      "total_tokens": 2488,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000003",
+   "verdict": "doubt",
+   "human": "real",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only",
+   "check": "video_length",
+   "t0": 18.73,
+   "t1": 22.83,
+   "question": "This is a robot teleoperation recording. Task: Fold the towel in half. The robot's joint recording ends 2.0 s into this clip; the rest of the video was recorded after that. What happens in the video after that point?",
+   "choices": [
+    "robot_continues_task",
+    "person_in_scene",
+    "nothing_moves",
+    "unclear"
+   ],
+   "camera": "observation.images.left_top",
+   "request_kb": {
+    "video": 107.6,
+    "frames": 106.8
+   },
+   "video": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 727,
+      "total_tokens": 736,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 623
+       }
+      },
+      "seconds": 1.2
+     }
+    ]
+   },
+   "frames": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 2496,
+      "total_tokens": 2505,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.3
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000007",
+   "verdict": "doubt",
+   "human": "real",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only",
+   "check": "video_length",
+   "t0": 18.67,
+   "t1": 22.8,
+   "question": "This is a robot teleoperation recording. Task: Fold the towel in half. The robot's joint recording ends 2.0 s into this clip; the rest of the video was recorded after that. What happens in the video after that point?",
+   "choices": [
+    "robot_continues_task",
+    "person_in_scene",
+    "nothing_moves",
+    "unclear"
+   ],
+   "camera": "observation.images.left_top",
+   "request_kb": {
+    "video": 107.6,
+    "frames": 106.5
+   },
+   "video": {
+    "answer": "person_in_scene",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 10,
+      "prompt_tokens": 727,
+      "total_tokens": 737,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 623
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   },
+   "frames": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 2496,
+      "total_tokens": 2505,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000034",
+   "verdict": "doubt",
+   "human": "real",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only",
+   "check": "video_length",
+   "t0": 21.9,
+   "t1": 24.0,
+   "question": "This is a robot teleoperation recording. Task: Fold the towel in half. The robot's joint recording ends 2.0 s into this clip; the rest of the video was recorded after that. What happens in the video after that point?",
+   "choices": [
+    "robot_continues_task",
+    "person_in_scene",
+    "nothing_moves",
+    "unclear"
+   ],
+   "camera": "observation.images.left_top",
+   "request_kb": {
+    "video": 56.0,
+    "frames": 107.0
+   },
+   "video": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 415,
+      "total_tokens": 424,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 311
+       }
+      },
+      "seconds": 0.7
+     }
+    ]
+   },
+   "frames": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 2496,
+      "total_tokens": 2505,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000037",
+   "verdict": "doubt",
+   "human": "real",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only",
+   "check": "video_length",
+   "t0": 23.57,
+   "t1": 29.1,
+   "question": "This is a robot teleoperation recording. Task: Fold the towel in half. The robot's joint recording ends 2.0 s into this clip; the rest of the video was recorded after that. What happens in the video after that point?",
+   "choices": [
+    "robot_continues_task",
+    "person_in_scene",
+    "nothing_moves",
+    "unclear"
+   ],
+   "camera": "observation.images.left_top",
+   "request_kb": {
+    "video": 164.5,
+    "frames": 108.4
+   },
+   "video": {
+    "answer": "person_in_scene",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 10,
+      "prompt_tokens": 1029,
+      "total_tokens": 1039,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 925
+       }
+      },
+      "seconds": 1.4
+     }
+    ]
+   },
+   "frames": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 2496,
+      "total_tokens": 2505,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000038",
+   "verdict": "doubt",
+   "human": "real",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only",
+   "check": "video_length",
+   "t0": 20.4,
+   "t1": 26.17,
+   "question": "This is a robot teleoperation recording. Task: Fold the towel in half. The robot's joint recording ends 2.0 s into this clip; the rest of the video was recorded after that. What happens in the video after that point?",
+   "choices": [
+    "robot_continues_task",
+    "person_in_scene",
+    "nothing_moves",
+    "unclear"
+   ],
+   "camera": "observation.images.left_top",
+   "request_kb": {
+    "video": 158.9,
+    "frames": 105.0
+   },
+   "video": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 1029,
+      "total_tokens": 1038,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 925
+       }
+      },
+      "seconds": 1.2
+     }
+    ]
+   },
+   "frames": {
+    "answer": "robot_continues_task",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 11,
+      "prompt_tokens": 2496,
+      "total_tokens": 2507,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000061",
+   "verdict": "doubt",
+   "human": "real",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only",
+   "check": "video_length",
+   "t0": 18.9,
+   "t1": 26.07,
+   "question": "This is a robot teleoperation recording. Task: Fold the towel in half. The robot's joint recording ends 2.0 s into this clip; the rest of the video was recorded after that. What happens in the video after that point?",
+   "choices": [
+    "robot_continues_task",
+    "person_in_scene",
+    "nothing_moves",
+    "unclear"
+   ],
+   "camera": "observation.images.left_top",
+   "request_kb": {
+    "video": 204.4,
+    "frames": 109.4
+   },
+   "video": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 1200,
+      "total_tokens": 1209,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 1096
+       }
+      },
+      "seconds": 1.2
+     }
+    ]
+   },
+   "frames": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 2496,
+      "total_tokens": 2505,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 0.8
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000062",
+   "verdict": "doubt",
+   "human": "false_positive",
+   "note": "towel folded fine, low progress from the video judge",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 24.33,
+   "question": "This is a robot teleoperation recording. Task: Fold the towel in half. By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.left_top",
+   "request_kb": {
+    "video": 795.4,
+    "frames": 110.1
+   },
+   "video": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 3881,
+      "total_tokens": 3888,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 3810
+       }
+      },
+      "seconds": 2.3
+     }
+    ]
+   },
+   "frames": {
+    "answer": "no",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2468,
+      "total_tokens": 2475,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000067",
+   "verdict": "doubt",
+   "human": "real",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only",
+   "check": "video_length",
+   "t0": 17.27,
+   "t1": 20.93,
+   "question": "This is a robot teleoperation recording. Task: Fold the towel in half. The robot's joint recording ends 2.0 s into this clip; the rest of the video was recorded after that. What happens in the video after that point?",
+   "choices": [
+    "robot_continues_task",
+    "person_in_scene",
+    "nothing_moves",
+    "unclear"
+   ],
+   "camera": "observation.images.left_top",
+   "request_kb": {
+    "video": 101.3,
+    "frames": 106.9
+   },
+   "video": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 715,
+      "total_tokens": 724,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 611
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   },
+   "frames": {
+    "answer": "robot_continues_task",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 11,
+      "prompt_tokens": 2496,
+      "total_tokens": 2507,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000076",
+   "verdict": "doubt",
+   "human": "false_positive",
+   "note": "towel folded fine, low progress from the video judge",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 19.47,
+   "question": "This is a robot teleoperation recording. Task: Fold the towel in half. By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.left_top",
+   "request_kb": {
+    "video": 649.1,
+    "frames": 110.4
+   },
+   "video": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 3227,
+      "total_tokens": 3234,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 3156
+       }
+      },
+      "seconds": 2.0
+     }
+    ]
+   },
+   "frames": {
+    "answer": "no",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2467,
+      "total_tokens": 2474,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000083",
+   "verdict": "doubt",
+   "human": "real",
+   "note": "video longer than joint data; 2 of the 9 watched (towel being reset), 7 from metadata only",
+   "check": "video_length",
+   "t0": 16.3,
+   "t1": 26.4,
+   "question": "This is a robot teleoperation recording. Task: Fold the towel in half. The robot's joint recording ends 2.0 s into this clip; the rest of the video was recorded after that. What happens in the video after that point?",
+   "choices": [
+    "robot_continues_task",
+    "person_in_scene",
+    "nothing_moves",
+    "unclear"
+   ],
+   "camera": "observation.images.left_top",
+   "request_kb": {
+    "video": 293.8,
+    "frames": 108.3
+   },
+   "video": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 1675,
+      "total_tokens": 1684,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 1571
+       }
+      },
+      "seconds": 1.4
+     }
+    ]
+   },
+   "frames": {
+    "answer": "nothing_moves",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 2497,
+      "total_tokens": 2506,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi/ep000099",
+   "verdict": "doubt",
+   "human": "not_checked",
+   "note": "no local video",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 21.47,
+   "question": "This is a robot teleoperation recording. Task: Fold the towel in half. By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "skipped": "no local video"
+  },
+  {
+   "episode_id": "lerobot__svla_so100_pickplace/ep000000",
+   "verdict": "doubt",
+   "human": "false_positive",
+   "note": "pick-and-place succeeded, scored slightly below the batch",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 15.13,
+   "question": "This is a robot teleoperation recording. Task: Pick up the cube and place it in the box. By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 447.4,
+    "frames": 123.3
+   },
+   "video": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2445,
+      "total_tokens": 2452,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 2370
+       }
+      },
+      "seconds": 1.6
+     }
+    ]
+   },
+   "frames": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2470,
+      "total_tokens": 2477,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_pickplace/ep000010",
+   "verdict": "doubt",
+   "human": "real",
+   "note": "recording stops while the arm is still returning",
+   "check": "end_pose",
+   "t0": 9.13,
+   "t1": 12.13,
+   "question": "This is a robot teleoperation recording. Task: Pick up the cube and place it in the box. This clip is the last 3.0 s of the recording. At the very end, is the robot arm still moving, or has it come to rest?",
+   "choices": [
+    "still_moving",
+    "at_rest",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 103.5,
+    "frames": 131.8
+   },
+   "video": {
+    "answer": "still_moving",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 564,
+      "total_tokens": 573,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 467
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   },
+   "frames": {
+    "answer": "still_moving",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 9,
+      "prompt_tokens": 2489,
+      "total_tokens": 2498,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_pickplace/ep000031",
+   "verdict": "doubt",
+   "human": "not_checked",
+   "note": "gripper blocks the camera",
+   "check": "regrasp",
+   "t0": 5.87,
+   "t1": 9.37,
+   "question": "This is a robot teleoperation recording. Task: Pick up the cube and place it in the box. Around 1.5 s and 2.0 s into this clip, does a robot gripper lose its grip on the object and grasp it again?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 113.9,
+    "frames": 133.5
+   },
+   "video": {
+    "answer": "no",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 704,
+      "total_tokens": 711,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 611
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   },
+   "frames": {
+    "answer": "no",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2485,
+      "total_tokens": 2492,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 0.9
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_pickplace/ep000033",
+   "verdict": "doubt",
+   "human": "false_positive",
+   "note": "pick-and-place succeeded, scored slightly below the batch",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 14.17,
+   "question": "This is a robot teleoperation recording. Task: Pick up the cube and place it in the box. By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 415.1,
+    "frames": 120.5
+   },
+   "video": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2285,
+      "total_tokens": 2292,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 2210
+       }
+      },
+      "seconds": 2.0
+     }
+    ]
+   },
+   "frames": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2470,
+      "total_tokens": 2477,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 0.9
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_pickplace/ep000039",
+   "verdict": "doubt",
+   "human": "false_positive",
+   "note": "pick-and-place succeeded, scored slightly below the batch",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 11.37,
+   "question": "This is a robot teleoperation recording. Task: Pick up the cube and place it in the box. By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 344.8,
+    "frames": 114.5
+   },
+   "video": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 1806,
+      "total_tokens": 1813,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 1731
+       }
+      },
+      "seconds": 1.6
+     }
+    ]
+   },
+   "frames": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2468,
+      "total_tokens": 2475,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_pickplace/ep000040",
+   "verdict": "doubt",
+   "human": "false_positive",
+   "note": "pick-and-place succeeded, scored slightly below the batch",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 15.77,
+   "question": "This is a robot teleoperation recording. Task: Pick up the cube and place it in the box. By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 454.8,
+    "frames": 119.6
+   },
+   "video": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2591,
+      "total_tokens": 2598,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 2516
+       }
+      },
+      "seconds": 1.8
+     }
+    ]
+   },
+   "frames": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2470,
+      "total_tokens": 2477,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 0.9
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_pickplace/ep000047",
+   "verdict": "doubt",
+   "human": "false_positive",
+   "note": "pick-and-place succeeded, scored slightly below the batch",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 13.93,
+   "question": "This is a robot teleoperation recording. Task: Pick up the cube and place it in the box. By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 392.1,
+    "frames": 117.2
+   },
+   "video": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2285,
+      "total_tokens": 2292,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 2210
+       }
+      },
+      "seconds": 1.9
+     }
+    ]
+   },
+   "frames": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2470,
+      "total_tokens": 2477,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_sorting/ep000008",
+   "verdict": "reject",
+   "human": "real",
+   "note": "arm never moves (joint data), the video judge agrees",
+   "check": "empty_recording",
+   "t0": 0.0,
+   "t1": 11.3,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube in the right box and the blue cube in the left box. Does the robot arm move at all during this clip?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "skipped": "no local video"
+  },
+  {
+   "episode_id": "lerobot__svla_so100_sorting/ep000021",
+   "verdict": "doubt",
+   "human": "not_checked",
+   "note": "no local video",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 28.4,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube in the right box and the blue cube in the left box. By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "skipped": "no local video"
+  },
+  {
+   "episode_id": "lerobot__svla_so100_sorting/ep000023",
+   "verdict": "doubt",
+   "human": "real",
+   "note": "arm never moves (joint data only)",
+   "check": "empty_recording",
+   "t0": 0.0,
+   "t1": 1.7,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube in the right box and the blue cube in the left box. Does the robot arm move at all during this clip?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "skipped": "no local video"
+  },
+  {
+   "episode_id": "lerobot__svla_so100_sorting/ep000030",
+   "verdict": "doubt",
+   "human": "not_checked",
+   "note": "no local video",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 26.07,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube in the right box and the blue cube in the left box. By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "skipped": "no local video"
+  },
+  {
+   "episode_id": "lerobot__svla_so100_sorting/ep000031",
+   "verdict": "doubt",
+   "human": "not_checked",
+   "note": "no local video",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 22.57,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube in the right box and the blue cube in the left box. By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "skipped": "no local video"
+  },
+  {
+   "episode_id": "lerobot__svla_so100_stacking/ep000015",
+   "verdict": "doubt",
+   "human": "false_positive",
+   "note": "stacking fine: cubes stacked so neatly the lower one is hidden, or the arm covers the cubes for a long time",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 16.73,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube on top of the blue cube. By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 487.3,
+    "frames": 125.7
+   },
+   "video": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2751,
+      "total_tokens": 2758,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 2676
+       }
+      },
+      "seconds": 1.6
+     }
+    ]
+   },
+   "frames": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2470,
+      "total_tokens": 2477,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_stacking/ep000020",
+   "verdict": "reject",
+   "human": "real",
+   "note": "recording shorter than one second",
+   "check": "too_short",
+   "t0": 0.0,
+   "t1": 0.03,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube on top of the blue cube. Does this clip show the robot doing the task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 10.7,
+    "frames": 106.9
+   },
+   "video": {
+    "answer": null,
+    "outcome": "error",
+    "error": "HTTPError: HTTP Error 400: Bad Request"
+   },
+   "frames": {
+    "answer": "no",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2463,
+      "total_tokens": 2470,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.0
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_stacking/ep000025",
+   "verdict": "doubt",
+   "human": "false_positive",
+   "note": "stacking fine: cubes stacked so neatly the lower one is hidden, or the arm covers the cubes for a long time",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 16.9,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube on top of the blue cube. By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 555.4,
+    "frames": 125.9
+   },
+   "video": {
+    "answer": "no",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2751,
+      "total_tokens": 2758,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 2676
+       }
+      },
+      "seconds": 1.7
+     }
+    ]
+   },
+   "frames": {
+    "answer": "no",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2470,
+      "total_tokens": 2477,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_stacking/ep000027",
+   "verdict": "doubt",
+   "human": "false_positive",
+   "note": "stacking fine: cubes stacked so neatly the lower one is hidden, or the arm covers the cubes for a long time",
+   "check": "progress_drop",
+   "t0": 8.5,
+   "t1": 15.0,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube on top of the blue cube. Between 1.5 s and 5.0 s into this clip, does the robot undo progress it had made, for example drop or knock over an object it had already placed?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 223.2,
+    "frames": 123.5
+   },
+   "video": {
+    "answer": "no",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 1182,
+      "total_tokens": 1189,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 1083
+       }
+      },
+      "seconds": 1.4
+     }
+    ]
+   },
+   "frames": {
+    "answer": "no",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2491,
+      "total_tokens": 2498,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.2
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_stacking/ep000028",
+   "verdict": "doubt",
+   "human": "false_positive",
+   "note": "stacking fine: cubes stacked so neatly the lower one is hidden, or the arm covers the cubes for a long time",
+   "check": "progress_drop",
+   "t0": 3.0,
+   "t1": 14.0,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube on top of the blue cube. Between 1.5 s and 9.5 s into this clip, does the robot undo progress it had made, for example drop or knock over an object it had already placed?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 397.4,
+    "frames": 128.1
+   },
+   "video": {
+    "answer": "no",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 1829,
+      "total_tokens": 1836,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 1730
+       }
+      },
+      "seconds": 1.6
+     }
+    ]
+   },
+   "frames": {
+    "answer": "no",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2492,
+      "total_tokens": 2499,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_stacking/ep000037",
+   "verdict": "reject",
+   "human": "real",
+   "note": "recording shorter than one second",
+   "check": "too_short",
+   "t0": 0.0,
+   "t1": 0.47,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube on top of the blue cube. Does this clip show the robot doing the task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 20.5,
+    "frames": 110.4
+   },
+   "video": {
+    "answer": "no",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 342,
+      "total_tokens": 349,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 271
+       }
+      },
+      "seconds": 0.9
+     }
+    ]
+   },
+   "frames": {
+    "answer": "no",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2463,
+      "total_tokens": 2470,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.3
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_stacking/ep000038",
+   "verdict": "reject",
+   "human": "real",
+   "note": "recording shorter than one second",
+   "check": "too_short",
+   "t0": 0.0,
+   "t1": 0.93,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube on top of the blue cube. Does this clip show the robot doing the task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 30.7,
+    "frames": 110.7
+   },
+   "video": {
+    "answer": "no",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 354,
+      "total_tokens": 361,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 283
+       }
+      },
+      "seconds": 0.8
+     }
+    ]
+   },
+   "frames": {
+    "answer": "no",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2463,
+      "total_tokens": 2470,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 0.9
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_stacking/ep000039",
+   "verdict": "reject",
+   "human": "real",
+   "note": "arm never moves for 14 s, a human hand in the last frame",
+   "check": "empty_recording",
+   "t0": 0.0,
+   "t1": 14.47,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube on top of the blue cube. Does the robot arm move at all during this clip?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 261.4,
+    "frames": 112.6
+   },
+   "video": {
+    "answer": "yes",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2428,
+      "total_tokens": 2435,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 2356
+       }
+      },
+      "seconds": 1.5
+     }
+    ]
+   },
+   "frames": {
+    "answer": "no",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2467,
+      "total_tokens": 2474,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.2
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_stacking/ep000051",
+   "verdict": "doubt",
+   "human": "false_positive",
+   "note": "stacking fine: cubes stacked so neatly the lower one is hidden, or the arm covers the cubes for a long time",
+   "check": "progress_drop",
+   "t0": 2.0,
+   "t1": 7.5,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube on top of the blue cube. Between 1.5 s and 4.0 s into this clip, does the robot undo progress it had made, for example drop or knock over an object it had already placed?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 209.2,
+    "frames": 122.6
+   },
+   "video": {
+    "answer": "no",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 1024,
+      "total_tokens": 1031,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 925
+       }
+      },
+      "seconds": 1.3
+     }
+    ]
+   },
+   "frames": {
+    "answer": "no",
+    "outcome": "clears",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2491,
+      "total_tokens": 2498,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so100_stacking/ep000055",
+   "verdict": "reject",
+   "human": "real",
+   "note": "a person resetting the cubes",
+   "check": "empty_recording",
+   "t0": 0.0,
+   "t1": 4.7,
+   "question": "This is a robot teleoperation recording. Task: Put the red cube on top of the blue cube. Does the robot arm move at all during this clip?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "camera": "observation.images.top",
+   "request_kb": {
+    "video": 111.0,
+    "frames": 114.9
+   },
+   "video": {
+    "answer": "no",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 839,
+      "total_tokens": 846,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "video": 767
+       }
+      },
+      "seconds": 1.2
+     }
+    ]
+   },
+   "frames": {
+    "answer": "no",
+    "outcome": "confirms",
+    "problems": [],
+    "usage": [
+     {
+      "completion_tokens": 7,
+      "prompt_tokens": 2464,
+      "total_tokens": 2471,
+      "completion_tokens_details": {
+       "accepted_prediction_tokens": null,
+       "audio_tokens": null,
+       "reasoning_tokens": 0,
+       "rejected_prediction_tokens": null
+      },
+      "prompt_tokens_details": {
+       "audio_tokens": null,
+       "cached_tokens": 0,
+       "created_cache_tokens": 0,
+       "multimodal_tokens": {
+        "image": 2296
+       }
+      },
+      "seconds": 1.1
+     }
+    ]
+   }
+  },
+  {
+   "episode_id": "lerobot__svla_so101_pickplace/ep000013",
+   "verdict": "doubt",
+   "human": "not_checked",
+   "note": "no local video",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 7.7,
+   "question": "This is a robot teleoperation recording. Task: pink lego brick into the transparent box By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "skipped": "no local video"
+  },
+  {
+   "episode_id": "lerobot__svla_so101_pickplace/ep000019",
+   "verdict": "doubt",
+   "human": "not_checked",
+   "note": "no local video",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 7.0,
+   "question": "This is a robot teleoperation recording. Task: pink lego brick into the transparent box By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "skipped": "no local video"
+  },
+  {
+   "episode_id": "lerobot__svla_so101_pickplace/ep000032",
+   "verdict": "doubt",
+   "human": "not_checked",
+   "note": "no local video",
+   "check": "regrasp",
+   "t0": 0.87,
+   "t1": 5.17,
+   "question": "This is a robot teleoperation recording. Task: pink lego brick into the transparent box Around 1.5 s and 2.8 s into this clip, does a robot gripper lose its grip on the object and grasp it again?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "skipped": "no local video"
+  },
+  {
+   "episode_id": "lerobot__svla_so101_pickplace/ep000034",
+   "verdict": "doubt",
+   "human": "not_checked",
+   "note": "no local video",
+   "check": "wrong_task",
+   "t0": 0.0,
+   "t1": 6.9,
+   "question": "This is a robot teleoperation recording. Task: pink lego brick into the transparent box By the end of this clip, has the robot completed this task?",
+   "choices": [
+    "yes",
+    "no",
+    "unclear"
+   ],
+   "skipped": "no local video"
+  }
+ ]
+}

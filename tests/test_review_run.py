@@ -68,3 +68,20 @@ def test_card_says_when_the_model_disagrees_or_gives_no_usable_answer(tmp_path):
     assert "disagrees with the rule" in _card(v, ep, lang="en")
     v.reviews = [ReviewResult("ds/ep000002", "regrasp", None, "unclear", "m", question="q")]
     assert "no usable answer" in _card(v, ep, lang="en") and "没给出能用的回答" in _card(v, ep, lang="zh")
+
+
+def test_clips_under_one_second_go_as_keyframes_even_in_video_mode(tmp_path):
+    # 2026-10-25: a 0.03 s clip (one frame) sent as video got HTTP 400 from Token Factory
+    ep = towel(tmp=tmp_path)
+    short = Finding("too_short", Cause.DATA_ERROR, 0.0, 0.03, 0.03, "too short", hard=True)
+    sent = []
+
+    def chat(messages, model):
+        sent.append([p["type"] for p in messages[-1]["content"]])
+        return '{"answer": "no"}'
+
+    ep.state = ep.state[:1]
+    ep.timestamps = ep.timestamps[:1]
+    run_reviews([Verdict(ep.id, Label.REJECT, ["r"], [short])], [ep], chat,
+                media=lambda ref, t0, t1: (b"mp4", [b"j"] * 8, [0.0] * 8))
+    assert sent == [["image_url"] * 8 + ["text"]]
