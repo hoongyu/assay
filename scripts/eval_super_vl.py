@@ -13,95 +13,26 @@ results/super_vl_review.json. The key is read from NEBIUS_API_KEY and never prin
 from __future__ import annotations
 
 import argparse
-import base64
 import collections
-import hashlib
-import io
 import json
 import os
 import sys
 import time
 import urllib.error
-import urllib.request
 from pathlib import Path
-
-import av
-import numpy as np
 
 from assay.diagnose import diagnose_batch
 from assay.ingest import load
 from assay.judges.cache import load_curves
-from assay.keyframes import jpeg_data_uri
 from assay.review import MODEL, PROMPT_VERSION, review, review_requests
-from assay.summary import BASE_URL, token_factory_body, token_factory_text
-from assay.types import VideoRef
-from assay.video import frames_at, read_clip
+from assay.review_run import MAX_SIDE, N_FRAMES, VIDEO_FPS, CachedChat, clip_media
+from assay.summary import BASE_URL
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 CACHE = ROOT / "cache"
 LABELS = json.loads((ROOT / "configs" / "public_review_labels.json").read_text(encoding="utf-8"))["labels"]
 CAMERA = {"CoRL2026-CSI__SO101-DualArm-teleop_fold_towel_100epi": "observation.images.left_top"}  # the camera the judges used
-VIDEO_FPS = 10  # the clip is re-encoded at this rate; the model samples about 2 frames per second anyway
-MAX_SIDE = 448
-N_FRAMES = 8
-
-
-def jpeg_bytes(img: np.ndarray) -> bytes:
-    return base64.b64decode(jpeg_data_uri(img).split(",", 1)[1])
-
-
-def mp4_bytes(frames: np.ndarray) -> bytes:
-    buf = io.BytesIO()
-    with av.open(buf, "w", format="mp4") as out:
-        s = out.add_stream("libx264", rate=VIDEO_FPS)
-        s.height, s.width = frames.shape[1:3]
-        s.pix_fmt = "yuv420p"
-        for img in frames:
-            for p in s.encode(av.VideoFrame.from_ndarray(np.ascontiguousarray(img), format="rgb24")):
-                out.mux(p)
-        for p in s.encode(None):
-            out.mux(p)
-    return buf.getvalue()
-
-
-def media(ref: VideoRef, t0: float, t1: float) -> tuple[bytes, list[bytes], list[float]]:
-    """The clip [t0, t1] (seconds from the episode start) as an mp4, and N_FRAMES keyframes spread over it."""
-    clip = VideoRef(ref.path, ref.from_s + t0, ref.from_s + t1)
-    frames, _ = read_clip(clip, sample_fps=VIDEO_FPS, max_side=MAX_SIDE)
-    times = [round(t0 + i * (t1 - t0) / (N_FRAMES - 1), 2) for i in range(N_FRAMES)]
-    keys = frames_at(ref, [min(t, t1 - 0.05) for t in times], max_side=MAX_SIDE)
-    return mp4_bytes(frames), [jpeg_bytes(k) for k in keys], [round(t - t0, 1) for t in times]
-
-
-class Recorder:
-    """A Token Factory chat that also keeps each call's usage and caches answers by request content."""
-
-    def __init__(self, key: str | None):
-        self.key = key
-        self.usage: list[dict] = []
-        (CACHE / "super_vl").mkdir(parents=True, exist_ok=True)
-
-    def __call__(self, messages: list[dict], model: str) -> str:
-        body = token_factory_body(messages, model, temperature=0.0, max_tokens=60)
-        digest = hashlib.sha256(json.dumps([PROMPT_VERSION, body], sort_keys=True).encode("utf-8")).hexdigest()[:24]
-        path = CACHE / "super_vl" / f"{digest}.json"
-        if path.exists():
-            hit = json.loads(path.read_text(encoding="utf-8"))
-            self.usage.append({**hit["usage"], "cached": True})
-            return hit["text"]
-        if self.key is None:
-            raise RuntimeError("NEBIUS_API_KEY is not set and this request is not cached")
-        req = urllib.request.Request(BASE_URL + "chat/completions", data=json.dumps(body).encode("utf-8"),
-                                     headers={"Authorization": f"Bearer {self.key}", "Content-Type": "application/json"})
-        t = time.time()
-        with urllib.request.urlopen(req, timeout=180) as r:
-            data = json.loads(r.read().decode("utf-8"))
-        text = token_factory_text(data)
-        usage = {**(data.get("usage") or {}), "seconds": round(time.time() - t, 1)}
-        path.write_text(json.dumps({"model": model, "prompt": PROMPT_VERSION, "text": text, "usage": usage}), encoding="utf-8")
-        self.usage.append(usage)
-        return text
 
 
 def main() -> int:
@@ -109,7 +40,7 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true", help="build every request and print sizes; no network")
     args = ap.parse_args()
     key = None if args.dry_run else os.environ.get("NEBIUS_API_KEY")
-    chat = Recorder(key)
+    chat = CachedChat(key, CACHE)
     rows = []
     for ds in sorted({k.split("/")[0] for k in LABELS}):
         res = load(DATA / ds)
@@ -135,7 +66,7 @@ def main() -> int:
             if not refs:
                 rows.append({**row, "skipped": "no local video"})
                 continue
-            video, frames, times = media(refs[0][1], req.t0, req.t1)
+            video, frames, times = clip_media(refs[0][1], req.t0, req.t1)
             row["camera"] = refs[0][0]
             row["request_kb"] = {"video": round(len(video) * 4 / 3 / 1024, 1), "frames": round(sum(map(len, frames)) * 4 / 3 / 1024, 1)}
             if not args.dry_run:

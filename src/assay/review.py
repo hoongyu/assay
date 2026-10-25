@@ -50,6 +50,7 @@ class ReviewResult:
     model: str
     problems: list[str] = field(default_factory=list)
     attempts: list[str] = field(default_factory=list)
+    question: str = ""
 
 
 def _video_seconds(ep: Episode) -> float | None:
@@ -163,11 +164,11 @@ def review(req: ReviewRequest, chat: Chat, model: str = MODEL, *, frames: list[b
         answer = parse_answer(raw, req.choices)
         if answer is not None:
             outcome = "confirms" if answer in req.confirms else "clears" if answer in req.clears else "unclear"
-            return ReviewResult(req.episode_id, req.check, answer, outcome, model, problems, attempts)
+            return ReviewResult(req.episode_id, req.check, answer, outcome, model, problems, attempts, req.question)
         problems.append(f"attempt {attempt + 1}: the answer is not one of {', '.join(req.choices)}")
         messages = messages + [{"role": "assistant", "content": raw},
                                {"role": "user", "content": "That cannot be used. " + _format_line(req.choices)}]
-    return ReviewResult(req.episode_id, req.check, None, "unclear", model, problems, attempts)
+    return ReviewResult(req.episode_id, req.check, None, "unclear", model, problems, attempts, req.question)
 
 
 def apply_reviews(verdicts: list[Verdict], results: list[ReviewResult]) -> list[Verdict]:

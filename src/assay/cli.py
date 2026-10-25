@@ -42,6 +42,34 @@ def _cmd_check(args: argparse.Namespace) -> int:
         say(f"  {source_name(j)}：{len(curves[j])}/{n} 条有缓存", f"  {source_name(j, 'en')}: {len(curves[j])}/{n} cached")
     for name, why in res.failures:
         say(f"  读取失败 {name}：{why}", f"  Could not read {name}: {en(why)}")
+    if args.review:
+        import os
+
+        from assay.review_run import CachedChat, run_reviews
+
+        chat = CachedChat(os.environ.get("NEBIUS_API_KEY"), args.cache, read_cache=not args.review_no_cache)
+        say(f"视频复核：{args.review_model}（Nebius Token Factory），输入{'整段视频' if args.review_input == 'video' else '关键帧'}",
+            f"Video review: {args.review_model} on Nebius Token Factory, input: {args.review_input}")
+        verdict_zh = {"confirms": "支持规则", "clears": "和规则相反，要人看", "unclear": "没给出能用的回答"}
+        verdict_en = {"confirms": "agrees with the rule", "clears": "disagrees with the rule, a person should look",
+                      "unclear": "no usable answer"}
+
+        def show(r) -> None:
+            say(f"  {r.episode_id}  {r.check} → {r.answer}（{verdict_zh[r.outcome]}）",
+                f"  {r.episode_id}  {r.check} -> {r.answer} ({verdict_en[r.outcome]})")
+
+        skipped: list[str] = []
+        try:
+            verdicts, skipped = run_reviews(verdicts, res.episodes, chat, camera=args.camera, mode=args.review_input,
+                                            model=args.review_model, on_result=show)
+        except (RuntimeError, OSError) as exc:  # 没设密钥又没有缓存、网络错误
+            say(f"  视频复核没跑完：{exc}", f"  Video review stopped: {exc}")
+        if skipped:
+            say(f"  {len(skipped)} 条没有本地视频，没复核", f"  {len(skipped)} episodes have no local video and were not reviewed")
+        fresh = [u for u in chat.usage if not u.get("cached")]
+        tokens = sum(u.get("prompt_tokens", 0) for u in fresh)
+        say(f"  新调用 {len(fresh)} 次，输入 {tokens} 个 token；{len(chat.usage) - len(fresh)} 次用了缓存",
+            f"  {len(fresh)} new calls, {tokens} prompt tokens; {len(chat.usage) - len(fresh)} answered from cache")
     if args.json:
         tasks = {ep.id: ep.task for ep in res.episodes}
         rows = [
@@ -54,6 +82,8 @@ def _cmd_check(args: argparse.Namespace) -> int:
                 "findings": [{**asdict(f), "cause": f.cause.value, "evidence_en": en(f.evidence)} for f in v.causes],
                 "not_checked": v.not_checked,
                 "not_checked_en": {key: en(why) for key, why in v.not_checked.items()},
+                "reviews": [{k: getattr(r, k) for k in ("model", "check", "question", "answer", "outcome")}
+                            for r in v.reviews],
             }
             for v in verdicts
         ]
@@ -260,6 +290,12 @@ def build_parser() -> argparse.ArgumentParser:
                    help="报告顶部加本批小结：Nemotron（Nebius Token Factory）写文字，数字由甄数填；密钥读环境变量 "
                         "NEBIUS_API_KEY，没设就用模板")
     c.add_argument("--summary-model", default="nvidia/Nemotron-3_5-Lightning", help="本批小结用哪个模型")
+    c.add_argument("--review", action="store_true",
+                   help="存疑和作废的示范各问 Nemotron 3.5 Super VL（Nebius Token Factory）一个由规则生成的问题，"
+                        "结论写进报告，不改判定；要本地视频，密钥读环境变量 NEBIUS_API_KEY，回答缓存在 --cache 下")
+    c.add_argument("--review-input", choices=["video", "frames"], default="video", help="复核时发整段视频还是 8 张关键帧")
+    c.add_argument("--review-model", default="nvidia/Nemotron-3.5-Super-VL", help="视频复核用哪个模型")
+    c.add_argument("--review-no-cache", action="store_true", help="视频复核不读缓存，每条都现场调一次（回答照样写进缓存）")
     c.add_argument("--lang", choices=["zh", "en"], default="zh", help="报告和终端打印用中文还是英文")
     c.set_defaults(func=_cmd_check)
 

@@ -55,6 +55,8 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:13px;overflow-wrap:an
 .reasons{margin:8px 0 0;padding-left:18px}
 .findings{list-style:none;margin:8px 0 0;padding:0}
 .findings li{padding:5px 0;border-top:1px dashed var(--line)}
+.review{margin-top:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;gap:4px}
+.review .a{font-weight:600}
 .cause{font-weight:600;margin-right:8px}.when{color:var(--muted);font-size:13px;margin-right:8px}
 .src{color:var(--muted);font-size:12px;margin-right:8px;padding:0 6px;border:1px solid var(--line);border-radius:4px}
 .spark{margin:10px 0 0}
@@ -123,6 +125,12 @@ UI = {  # 界面文字：键 -> (中文, 英文)
     "episodes_h": ("每条示范", "Episodes"),
     "all": ("全部 {n}", "All {n}"),
     "summary": ("本批小结", "Batch summary"),
+    "review": ("视频复核（Nemotron 3.5 Super VL，经 Nebius Token Factory）", "Video review (Nemotron 3.5 Super VL on Nebius Token Factory)"),
+    "review_q": ("问（英文原文）", "Question"),
+    "review_a": ("答", "Answer"),
+    "review_confirms": ("支持规则的发现", "agrees with the rule"),
+    "review_clears": ("和规则的发现相反，要人看", "disagrees with the rule; a person should look"),
+    "review_unclear": ("没给出能用的回答", "no usable answer"),
     "footer": (
         "<p>判定规则：作废是客观硬规则触发（读数缺失、丢帧、示范过短、视频比关节数据短），或者两个独立来源指向同一处问题；"
         "存疑是有发现但够不上作废，要人看；合格是什么都没报。判得偏保守是取舍：好示范很少被错杀，代价是有些坏示范会判合格。</p>"
@@ -278,6 +286,22 @@ def _finding(f: Finding, duration: float, lang: str) -> str:
             f'<span class="src">{escape(source_name(f.source, lang))}</span>{escape(_text(f.evidence, lang))}</li>')
 
 
+ANSWER = {"yes": ("是", "yes"), "no": ("否", "no"), "unclear": ("看不清", "unclear"),
+          "still_moving": ("还在动", "still moving"), "at_rest": ("已经停下", "at rest"),
+          "robot_continues_task": ("机器人还在做任务", "the robot continues the task"),
+          "person_in_scene": ("有人在画面里", "a person is in the scene"), "nothing_moves": ("画面里没有动作", "nothing moves")}
+
+
+def _review(r, lang: str) -> str:
+    """视觉模型的复核：问了什么、答了什么、和规则的发现是否一致。"""
+    zh, english = ANSWER.get(r.answer, (r.answer or "—", r.answer or "—"))
+    answer = english if lang == "en" else zh
+    return (f'<div class="review"><span class="src">{_t("review", lang)}</span>'
+            f'<span class="q">{_t("review_q", lang)}{_t("sep", lang)}{escape(r.question)}</span>'
+            f'<span class="a">{_t("review_a", lang)}{_t("sep", lang)}{escape(answer)}{_t("sep", lang)}'
+            f'{_t("review_" + r.outcome, lang)}</span></div>')
+
+
 def _card(v: Verdict, ep: Episode, shots=(), lang: str = "zh") -> str:
     cls = CSS_CLASS[v.label]
     parts = [f'<article class="card {cls}" data-label="{cls}">',
@@ -289,6 +313,7 @@ def _card(v: Verdict, ep: Episode, shots=(), lang: str = "zh") -> str:
     parts.append(_shots(list(shots), ep.duration, lang))
     if v.causes:
         parts.append('<ul class="findings">' + "".join(_finding(f, ep.duration, lang) for f in v.causes) + "</ul>")
+    parts += [_review(r, lang) for r in v.reviews]
     if v.not_checked:
         items = "".join(f"<li>{escape(_rule(k, lang))}{_t('sep', lang)}{escape(_text(why, lang))}</li>"
                         for k, why in sorted(v.not_checked.items()))
