@@ -42,19 +42,13 @@
 <body>
 <div class="stage">
 
-  <section class="card on" aria-label="Title">
+  <section class="card on" aria-label="What">
     <p class="kicker">Nebius × NVIDIA Global AI Hackathon · Physical AI</p>
     <h1>Assay</h1>
     <p class="lead">Automatic QA for robot teleoperation data. Every episode gets PASS, DOUBT or REJECT, with the reason and the evidence.</p>
-  </section>
-
-  <section class="card" aria-label="Why">
-    <p class="kicker">Why</p>
-    <h2>Robot foundation models learn from teleoperation demonstrations</h2>
-    <div class="grid">
-      <div class="box"><p class="big">15+</p><p>large data-collection sites in China, typically with 100 or more robots each</p><p class="src">China Business Journal, cited by Jiazi Guangnian</p></div>
-      <div class="box"><p class="big">500 to 1,000</p><p>CNY per hour of data at Beijing Humanoid's site</p><p class="src">Jiazi Guangnian, 2026-06-26</p></div>
-      <div class="box"><p class="big">Manual</p><p>QA and labeling still rely largely on people; one site head estimates half of 100 hours ends up usable</p><p class="src">Same report; an estimate, not a statistic</p></div>
+    <div class="grid two">
+      <div class="box"><p class="big">The joints say when.</p><p>Joint rules on the CPU find the moment: a regrasp, a cut ending, footage that does not match the joints.</p></div>
+      <div class="box"><p class="big">Nemotron says what.</p><p>Nemotron 3.5 Super VL on Nebius Token Factory watches that clip and answers one fixed question. Nemotron 3.5 Lightning writes the batch summary; Assay fills in every number.</p></div>
     </div>
   </section>
 
@@ -62,28 +56,19 @@
     <p class="kicker">Results</p>
     <h2>Measured on public data and on a real QA team's labels</h2>
     <div class="grid two">
-      <div class="box solid"><p class="big">6 of 6</p><p>rejections in five public LeRobot datasets (308 episodes, none marked as failed) are unusable recordings. Of 33 sent to a person: 12 real, 12 false positives, 9 not checked.</p></div>
+      <div class="box solid"><p class="big">6 of 6</p><p>rejections in five public LeRobot datasets (308 episodes, none marked as failed) are unusable recordings.</p></div>
+      <div class="box"><p class="big">[TBD]</p><p>Nemotron 3.5 Super VL review of the flagged episodes: [TBD false alarms cleared, real problems confirmed, with denominators].</p></div>
       <div class="box"><p class="big">99 of 162</p><p>comparable regrasps flagged in RoboMIND, 1,678 episodes rejected by Beijing Humanoid's QA. Rule chosen on another benchmark, not retuned.</p></div>
-      <div class="box"><p class="big">197 of 201</p><p>injected cut endings caught on held-out datasets, with 0 of 202 clean episodes flagged (second look at the test set, disclosed).</p></div>
-      <div class="box"><p class="big">What failed</p><p>Smoothness metrics did not separate "unsmooth" episodes on real labels. We kept a duration rule that catches 14%, and say so.</p></div>
-    </div>
-  </section>
-
-  <section class="card" aria-label="Nemotron">
-    <p class="kicker">NVIDIA Nemotron on Nebius Token Factory</p>
-    <h2>The model writes the batch summary. Assay writes every number.</h2>
-    <div class="grid">
-      <div class="box"><p class="big">Statistics only</p><p>The model sees counts, problem names and episode ids, never joint data or video.</p></div>
-      <div class="box"><p class="big">Placeholders</p><p>It writes {n_doubt}, not 13. A digit it writes itself is rejected; one retry, then a template.</p></div>
-      <div class="box"><p class="big">Open weights</p><p>Nemotron 3.5 Lightning (OpenMDW-1.1): a site can later run it on its own machines.</p></div>
+      <div class="box"><p class="big">36% vs 21%</p><p>policy success on robomimic after removing the 45 episodes Assay flags vs 45 random ones (3 seeds, 150 rollouts each). Keeping all 300: 39%.</p></div>
     </div>
   </section>
 
   <section class="card" aria-label="Closing">
     <h1>Assay</h1>
-    <p class="lead">Screen every episode, explain what went wrong, and feed it back to the operators.</p>
+    <p class="lead">The joints say when. Nemotron says what.</p>
     <p class="url">github.com/hoongyu/assay</p>
-    <p class="note">Apache-2.0. Joint checks run on a laptop; the report is one offline HTML file.</p>
+    <p class="url">hoongyu.github.io/assay-demo</p>
+    <p class="note">Apache-2.0. Data shown: SO-101 towel folding (CoRL2026-CSI), SO-100 cube stacking (LeRobot) and switch flipping (RohanVasa) from Hugging Face, all Apache-2.0; robomimic (MIT).</p>
   </section>
 
 </div>
