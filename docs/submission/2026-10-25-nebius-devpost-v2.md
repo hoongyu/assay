@@ -1,6 +1,6 @@
 # Devpost submission draft v2: Nebius × NVIDIA Global AI Hackathon, Physical AI track
 
-Draft for the user to paste into Devpost; the user saves the draft and submits. Official deadline: 2026-10-30, 10:00 Pacific (18:00 Berlin); internal target: submit by 10-28. Items marked [TBD] wait for the Super VL evaluation (`results/super_vl_review.json`). Do not select a city prize (we did not attend a city event). Replaces the 2026-10-05 draft.
+Draft for the user to paste into Devpost; the user saves the draft and submits. Official deadline: 2026-10-30, 10:00 Pacific (18:00 Berlin); internal target: submit by 10-28. Super VL numbers are from `results/super_vl_review.json` (2026-10-25). Do not select a city prize (we did not attend a city event). Replaces the 2026-10-05 draft.
 
 ---
 
@@ -12,7 +12,7 @@ Draft for the user to paste into Devpost; the user saves the draft and submits. 
 
 | Criterion | Where to look |
 |---|---|
-| Technological implementation | Nemotron 3.5 Super VL on Nebius Token Factory reviews every flagged episode: the joint rules pick the moment and write one question, the model watches that clip (sent as `video_url`) and must answer from a fixed list. Nemotron 3.5 Lightning writes the batch summary with placeholders; Assay fills in every number. Measured: [TBD Super VL score with denominators]. |
+| Technological implementation | Nemotron 3.5 Super VL on Nebius Token Factory reviews every flagged episode: the joint rules pick the moment and write one question, the model watches that clip (sent as `video_url`) and must answer from a fixed list. Nemotron 3.5 Lightning writes the batch summary with placeholders; Assay fills in every number. Measured on 29 flagged episodes: watching the clip, it cleared 11 of the 12 false alarms the video judges raised and confirmed 2 of the 2 real problems it could judge (with 8 keyframes instead: 9 of 12 and 1 of 2). |
 | Design | One command, one offline HTML report in English or Chinese: verdict funnel, per-operator statistics, and one card per flagged episode with the reason, time span, keyframes and the model's review. Browser demo: hoongyu.github.io/assay-demo. |
 | Potential impact | Robot data is now produced in collection sites with 100+ robots each; QA is still mostly manual. On five public datasets, 6 of 308 episodes Assay rejected were all unusable. On robomimic, removing the episodes Assay flags beats removing the same number at random (36% vs 21% policy success). |
 | Quality of the idea | The vision model never decides alone: rules say when, the model says what, a rejection still needs two independent sources, and every number in the report comes from code. |
@@ -42,14 +42,14 @@ The problem is not only Chinese. On five public LeRobot datasets on Hugging Face
 ## Results
 
 - Public demonstration datasets (5 LeRobot datasets, 308 episodes): 6 rejected, all 6 real problems. 33 sent to a person: 12 real problems, 12 false positives, 9 not checked.
-- Nemotron 3.5 Super VL review of the 39 flagged episodes (29 with local video, human labels in `configs/public_review_labels.json`): [TBD: of the 12 false positives, cleared X with video input and X' with 8 keyframes; of the N real problems it could see, agreed with Y; what it says the extra footage shows in the 9 length mismatches; tokens and cost].
+- Nemotron 3.5 Super VL review of the 39 flagged episodes (29 with local video, human labels in `configs/public_review_labels.json`): On the 29 flagged episodes with local video, against the human review: of the 12 false positives, it cleared 11 with the clip sent as video and 9 with 8 keyframes. Of the 2 real problems it can answer yes or no about (the towel regrasp and a recording that stops mid-motion), video confirmed both; keyframes missed the regrasp. On the 5 rejected episodes with video, keyframes confirmed all 5; video confirmed 3, disagreed on 1 (an arm that stays still for 14 s before a human hand appears) and failed on 1 (a 0.03 s clip with a single frame, refused by the API with HTTP 400; clips under 1 s now go as keyframes). A review never changes a verdict, so that episode stays REJECT and its card asks a person to look. For the 9 episodes whose video runs longer than the joint data, video says nothing moves in 7 and a person is in the scene in 2; ep83, which we know shows the towel being reset, was described as nothing moves. 57 calls, 114,001 prompt tokens, about 0.04 USD: video averaged 1,502 prompt tokens per call and keyframes 2,481, with median latency 1.4 s and 1.1 s.
 - Downstream training on robomimic Square MH (BC-RNN, 3 seeds, 150 rollouts per condition): removing the 45 episodes Assay flags gives 36% success, removing 45 random ones 21%, keeping all 300 gives 39%. Filtering picks the right episodes but does not beat using everything at 600 epochs; we report both.
 - RoboMIND, 1,678 episodes rejected by Beijing Humanoid's QA: the regrasp rule, tuned on another dataset and not retuned, flags 99 of the 162 regrasp rejections it can compare.
 - Injected defects on held-out datasets: cut endings 197/201 and frozen frames 199/201, with 0/202 clean episodes flagged (second look at the test set, disclosed).
 
 ## Challenges we ran into
 
-- Video or keyframes? Our probe on one clip: 8 keyframes cost 2,450 prompt tokens and missed the regrasp; the 4.5 s clip as video cost 881 and got it right. One example is not a result, so the evaluation asks both ways [TBD: which input won].
+- Video or keyframes? Our probe on one clip: 8 keyframes cost 2,450 prompt tokens and missed the regrasp; the 4.5 s clip as video cost 881 and got it right. One example is not a result, so the evaluation asked both ways on 29 episodes. Video won on the doubts (11 vs 9 of 12 false alarms cleared, 2 vs 1 of 2 real problems) and cost 40% fewer tokens per call; keyframes won on the rejections (5 vs 3 of 5), where the clips are very short or the arm does not move. Clips under 1 s now go as keyframes.
 - Smoothness metrics did not work on real QA labels (AUC 0.31 to 0.45 on dev, near chance on test). We kept a duration rule, which catches 14%, and say so.
 - With reasoning on (the default), Nemotron's reasoning trace came back inside the answer text and ran into the token limit; `enable_thinking: false` fixed it.
 
@@ -61,7 +61,7 @@ The problem is not only Chinese. On five public LeRobot datasets on Hugging Face
 
 ## What we learned
 
-- Send the clip, not a handful of frames, when the question is about motion; it was also cheaper per second of footage on Token Factory.
+- Send the clip, not a handful of frames, when the question is about motion: it cleared more false alarms, caught the regrasp the frames missed, and cost fewer tokens. For a clip of under a second, frames are the safer input.
 - On real QA labels, "obvious" motion-quality metrics can score below chance; measure before shipping.
 
 ## What's next

@@ -13,7 +13,7 @@
 - 数：308 条里作废 6 条，6 条全是真问题。
 - 话：The joints say when. Nemotron says what.
 
-标【待填】的地方要等 Super VL 评测结果（`results/super_vl_review.json`）。成绩出来后，项目窗口填好，再交给你录。
+Super VL 的成绩已按 `results/super_vl_review.json`（10-25 用户跑的评测）填好：模型在 ep2 上答对（yes），段 D 照原计划用 ep2。
 
 ## 一、录之前准备一次（约 30 分钟）
 
@@ -65,10 +65,10 @@ cd C:\Claude_code\jianjin
 | A | 0:00 至 0:09 | 9 秒 | 直接放 A 的片段文件，不加说明 | This episode is from a public robot dataset, published for training. Watch the right gripper. |
 | B | 0:09 至 0:25 | 16 秒 | 卡片第 1 页（Assay 是什么），不动 | Assay checks robot teleoperation demonstrations before they are used to train robots. It runs on Nebius Token Factory with two NVIDIA open models: Nemotron 3.5 Super VL watches the robot camera, and Nemotron 3.5 Lightning writes the batch summary. The joints say when. Nemotron says what. |
 | C | 0:25 至 1:05 | 40 秒 | 终端：粘贴下面“段 C 的命令”回车，等到最后一行 Report written 出来。不要中途停，终端里能看到模型 ID 和每条复核的回答 | One command checks a batch. These are the hundred towel-folding episodes from that dataset. The joint rules run on the CPU in seconds. For every flagged episode, the rules pick the moment and write one question. Nemotron 3.5 Super VL, on Nebius Token Factory, watches that clip and answers from a fixed list of choices. Here comes each answer, live. |
-| D | 1:05 至 1:35 | 30 秒 | 浏览器打开 `reports/fold_towel_en.html`，往下滚到 ep000002 的体检单，停在关键帧和下面的 Video review 那一块 | Episode two. The joints say when: the right gripper switched six times, where this task usually switches four, and the keyframes sit at 12.8 and 13.5 seconds. Nemotron says what: asked whether the gripper loses the towel and grasps it again, it answers 【待填：yes】. Beijing Humanoid's quality team calls this a regrasp. |
+| D | 1:05 至 1:35 | 30 秒 | 浏览器打开 `reports/fold_towel_en.html`，往下滚到 ep000002 的体检单，停在关键帧和下面的 Video review 那一块 | Episode two. The joints say when: the right gripper switched six times, where this task usually switches four, and the keyframes sit at 12.8 and 13.5 seconds. Nemotron says what: asked whether the gripper loses the towel and grasps it again, it answers yes. Beijing Humanoid's quality team calls this a regrasp. |
 | E | 1:35 至 1:50 | 15 秒 | 同一页滚回顶部，停在 Batch summary 和漏斗 | At the top, Nemotron 3.5 Lightning writes the batch summary from our statistics. Every number in it is filled in by Assay, never by the model. |
 | F | 1:50 至 2:05 | 15 秒 | 终端：粘贴下面“段 F 的命令”回车，2 秒左右出结果 | Assay also runs on data it has never seen. This switch-flipping dataset was never used to tune it. Fifty episodes, checked in two seconds. |
-| G | 2:05 至 2:35 | 30 秒 | 卡片第 2 页（成绩），念到哪格用鼠标指哪格 | In five public datasets, Assay rejected six of 308 episodes, and all six were unusable. On the episodes it sent to a person, Nemotron's review 【待填：cleared X of the 12 false alarms and agreed with Y of the Z real problems it could see】. On a separate robomimic test, removing the episodes Assay flags beats removing the same number at random, 36 against 21 percent success, but it does not beat keeping them all. We report both. |
+| G | 2:05 至 2:35 | 30 秒 | 卡片第 2 页（成绩），念到哪格用鼠标指哪格 | In five public datasets, Assay rejected six of 308 episodes, and all six were unusable. Watching the clip, Nemotron cleared eleven of twelve false alarms and confirmed both real problems it could judge; on very short clips, keyframes did better. On robomimic, removing the episodes Assay flags beats removing the same number at random, 36 against 21 percent success, but does not beat keeping them all. We report both. |
 | H | 2:35 至 2:48 | 13 秒 | 卡片第 3 页（结尾和数据出处），停 3 秒；再切到浏览器打开 hoongyu.github.io/assay-demo 停 3 秒 | Assay. The joints say when, Nemotron says what. It is open source, and you can try it in your browser. |
 
 段 C 的命令（一行，整行复制）：
@@ -114,5 +114,5 @@ ffmpeg -i assay_demo.mp4 -vf "subtitles=assay_demo.srt:force_style='FontSize=22,
 
 - 段 C 跑完，终端最后几行有“Video review: nvidia/Nemotron-3.5-Super-VL on Nebius Token Factory”和每条复核的回答；整批合格 87、存疑 13、作废 0。
 - ep000002 的体检单里，Video review 那一块的回答和段 D 旁白里说的一致。要是模型在 ep2 上答错，段 D 换成一条答对的示范，旁白跟着改，成绩卡照实报总体成绩。
-- 视频里的数字和 README、Devpost 说明一致：308 条里作废 6 条；robomimic 下游 36% 对 21%；Super VL 复核成绩【待填】。
+- 视频里的数字和 README、Devpost 说明一致：308 条里作废 6 条；robomimic 下游 36% 对 21%；Super VL 复核：12 条误报里视频推翻 11 条（关键帧 9 条），能判断的 2 条真问题都确认，5 条作废里视频确认 3 条、关键帧确认 5 条。
 - 画面里不放 NVIDIA、Nebius 的标志图，只说名字。

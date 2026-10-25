@@ -141,6 +141,10 @@ uv run assay check <数据集目录> --judges robometer,topreward --camera obser
 
 本机有视频时，报告会给存疑、作废的示范配关键帧；`--no-frames` 关掉。
 
+加 `--review`，存疑和作废的示范各问 NVIDIA 的 Nemotron 3.5 Super VL（在 Nebius Token Factory 上，`nvidia/Nemotron-3.5-Super-VL`）一个由规则生成的问题：关节说什么时候，模型说画面里发生了什么。二次抓取问隔得最近的两次换档前后有没有松开又抓，视频比关节长问多出来的那段在干什么，视频评判怀疑指令不符的问整条做没做完。片段用 PyAV 切出来，重新编码成 10 fps、长边 448 的 mp4，按 `video_url` 发过去（`--review-input frames` 改发 8 张关键帧；不到 1 秒的片段自动改发关键帧）。模型只能从列出的选项里选，选项以外的回答再问一次，还不行记「没给出能用的回答」；它写不进任何数字。复核结论写在体检单上，不改判定，作废照旧要两个独立来源。
+
+在 5 个公开数据集被标出的 39 条里，本机有视频的 29 条，对照人工核对（`configs/public_review_labels.json`，脚本 `scripts/eval_super_vl.py`，结果 `results/super_vl_review.json`）：12 条误报，发视频推翻 11 条，发 8 张关键帧推翻 9 条；能用是否判断的 2 条真问题（叠毛巾重抓、录到一半停），视频都确认，关键帧漏了重抓；5 条作废，关键帧都确认，视频确认 3 条、推翻 1 条（手臂 14 秒不动、最后一帧伸进人手）、报错 1 条（0.03 秒的片段只有 1 帧，接口回 HTTP 400，所以现在不到 1 秒的片段改发关键帧）。复核不改判定，那条照旧是作废，体检单上会写「和规则的发现相反，要人看」。视频比关节长的 9 条，视频说 7 条没有动作、2 条有人在画面里；已知多出来是复位画面的 ep83，两种输入都说没有动作。57 次调用共 114,001 个 prompt token，约 0.04 美元；视频平均每次 1,502 个，关键帧 2,481 个，延迟中位数 1.4 秒和 1.1 秒。
+
 加 `--summary`，报告顶部多一节「本批小结」：NVIDIA 的 Nemotron（在 Nebius Token Factory 上，`nvidia/Nemotron-3_5-Lightning`）写一段给质检组长和采集员看的话，中文、英文各一份。模型只看甄数算出的统计，不看原始数据；它写的文字里所有数字、示范编号、原因名都是占位符，由甄数按统计填。模型自己写的阿拉伯数字一律不收，「二」以上带量词的中文数字、two 以上的英文数字词也不收（「一」和 one 太常见，放行）；不合格重试一次，再不行退回模板。核对管不到占位符放没放对句子：模型是在模板草稿上改写的，草稿里占位符都已放好，放错的概率没量过。给采集员的提醒只能从我们写好的清单里选：每类问题一句，同样是占位符（`{advice_1}`），模型负责挑和串，不许自己编建议（第一次不加限制时，它让采集员确保甄数的某项检查在所有示范上都能跑，采集员没法照做）。密钥读环境变量 `NEBIUS_API_KEY`，没设就用模板；回答按统计缓存在 `cache/summary/`，重出报告不再调用；`assay summary-stats` 数缓存里第一次就过、重试以后过、退回模板各几条。2026-10-11 用现在的提示（第 4 版）在 4 批公开数据上实测（SO-100 的放方块、叠方块、分拣，SO-101 的放方块），中英共 8 段，8 段都是第一次就过了数字核对，没有重试，也没有退回模板；分母只有 8。逐段读下来，数字核对管不到的问题也看到了：8 段里有 1 段（分拣，英文）把「没查」的占位符在一句里用了两次，句子不通，还自己改写了一条提醒，没用我们写好的那句（提醒只能用清单是对模型的要求，代码不核对）。另有两处是我们代码的问题，已修：提醒后面多一个句号，英文的「1 episodes」。
 
 考卷和测试：
@@ -171,6 +175,8 @@ src/assay/
   judges/       视频评判适配器（Robometer、TOPReward）和缓存
   diagnose.py   合并成判定
   report.py     离线网页报告；keyframes.py 配关键帧
+  review.py     视频复核的问题和回答（Nemotron 3.5 Super VL），不联网，网页也用
+  review_run.py 为 `--review` 切片段、调 Token Factory
   eval/         三张考卷
 notebooks/      在 Colab 上跑视频评判和下游实验的笔记本
 experiments/    下游实验实际跑的脚本和说明
@@ -191,6 +197,7 @@ docs/           设计文档、实现计划、背景资料
 | Robometer-4B（`lerobot/Robometer-4B`） | 视频进度评判 | Apache-2.0 |
 | Qwen3-VL-4B-Instruct（TOPReward 方法用它） | 第二个视频评判，只判指令不符 | Apache-2.0 |
 | LeRobot 0.6.1 | 加载上面两个模型，只在 Colab 上装 | Apache-2.0 |
+| Nemotron 3.5 Super VL（`nvidia/Nemotron-3.5-Super-VL`，经 Nebius Token Factory 调用） | `--review` 时复核存疑和作废示范的视频 | OpenMDW-1.1，权重公开 |
 | Nemotron 3.5 Lightning（`nvidia/Nemotron-3_5-Lightning`，经 Nebius Token Factory 调用） | `--summary` 时写本批小结，可不开 | OpenMDW-1.1，权重公开 |
 
 用到的数据都不随仓库分发：`data/`、`cache/`、`reports/` 不进仓库。
